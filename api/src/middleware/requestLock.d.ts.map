@@ -1,0 +1,1 @@
+{"version":3,"file":"requestLock.d.ts","sourceRoot":"","sources":["requestLock.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AACtD,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,gBAAgB,CAAC;AAItD,wBAAgB,iBAAiB,CAAC,MAAM,EAAE,MAAM,IACtC,KAAK,eAAe,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,oDAkBhE"}
