@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts"
-  },
+  "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js"
+}
   "keywords": [],
   "author": "",
   "license": "ISC",
