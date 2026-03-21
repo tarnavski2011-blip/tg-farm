@@ -1,0 +1,32 @@
+<div id="animalsScreen" class="screen hidden">
+  <div class="screenHeader">
+    <h2>🐾 Animals</h2>
+    <button onclick="closeAnimals()">✖</button>
+  </div>
+
+  <div class="animalsGrid">
+    <div class="animalCard">
+      <div class="animalIcon">🐔</div>
+      <div class="animalTitle">Chicken</div>
+      <div class="animalDesc">Produces eggs</div>
+      <div id="chickenCount">0 owned</div>
+      <button onclick="buyAnimal('CHICKEN')">Buy (50)</button>
+    </div>
+
+    <div class="animalCard">
+      <div class="animalIcon">🐑</div>
+      <div class="animalTitle">Sheep</div>
+      <div class="animalDesc">Produces wool</div>
+      <div id="sheepCount">0 owned</div>
+      <button onclick="buyAnimal('SHEEP')">Buy (120)</button>
+    </div>
+
+    <div class="animalCard">
+      <div class="animalIcon">🐄</div>
+      <div class="animalTitle">Cow</div>
+      <div class="animalDesc">Produces milk</div>
+      <div id="cowCount">0 owned</div>
+      <button onclick="buyAnimal('COW')">Buy (500)</button>
+    </div>
+  </div>
+</div>
