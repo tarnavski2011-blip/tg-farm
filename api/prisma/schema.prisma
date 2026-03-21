@@ -14,48 +14,42 @@ enum AnimalType {
 }
 
 model User {
-  id              Int      @id @default(autoincrement())
-  telegramId      BigInt   @unique
+  id               Int      @id @default(autoincrement())
+  telegramId       BigInt   @unique
 
-  coins           Int      @default(0)
-  diamonds        Int      @default(0)
-  points          Int      @default(0)
+  coins            Int      @default(0)
+  diamonds         Int      @default(0)
+  points           Int      @default(0)
 
-  level Int @default(1)
-xp    Int @default(0)
+  level            Int      @default(1)
+  xp               Int      @default(0)
 
-  feedUntil       DateTime?
-  feedActivatedAt DateTime?
+  feedUntil        DateTime?
+  feedActivatedAt  DateTime?
+  lastTapAt        DateTime? @default(now())
 
-  lastTapAt       DateTime? @default(now())
-
-  boostUntil      DateTime?
-  vipUntil        DateTime?
-
-  // ✅ автозбір
+  boostUntil       DateTime?
+  vipUntil         DateTime?
   autoCollectUntil DateTime?
 
-  lastDailyAt     DateTime?
-  dailyStreak     Int       @default(0)
+  lastDailyAt      DateTime?
+  dailyStreak      Int      @default(0)
 
-  warehouseLevel  Int       @default(1)
-  labLevel        Int       @default(1)
+  warehouseLevel   Int      @default(1)
+  labLevel         Int      @default(1)
+  labMultiplier    Int      @default(1)
 
-  payments Payment[]
+  lastWheelSpinAt  DateTime?
 
-  createdAt       DateTime  @default(now())
-  lastSeenAt DateTime @default(now())
-  labMultiplier Int @default(1)
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
 
-  referrals     Referral[] @relation("Referrer")
-referredBy    Referral?  @relation("Invited")
-lastWheelSpinAt DateTime?
-dailyQuestClaims DailyQuestClaim[]
-
-
-
-  animals         Animal[]
-  storage         Storage?
+  referrals        Referral[]         @relation("Referrer")
+  referredBy       Referral?          @relation("Invited")
+  dailyQuestClaims DailyQuestClaim[]
+  payments         Payment[]
+  animals          Animal[]
+  storage          Storage?
   achievementClaims AchievementClaim[]
 }
 
@@ -65,33 +59,33 @@ model Storage {
   eggs      Int      @default(0)
   wool      Int      @default(0)
   milk      Int      @default(0)
-  capacity Int @default(1000)
+  capacity  Int      @default(1000)
   updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Animal {
-  id        Int       @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   userId    Int
   type      AnimalType
-  level     Int       @default(1)
-  lastClaim DateTime  @default(now())
-  createdAt DateTime  @default(now())
+  level     Int        @default(1)
+  lastClaim DateTime   @default(now())
+  createdAt DateTime   @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
 }
 
 model AchievementClaim {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  code            String
-  claimed         Boolean  @default(false)
-  claimedAt       DateTime?
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  code      String
+  claimed   Boolean  @default(false)
+  claimedAt DateTime?
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, code])
   @@index([userId])
@@ -103,8 +97,8 @@ model Referral {
   invitedId  Int      @unique
   createdAt  DateTime @default(now())
 
-  referrer   User @relation("Referrer", fields: [referrerId], references: [id])
-  invited    User @relation("Invited", fields: [invitedId], references: [id])
+  referrer   User     @relation("Referrer", fields: [referrerId], references: [id])
+  invited    User     @relation("Invited", fields: [invitedId], references: [id])
 }
 
 model DailyQuestClaim {
@@ -134,7 +128,7 @@ model Payment {
   createdAt               DateTime @default(now())
   paidAt                  DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([productCode])
