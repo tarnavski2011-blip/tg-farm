@@ -1,17 +1,10 @@
 import { Router } from "express";
-import { handleTelegramPaymentUpdate } from "../bot/telegramPaymentHandlers";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
-  try {
-    const update = req.body;
-    await handleTelegramPaymentUpdate(update);
-    res.sendStatus(200);
-  } catch (e) {
-    console.error("Telegram webhook error:", e);
-    res.sendStatus(200);
-  }
+  console.log("TELEGRAM ROUTER UPDATE:", req.body);
+  res.sendStatus(200);
 });
 
 router.get("/", (_req, res) => {
