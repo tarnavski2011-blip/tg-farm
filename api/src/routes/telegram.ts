@@ -19,3 +19,29 @@ router.get("/", (_req, res) => {
 });
 
 export default router;
+
+router.post("/", async (req, res) => {
+  console.log("TELEGRAM UPDATE:", req.body);
+
+  const message = req.body.message;
+
+  if (message?.text === "/start") {
+    const chatId = message.chat.id;
+
+    await fetch(
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "🚜 Welcome to My Farm Clicker!",
+        }),
+      },
+    );
+  }
+
+  res.sendStatus(200);
+});
