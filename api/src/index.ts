@@ -35,7 +35,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Telegram auth для всіх /api/*
+// Telegram webhook
+app.use("/telegram", telegramRouter);
+
+app.post("/telegram", (req, res) => {
+  console.log("TELEGRAM UPDATE:", req.body);
+  res.sendStatus(200);
+});
+
+app.get("/telegram", (_req, res) => {
+  res.send("telegram webhook ok");
+});
+
+// Telegram auth для всіх /api/*
 app.use("/api", telegramAuth);
 
 // routes
@@ -62,7 +74,6 @@ app.use("/api/shop", shopRouter);
 app.use("/api/daily-login", dailyLoginRouter);
 app.use("/api/boosters", boostersRouter);
 app.use("/api/payments", paymentsRouter);
-app.use("/telegram", telegramRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -70,7 +81,7 @@ app.listen(port, () => {
   console.log(`API running on http://localhost:${port}`);
 });
 
-// ✅ Автозбір раз на 10 сек для тих, у кого активний autoCollect
+// Автозбір раз на 10 сек для тих, у кого активний autoCollect
 const AUTO_COLLECT_INTERVAL_MS = 10_000;
 
 setInterval(async () => {
