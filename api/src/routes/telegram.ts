@@ -2,16 +2,48 @@ import { Router } from "express";
 
 const router = Router();
 
-router.use((req, _res, next) => {
-  console.error("TELEGRAM HIT:", req.method, req.originalUrl);
-  next();
-});
+router.post("/", async (req, res) => {
+  try {
+    process.stdout.write("TELEGRAM UPDATE:\n");
+    process.stdout.write(JSON.stringify(req.body) + "\n");
 
-router.post("/", (req, res) => {
-  process.stdout.write("TELEGRAM UPDATE:\n");
-  process.stdout.write(JSON.stringify(req.body) + "\n");
+    const message = req.body?.message;
+    const text = message?.text;
+    const chatId = message?.chat?.id;
 
-  res.status(200).json({ ok: true });
+    if (text === "/start" && chatId) {
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+
+      if (!token) {
+        process.stdout.write("ERROR: TELEGRAM_BOT_TOKEN missing\n");
+        return res.sendStatus(200);
+      }
+
+      const tgRes = await fetch(
+        `https://api.telegram.org/bot${token}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "🚜 Welcome to My Farm Clicker!",
+          }),
+        },
+      );
+
+      const tgJson = await tgRes.text();
+      process.stdout.write("SEND MESSAGE RESULT:\n");
+      process.stdout.write(tgJson + "\n");
+    }
+
+    return res.sendStatus(200);
+  } catch (error) {
+    process.stdout.write("TELEGRAM ERROR:\n");
+    process.stdout.write(String(error) + "\n");
+    return res.sendStatus(200);
+  }
 });
 
 router.get("/", (_req, res) => {
@@ -19,29 +51,3 @@ router.get("/", (_req, res) => {
 });
 
 export default router;
-
-router.post("/", async (req, res) => {
-  console.log("TELEGRAM UPDATE:", req.body);
-
-  const message = req.body.message;
-
-  if (message?.text === "/start") {
-    const chatId = message.chat.id;
-
-    await fetch(
-      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: "🚜 Welcome to My Farm Clicker!",
-        }),
-      },
-    );
-  }
-
-  res.sendStatus(200);
-});
