@@ -38,15 +38,6 @@ app.use(express.json());
 // Telegram webhook
 app.use("/telegram", telegramRouter);
 
-app.post("/telegram", (req, res) => {
-  console.log("TELEGRAM UPDATE:", req.body);
-  res.sendStatus(200);
-});
-
-app.get("/telegram", (_req, res) => {
-  res.send("telegram webhook ok");
-});
-
 // Telegram auth для всіх /api/*
 app.use("/api", telegramAuth);
 
@@ -97,10 +88,10 @@ setInterval(async () => {
       try {
         await collectToStorageByUserId(u.id);
       } catch {
-        // ігноруємо помилки одного юзера
+        // ignore user-level errors
       }
     }
   } catch {
-    // ігноруємо разову помилку
+    // ignore interval-level errors
   }
 }, AUTO_COLLECT_INTERVAL_MS);

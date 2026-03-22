@@ -70,13 +70,6 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 // Telegram webhook
 app.use("/telegram", telegram_1.default);
-app.post("/telegram", (req, res) => {
-    console.log("TELEGRAM UPDATE:", req.body);
-    res.sendStatus(200);
-});
-app.get("/telegram", (_req, res) => {
-    res.send("telegram webhook ok");
-});
 // Telegram auth для всіх /api/*
 app.use("/api", telegramAuth_1.telegramAuth);
 // routes
@@ -121,11 +114,11 @@ setInterval(async () => {
                 await (0, collect_1.collectToStorageByUserId)(u.id);
             }
             catch {
-                // ігноруємо помилки одного юзера
+                // ignore user-level errors
             }
         }
     }
     catch {
-        // ігноруємо разову помилку
+        // ignore interval-level errors
     }
 }, AUTO_COLLECT_INTERVAL_MS);
