@@ -22,7 +22,19 @@ router.post("/", async (req, res) => {
                 },
                 body: JSON.stringify({
                     chat_id: chatId,
-                    text: "🚜 Welcome to My Farm Clicker!",
+                    text: "🚜 Welcome to My Farm Clicker!\n\nTap below to start playing 👇",
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: "🎮 Play",
+                                    web_app: {
+                                        url: "https://tg-farm-api.onrender.com",
+                                    },
+                                },
+                            ],
+                        ],
+                    },
                 }),
             });
             const tgJson = await tgRes.text();
