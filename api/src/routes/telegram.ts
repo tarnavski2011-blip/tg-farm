@@ -8,8 +8,10 @@ router.use((req, _res, next) => {
 });
 
 router.post("/", (req, res) => {
-  console.error("TELEGRAM BODY:", JSON.stringify(req.body));
-  res.status(200).json({ ok: true, got: req.body ?? null });
+  process.stdout.write("TELEGRAM UPDATE:\n");
+  process.stdout.write(JSON.stringify(req.body) + "\n");
+
+  res.status(200).json({ ok: true });
 });
 
 router.get("/", (_req, res) => {
