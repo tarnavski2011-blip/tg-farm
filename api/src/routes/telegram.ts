@@ -2,8 +2,13 @@ import { Router } from "express";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
-  console.log("TELEGRAM ROUTER UPDATE:", req.body);
+router.use((req, res, next) => {
+  console.log("TELEGRAM HIT:", req.method, req.originalUrl);
+  next();
+});
+
+router.post("/", (req, res) => {
+  console.log("TELEGRAM BODY:", JSON.stringify(req.body));
   res.sendStatus(200);
 });
 
