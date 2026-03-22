@@ -2,7 +2,7 @@ import { Router } from "express";
 
 const router = Router();
 
-router.use((req, res, next) => {
+router.use((req, _res, next) => {
   console.log("TELEGRAM HIT:", req.method, req.originalUrl);
   next();
 });
@@ -13,7 +13,7 @@ router.post("/", (req, res) => {
 });
 
 router.get("/", (_req, res) => {
-  res.send("telegram webhook ok");
+  res.send("telegram webhook ok 12345");
 });
 
 export default router;
