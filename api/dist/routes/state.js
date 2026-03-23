@@ -14,10 +14,10 @@ function secondsLeft(futureDate) {
     return diff > 0 ? diff : 0;
 }
 router.get("/", async (req, res) => {
-    if (!req.tgUserId) {
+    if (!req.telegramUser?.id) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser.id);
     let user = await prisma_1.prisma.user.findUnique({
         where: { telegramId },
         include: {
