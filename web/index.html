@@ -101,7 +101,7 @@
             {
               method: "GET",
               headers: {
-                Authorization: `tma ${initData}`,
+                "x-telegram-init-data": initData,
               },
             },
           );
