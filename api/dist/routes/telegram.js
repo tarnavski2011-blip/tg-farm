@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
                                 {
                                     text: "🎮 Play",
                                     web_app: {
-                                        url: "https://tg-farm-api.onrender.com",
+                                        url: "https://tg-farm-web.onrender.com",
                                     },
                                 },
                             ],
