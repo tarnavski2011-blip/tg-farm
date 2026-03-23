@@ -1,8 +1,19 @@
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 
+export interface TgAuthedRequest extends Request {
+  telegramUser?: {
+    id: number;
+    first_name?: string;
+    last_name?: string;
+    username?: string;
+    language_code?: string;
+  };
+  telegramInitData?: string;
+}
+
 export const telegramAuth = (
-  req: Request,
+  req: TgAuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -60,13 +71,11 @@ export const telegramAuth = (
     }
 
     const userRaw = urlParams.get("user");
-    const user = userRaw ? JSON.parse(userRaw) : null;
-
-    (req as any).telegramUser = user;
-    (req as any).telegramInitData = initData;
+    req.telegramUser = userRaw ? JSON.parse(userRaw) : undefined;
+    req.telegramInitData = initData;
 
     next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({ error: "Auth error" });
   }
 };

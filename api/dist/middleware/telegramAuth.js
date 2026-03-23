@@ -46,12 +46,11 @@ const telegramAuth = (req, res, next) => {
             return res.status(401).json({ error: "initData expired" });
         }
         const userRaw = urlParams.get("user");
-        const user = userRaw ? JSON.parse(userRaw) : null;
-        req.telegramUser = user;
+        req.telegramUser = userRaw ? JSON.parse(userRaw) : undefined;
         req.telegramInitData = initData;
         next();
     }
-    catch (error) {
+    catch {
         return res.status(401).json({ error: "Auth error" });
     }
 };
