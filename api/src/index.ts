@@ -9,7 +9,7 @@ import stateRouter from "./routes/state";
 import tapRouter from "./routes/tap";
 import feedRouter from "./routes/feed";
 import animalsRouter from "./routes/animals";
-import collectRouter, { collectToStorageByUserId } from "./routes/collect";
+import collectRouter from "./routes/collect";
 import storageRouter from "./routes/storage";
 import sellRouter from "./routes/sell";
 import upgradeRouter from "./routes/upgrade";
@@ -74,24 +74,3 @@ app.listen(port, () => {
 
 // Автозбір раз на 10 сек для тих, у кого активний autoCollect
 const AUTO_COLLECT_INTERVAL_MS = 10_000;
-
-setInterval(async () => {
-  try {
-    const now = new Date();
-
-    const users = await prisma.user.findMany({
-      where: { autoCollectUntil: { gt: now } },
-      select: { id: true },
-    });
-
-    for (const u of users) {
-      try {
-        await collectToStorageByUserId(u.id);
-      } catch {
-        // ignore user-level errors
-      }
-    }
-  } catch {
-    // ignore interval-level errors
-  }
-}, AUTO_COLLECT_INTERVAL_MS);

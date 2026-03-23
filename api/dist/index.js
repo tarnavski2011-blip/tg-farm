@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -39,13 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 require("dotenv/config");
-const prisma_1 = require("./prisma");
 const telegramAuth_1 = require("./middleware/telegramAuth");
 const state_1 = __importDefault(require("./routes/state"));
 const tap_1 = __importDefault(require("./routes/tap"));
 const feed_1 = __importDefault(require("./routes/feed"));
 const animals_1 = __importDefault(require("./routes/animals"));
-const collect_1 = __importStar(require("./routes/collect"));
+const collect_1 = __importDefault(require("./routes/collect"));
 const storage_1 = __importDefault(require("./routes/storage"));
 const sell_1 = __importDefault(require("./routes/sell"));
 const upgrade_1 = __importDefault(require("./routes/upgrade"));
@@ -102,23 +68,3 @@ app.listen(port, () => {
 });
 // Автозбір раз на 10 сек для тих, у кого активний autoCollect
 const AUTO_COLLECT_INTERVAL_MS = 10000;
-setInterval(async () => {
-    try {
-        const now = new Date();
-        const users = await prisma_1.prisma.user.findMany({
-            where: { autoCollectUntil: { gt: now } },
-            select: { id: true },
-        });
-        for (const u of users) {
-            try {
-                await (0, collect_1.collectToStorageByUserId)(u.id);
-            }
-            catch {
-                // ignore user-level errors
-            }
-        }
-    }
-    catch {
-        // ignore interval-level errors
-    }
-}, AUTO_COLLECT_INTERVAL_MS);
