@@ -226,8 +226,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       },
     });
   } catch (e) {
-    console.error("STATE ERROR:", e);
-    return res.status(500).json({ error: "Server error" });
+    console.error("STATE ERROR FULL:", e);
+    return res.status(500).json({
+      error: "Server error",
+      details: String(e),
+    });
   }
 });
 
