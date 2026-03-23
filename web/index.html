@@ -6,112 +6,317 @@
     <title>My Farm Clicker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: Arial, sans-serif;
         margin: 0;
-        padding: 24px;
-        background: #f4f7f1;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, #dff6d8 0%, #f4f7f1 100%);
         color: #1f2937;
       }
-      .card {
-        max-width: 520px;
+
+      .app {
+        max-width: 480px;
         margin: 0 auto;
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
+        min-height: 100vh;
+        padding: 16px;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 16px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        margin-bottom: 16px;
       }
-      h1 {
-        margin-top: 0;
+
+      .title {
+        text-align: center;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
       }
-      .muted {
+
+      .subtitle {
+        text-align: center;
         color: #6b7280;
+        margin-bottom: 20px;
       }
-      .box {
-        margin-top: 16px;
-        padding: 12px;
-        border-radius: 12px;
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .stat {
         background: #f9fafb;
-        word-break: break-word;
+        border-radius: 16px;
+        padding: 14px 10px;
+        text-align: center;
       }
-      button {
-        margin-top: 16px;
-        border: 0;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-size: 16px;
-        cursor: pointer;
-        background: #16a34a;
+
+      .stat-label {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .tap-wrap {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      .tap-btn {
+        width: 180px;
+        height: 180px;
+        border: none;
+        border-radius: 50%;
+        background: radial-gradient(circle at top, #34d399, #16a34a);
         color: white;
+        font-size: 28px;
+        font-weight: 700;
+        box-shadow: 0 12px 24px rgba(22, 163, 74, 0.35);
+        cursor: pointer;
+        transition: transform 0.08s ease;
       }
-      pre {
-        white-space: pre-wrap;
+
+      .tap-btn:active {
+        transform: scale(0.96);
+      }
+
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .small-card {
+        flex: 1;
+        background: #f9fafb;
+        border-radius: 14px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .small-card-title {
         font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+
+      .small-card-value {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .action-btn {
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        color: white;
+        background: #16a34a;
+        margin-top: 12px;
+      }
+
+      .secondary-btn {
+        background: #2563eb;
+      }
+
+      .result-box {
+        background: #0f172a;
+        color: #e5e7eb;
+        border-radius: 16px;
+        padding: 12px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 80px;
       }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>🚜 My Farm Clicker</h1>
-      <p class="muted">Тестова Telegram Mini App</p>
+    <div class="app">
+      <div class="card">
+        <div class="title">🚜 My Farm Clicker</div>
+        <div class="subtitle">Telegram Mini App</div>
 
-      <div class="box">
-        <strong>Telegram user:</strong>
-        <div id="user">завантаження...</div>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Coins</div>
+            <div class="stat-value" id="coins">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Diamonds</div>
+            <div class="stat-value" id="diamonds">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Points</div>
+            <div class="stat-value" id="points">0</div>
+          </div>
+        </div>
+
+        <div class="tap-wrap">
+          <button class="tap-btn" id="tapBtn">TAP</button>
+        </div>
+
+        <div class="row">
+          <div class="small-card">
+            <div class="small-card-title">Telegram ID</div>
+            <div class="small-card-value" id="telegramId">-</div>
+          </div>
+          <div class="small-card">
+            <div class="small-card-title">Status</div>
+            <div class="small-card-value" id="status">ready</div>
+          </div>
+        </div>
+
+        <button class="action-btn secondary-btn" id="loadStateBtn">
+          Оновити стан
+        </button>
       </div>
 
-      <div class="box">
-        <strong>initData:</strong>
-        <pre id="initData">завантаження...</pre>
-      </div>
-
-      <button id="sendBtn">Надіслати на сервер</button>
-
-      <div class="box">
-        <strong>Відповідь сервера:</strong>
-        <pre id="result">ще нічого</pre>
+      <div class="card">
+        <div style="font-weight: 700; margin-bottom: 10px">
+          Відповідь сервера
+        </div>
+        <div class="result-box" id="resultBox">ще нічого</div>
       </div>
     </div>
 
     <script>
       const tg = window.Telegram?.WebApp;
-      const userEl = document.getElementById("user");
-      const initDataEl = document.getElementById("initData");
-      const resultEl = document.getElementById("result");
-      const sendBtn = document.getElementById("sendBtn");
+      const API = "https://tg-farm-api.onrender.com/api";
+
+      const coinsEl = document.getElementById("coins");
+      const diamondsEl = document.getElementById("diamonds");
+      const pointsEl = document.getElementById("points");
+      const telegramIdEl = document.getElementById("telegramId");
+      const statusEl = document.getElementById("status");
+      const resultBox = document.getElementById("resultBox");
+      const tapBtn = document.getElementById("tapBtn");
+      const loadStateBtn = document.getElementById("loadStateBtn");
 
       if (tg) {
-        tg.expand();
         tg.ready();
+        tg.expand();
       }
 
-      const user = tg?.initDataUnsafe?.user ?? null;
       const initData = tg?.initData ?? "";
+      const user = tg?.initDataUnsafe?.user ?? null;
 
-      userEl.textContent = user
-        ? `${user.first_name || ""} ${user.last_name || ""} | id: ${user.id}`
-        : "Користувача не знайдено";
+      telegramIdEl.textContent = user?.id ? String(user.id) : "-";
 
-      initDataEl.textContent = initData || "Порожньо";
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
 
-      sendBtn.addEventListener("click", async () => {
+      function setResult(data) {
+        resultBox.textContent =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      }
+
+      async function apiGet(path) {
+        const res = await fetch(`${API}${path}`, {
+          method: "GET",
+          headers: {
+            "x-telegram-init-data": initData,
+          },
+        });
+
+        const text = await res.text();
+        let json;
         try {
-          const res = await fetch(
-            "https://tg-farm-api.onrender.com/api/state",
-            {
-              method: "GET",
-              headers: {
-                "x-telegram-init-data": initData,
-              },
-            },
-          );
-
-          const text = await res.text();
-          resultEl.textContent = text;
-        } catch (e) {
-          resultEl.textContent = String(e);
+          json = JSON.parse(text);
+        } catch {
+          json = text;
         }
-      });
+
+        return { ok: res.ok, data: json };
+      }
+
+      async function apiPost(path, body = {}) {
+        const res = await fetch(`${API}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-telegram-init-data": initData,
+          },
+          body: JSON.stringify(body),
+        });
+
+        const text = await res.text();
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = text;
+        }
+
+        return { ok: res.ok, data: json };
+      }
+
+      function applyState(data) {
+        coinsEl.textContent = data?.coins ?? data?.user?.coins ?? 0;
+        diamondsEl.textContent = data?.diamonds ?? data?.user?.diamonds ?? 0;
+        pointsEl.textContent = data?.points ?? data?.user?.points ?? 0;
+      }
+
+      async function loadState() {
+        try {
+          setStatus("loading");
+          const res = await apiGet("/state");
+          setResult(res.data);
+
+          if (res.ok) {
+            applyState(res.data);
+            setStatus("ok");
+          } else {
+            setStatus("error");
+          }
+        } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      async function collect() {
+        try {
+          setStatus("collect...");
+          const res = await apiPost("/collect");
+          setResult(res.data);
+
+          if (res.ok) {
+            await loadState();
+            setStatus("ok");
+          } else {
+            setStatus("error");
+          }
+        } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      tapBtn.addEventListener("click", collect);
+      loadStateBtn.addEventListener("click", loadState);
+
+      loadState();
     </script>
   </body>
 </html>
