@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
 router.get("/", async (req, res) => {
     try {
@@ -9,9 +10,54 @@ router.get("/", async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const telegramId = BigInt(user.id);
+        // 🔍 шукаємо юзера
+        let dbUser = await prisma_1.prisma.user.findUnique({
+            where: { telegramId },
+            include: {
+                animals: true,
+                plots: true,
+            },
+        });
+        // 🆕 якщо нема — створюємо
+        if (!dbUser) {
+            dbUser = await prisma_1.prisma.user.create({
+                data: {
+                    telegramId,
+                    coins: 100,
+                    diamonds: 0,
+                    feed: 0,
+                    animals: {
+                        create: [
+                            {
+                                type: "chicken",
+                                level: 1,
+                            },
+                        ],
+                    },
+                    plots: {
+                        create: [
+                            {
+                                planted: false,
+                            },
+                        ],
+                    },
+                },
+                include: {
+                    animals: true,
+                    plots: true,
+                },
+            });
+        }
         return res.json({
             ok: true,
-            telegramId: telegramId.toString(),
+            user: {
+                id: dbUser.telegramId.toString(),
+                coins: dbUser.coins,
+                diamonds: dbUser.diamonds,
+                feed: dbUser.feed,
+            },
+            animals: dbUser.animals,
+            plots: dbUser.plots,
         });
     }
     catch (e) {
