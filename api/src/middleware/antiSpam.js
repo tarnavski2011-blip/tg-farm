@@ -4,7 +4,7 @@ exports.antiSpamPerUser = antiSpamPerUser;
 const buckets = new Map();
 function antiSpamPerUser(windowMs, maxHits) {
     return (req, res, next) => {
-        const userId = String(req.tgUserId ?? req.ip ?? "anon");
+        const userId = String(req.telegramUser!.id ?? req.ip ?? "anon");
         const key = `${userId}:${req.method}:${req.path}`;
         const now = Date.now();
         const current = buckets.get(key);

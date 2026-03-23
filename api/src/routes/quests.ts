@@ -70,11 +70,11 @@ const DAILY_QUESTS: QuestDef[] = [
 ];
 
 router.get("/", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) {
+  if (!req.telegramUser!.id) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
   const today = getTodayKey();
 
   const user = await prisma.user.findUnique({
@@ -132,11 +132,11 @@ router.post(
   antiSpamPerUser(3000, 3),
   requestLockByUser(2000),
   async (req: TgAuthedRequest, res) => {
-    if (!req.tgUserId) {
+    if (!req.telegramUser!.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const code = String(req.body?.code ?? "").trim();
     const today = getTodayKey();
 

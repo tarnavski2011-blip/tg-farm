@@ -6,9 +6,9 @@ const router = (0, express_1.Router)();
 const PRICE_DIAMONDS = 100;
 const DURATION_MS = 60 * 60 * 1000;
 router.post("/activate", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({ where: { telegramId } });
     if (!user)
         return res.status(404).json({ error: "user not found" });

@@ -10,9 +10,9 @@ function labUpgradeCost(level) {
     return 1500 * level;
 }
 router.post("/warehouse", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({ where: { telegramId } });
     if (!user)
         return res.status(404).json({ error: "user not found" });
@@ -32,9 +32,9 @@ router.post("/warehouse", async (req, res) => {
     });
 });
 router.post("/lab", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({ where: { telegramId } });
     if (!user)
         return res.status(404).json({ error: "user not found" });

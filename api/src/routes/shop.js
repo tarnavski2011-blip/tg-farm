@@ -40,10 +40,10 @@ function addDays(base, days) {
     return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
 }
 router.get("/", async (req, res) => {
-    if (!req.tgUserId) {
+    if (!req.telegramUser!.id) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({
         where: { telegramId },
         select: {
@@ -61,10 +61,10 @@ router.get("/", async (req, res) => {
     });
 });
 router.post("/buy", (0, antiSpam_1.antiSpamPerUser)(3000, 4), (0, requestLock_1.requestLockByUser)(1500), async (req, res) => {
-    if (!req.tgUserId) {
+    if (!req.telegramUser!.id) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const code = String(req.body?.code ?? "").trim();
     const item = SHOP_ITEMS[code];
     if (!item) {

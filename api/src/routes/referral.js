@@ -4,9 +4,9 @@ const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
 router.get("/link", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({
         where: { telegramId },
     });
@@ -16,9 +16,9 @@ router.get("/link", async (req, res) => {
     res.json({ link });
 });
 router.post("/activate", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const referrerId = Number(req.body.referrerId);
     const user = await prisma_1.prisma.user.findUnique({
         where: { telegramId },

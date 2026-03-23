@@ -5,12 +5,12 @@ const prisma_1 = require("../prisma");
 const economy_1 = require("../config/economy");
 const router = (0, express_1.Router)();
 router.post("/", async (req, res) => {
-    if (!req.tgUserId)
+    if (!req.telegramUser!.id)
         return res.status(401).json({ error: "Unauthorized" });
     const type = String(req.body?.type ?? "")
         .trim()
         .toUpperCase();
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const user = await prisma_1.prisma.user.findUnique({
         where: { telegramId },
         select: { id: true, coins: true },

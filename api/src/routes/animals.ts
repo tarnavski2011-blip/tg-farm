@@ -6,14 +6,15 @@ import { ECONOMY } from "../config/economy";
 const router = Router();
 
 router.post("/buy", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) return res.status(401).json({ error: "Unauthorized" });
+  if (!req.telegramUser!.id)
+    return res.status(401).json({ error: "Unauthorized" });
   const type = String(req.body?.type ?? "")
     .trim()
     .toUpperCase() as keyof typeof ECONOMY.animals;
   if (!ECONOMY.animals[type])
     return res.status(400).json({ error: "Unknown animal type" });
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
   const user = await prisma.user.findUnique({
     where: { telegramId },
     select: { id: true, coins: true },

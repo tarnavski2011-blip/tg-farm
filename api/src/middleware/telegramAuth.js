@@ -69,7 +69,7 @@ function telegramAuth(req, res, next) {
     if (!verified) {
         return res.status(401).json({ error: "Unauthorized (bad initData)" });
     }
-    req.tgUserId = verified.userId;
+    req.telegramUser!.id = verified.userId;
     next();
 }
 //# sourceMappingURL=telegramAuth.js.map

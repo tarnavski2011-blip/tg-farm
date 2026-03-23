@@ -42,11 +42,11 @@ function getCooldown(lastSpinAt: Date | null): number {
 }
 
 router.get("/state", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) {
+  if (!req.telegramUser!.id) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
 
   const user = await prisma.user.findUnique({
     where: { telegramId },
@@ -68,11 +68,11 @@ router.get("/state", async (req: TgAuthedRequest, res) => {
 });
 
 router.post("/spin", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) {
+  if (!req.telegramUser!.id) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
 
   const user = await prisma.user.findUnique({
     where: { telegramId },

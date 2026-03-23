@@ -44,11 +44,11 @@ function addDays(base: Date, days: number) {
 }
 
 router.get("/", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) {
+  if (!req.telegramUser!.id) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
 
   const user = await prisma.user.findUnique({
     where: { telegramId },
@@ -74,11 +74,11 @@ router.post(
   antiSpamPerUser(3000, 4),
   requestLockByUser(1500),
   async (req: TgAuthedRequest, res) => {
-    if (!req.tgUserId) {
+    if (!req.telegramUser!.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const telegramId = BigInt(req.tgUserId);
+    const telegramId = BigInt(req.telegramUser!.id);
     const code = String(req.body?.code ?? "").trim() as keyof typeof SHOP_ITEMS;
 
     const item = SHOP_ITEMS[code];

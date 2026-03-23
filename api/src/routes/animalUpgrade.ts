@@ -6,11 +6,12 @@ import { upgradePrice } from "../config/economy";
 const router = Router();
 
 router.post("/", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) return res.status(401).json({ error: "Unauthorized" });
+  if (!req.telegramUser!.id)
+    return res.status(401).json({ error: "Unauthorized" });
   const type = String(req.body?.type ?? "")
     .trim()
     .toUpperCase() as "CHICKEN" | "SHEEP" | "COW";
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
 
   const user = await prisma.user.findUnique({
     where: { telegramId },

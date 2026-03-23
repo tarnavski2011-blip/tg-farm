@@ -5,7 +5,7 @@ const locks = new Map<string, number>();
 
 export function requestLockByUser(lockMs: number) {
   return (req: TgAuthedRequest, res: Response, next: NextFunction) => {
-    const userId = String(req.tgUserId ?? req.ip ?? "anon");
+    const userId = String(req.telegramUser!.id ?? req.ip ?? "anon");
     const bodyKey = JSON.stringify(req.body ?? {});
     const key = `${userId}:${req.method}:${req.path}:${bodyKey}`;
     const now = Date.now();

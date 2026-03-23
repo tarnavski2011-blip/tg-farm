@@ -11,9 +11,10 @@ function calcReward(streak: number) {
 }
 
 router.post("/claim", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) return res.status(401).json({ error: "Unauthorized" });
+  if (!req.telegramUser!.id)
+    return res.status(401).json({ error: "Unauthorized" });
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
   const user = await prisma.user.upsert({
     where: { telegramId },
     update: {},
@@ -29,7 +30,9 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
   }
 
   const missedTooMuch = last && now - last > 2 * DAY_MS;
-  const newStreak = missedTooMuch ? 1 : Math.min(7, (user.dailyStreak || 0) + 1);
+  const newStreak = missedTooMuch
+    ? 1
+    : Math.min(7, (user.dailyStreak || 0) + 1);
 
   const rewardCoins = calcReward(newStreak);
 

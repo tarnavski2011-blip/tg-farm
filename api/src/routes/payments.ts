@@ -18,13 +18,14 @@ router.get("/products", async (_req, res) => {
 });
 
 router.post("/create-invoice", async (req: TgAuthedRequest, res) => {
-  if (!req.tgUserId) return res.status(401).json({ error: "Unauthorized" });
+  if (!req.telegramUser!.id)
+    return res.status(401).json({ error: "Unauthorized" });
 
   const productCode = String(req.body?.productCode ?? "").trim();
   const product = getPremiumProduct(productCode);
   if (!product) return res.status(400).json({ error: "Unknown product" });
 
-  const telegramId = BigInt(req.tgUserId);
+  const telegramId = BigInt(req.telegramUser!.id);
   const user = await prisma.user.findUnique({
     where: { telegramId },
     select: { id: true },
