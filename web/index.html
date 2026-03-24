@@ -4,694 +4,237 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Farm Clicker</title>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <style>
       * {
         box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
+        margin: 0;
+        padding: 0;
       }
 
       body {
-        margin: 0;
         font-family: Arial, sans-serif;
-        background: linear-gradient(
-          180deg,
-          #dbeafe 0%,
-          #eff6ff 45%,
-          #ffffff 100%
-        );
-        color: #0f172a;
+        background: linear-gradient(180deg, #0f172a, #1e293b);
+        color: #fff;
       }
 
       .app {
         max-width: 480px;
-        margin: 0 auto;
-        min-height: 100vh;
-        padding: 14px 14px 28px;
-      }
-
-      .card {
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        border-radius: 22px;
+        margin: auto;
         padding: 16px;
-        box-shadow: 0 12px 30px rgba(37, 99, 235, 0.1);
-        margin-bottom: 14px;
-      }
-
-      .header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 14px;
       }
 
       .title {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 800;
-        line-height: 1;
+        margin-bottom: 16px;
       }
 
-      .subtitle {
-        font-size: 13px;
-        color: #64748b;
-        margin-top: 6px;
-      }
-
-      .badge {
-        background: linear-gradient(135deg, #2563eb, #60a5fa);
-        color: #fff;
-        padding: 10px 14px;
-        border-radius: 16px;
-        font-size: 13px;
-        font-weight: 700;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
-      }
-
-      .stats {
+      .menu {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
       }
 
-      .stat {
-        background: #f8fbff;
-        border: 1px solid #e0ecff;
-        border-radius: 18px;
-        padding: 12px 8px;
+      .btn {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 16px;
         text-align: center;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
       }
 
-      .stat-label {
-        font-size: 11px;
-        color: #64748b;
-        margin-bottom: 6px;
+      .btn:active {
+        transform: scale(0.95);
       }
 
-      .stat-value {
-        font-size: 18px;
-        font-weight: 800;
-        color: #0f172a;
+      /* MODAL */
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: flex-end;
+        z-index: 100;
       }
 
-      .section-title {
+      .modal-content {
+        width: 100%;
+        max-width: 480px;
+        background: #0f172a;
+        border-radius: 20px 20px 0 0;
+        padding: 16px;
+        animation: up 0.2s ease;
+      }
+
+      @keyframes up {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      .modal-title {
         font-size: 18px;
         font-weight: 800;
         margin-bottom: 12px;
       }
 
-      .tap-zone {
+      .close {
+        float: right;
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .tabs {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding-top: 4px;
+        gap: 8px;
+        margin-bottom: 12px;
       }
 
-      .tap-btn {
-        width: 170px;
-        height: 170px;
-        border: none;
-        border-radius: 50%;
-        cursor: pointer;
-        color: #fff;
-        font-size: 32px;
-        font-weight: 900;
-        letter-spacing: 1px;
-        background: radial-gradient(
-          circle at 30% 20%,
-          #60a5fa,
-          #2563eb 58%,
-          #1d4ed8 100%
-        );
-        box-shadow:
-          0 20px 40px rgba(37, 99, 235, 0.28),
-          inset 0 6px 18px rgba(255, 255, 255, 0.25);
-        transition:
-          transform 0.08s ease,
-          box-shadow 0.15s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .tap-btn:active {
-        transform: scale(0.95);
-      }
-
-      .tap-btn::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.28),
-          rgba(255, 255, 255, 0)
-        );
-        border-radius: 50%;
-        pointer-events: none;
-      }
-
-      .tap-hint {
-        margin-top: 12px;
-        font-size: 13px;
-        color: #64748b;
+      .tab {
+        flex: 1;
         text-align: center;
-      }
-
-      .pulse {
-        animation: pulseGlow 1.6s infinite;
-      }
-
-      @keyframes pulseGlow {
-        0% {
-          box-shadow:
-            0 20px 40px rgba(37, 99, 235, 0.22),
-            inset 0 6px 18px rgba(255, 255, 255, 0.25);
-        }
-        50% {
-          box-shadow:
-            0 24px 48px rgba(37, 99, 235, 0.38),
-            inset 0 6px 18px rgba(255, 255, 255, 0.25);
-        }
-        100% {
-          box-shadow:
-            0 20px 40px rgba(37, 99, 235, 0.22),
-            inset 0 6px 18px rgba(255, 255, 255, 0.25);
-        }
-      }
-
-      .floating {
-        position: fixed;
-        left: 50%;
-        transform: translateX(-50%);
-        pointer-events: none;
-        color: #2563eb;
-        font-weight: 900;
-        font-size: 22px;
-        animation: floatUp 0.9s ease forwards;
-        z-index: 20;
-        text-shadow: 0 2px 10px rgba(255, 255, 255, 0.9);
-      }
-
-      @keyframes floatUp {
-        0% {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0) scale(0.9);
-        }
-        100% {
-          opacity: 0;
-          transform: translateX(-50%) translateY(-70px) scale(1.15);
-        }
-      }
-
-      .menu-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .menu-btn {
-        border: none;
-        border-radius: 18px;
-        padding: 14px 8px;
-        background: linear-gradient(180deg, #f8fbff, #ebf4ff);
-        border: 1px solid #dbeafe;
-        color: #0f172a;
-        font-weight: 700;
-        font-size: 13px;
+        padding: 10px;
+        border-radius: 12px;
+        background: #1e293b;
         cursor: pointer;
-        min-height: 72px;
       }
 
-      .animals-grid,
-      .storage-grid,
-      .quest-grid,
-      .shop-grid,
-      .info-grid {
+      .tab.active {
+        background: #2563eb;
+      }
+
+      .grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
       }
 
-      .tile {
-        background: #f8fbff;
-        border: 1px solid #dbeafe;
-        border-radius: 18px;
+      .card {
+        background: #1e293b;
+        border-radius: 14px;
         padding: 12px;
-      }
-
-      .tile-title {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 8px;
-      }
-
-      .tile-value {
-        font-size: 18px;
-        font-weight: 800;
-      }
-
-      .small-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 8px;
-        font-size: 13px;
-        color: #475569;
-      }
-
-      .main-btn {
-        width: 100%;
-        border: none;
-        border-radius: 16px;
-        padding: 14px;
-        font-size: 15px;
-        font-weight: 800;
-        cursor: pointer;
-        color: #fff;
-        background: linear-gradient(135deg, #2563eb, #3b82f6);
-        margin-top: 10px;
-        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
-      }
-
-      .main-btn.secondary {
-        background: linear-gradient(135deg, #0f172a, #334155);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-      }
-
-      .main-btn.light {
-        background: linear-gradient(135deg, #60a5fa, #93c5fd);
-        color: #082f49;
-      }
-
-      .result-box {
-        background: #0f172a;
-        color: #e2e8f0;
-        border-radius: 18px;
-        padding: 12px;
-        font-size: 12px;
-        white-space: pre-wrap;
-        word-break: break-word;
-        min-height: 100px;
-      }
-
-      .status-line {
-        font-size: 13px;
-        color: #64748b;
-        margin-top: 10px;
         text-align: center;
-        font-weight: 700;
       }
 
-      .footer-space {
-        height: 18px;
+      .buy-btn {
+        margin-top: 8px;
+        padding: 8px;
+        background: #2563eb;
+        border-radius: 10px;
+        cursor: pointer;
       }
     </style>
   </head>
+
   <body>
     <div class="app">
-      <div class="card">
-        <div class="header">
-          <div>
-            <div class="title">🚜 My Farm Clicker</div>
-            <div class="subtitle">Ферма в Telegram Mini App</div>
-          </div>
-          <div class="badge" id="levelBadge">LVL 1</div>
+      <div class="title">🚜 My Farm Clicker</div>
+
+      <div class="menu">
+        <div class="btn" onclick="openModal('animals')">🐔<br />Тварини</div>
+        <div class="btn" onclick="openModal('storage')">📦<br />Склад</div>
+        <div class="btn" onclick="openModal('daily')">🎁<br />Daily</div>
+        <div class="btn" onclick="openModal('quests')">📜<br />Квести</div>
+        <div class="btn" onclick="openModal('wheel')">🎰<br />Wheel</div>
+        <div class="btn" onclick="openModal('shop')">🛒<br />Shop</div>
+        <div class="btn" onclick="openModal('boost')">⚡<br />Boosters</div>
+        <div class="btn" onclick="openModal('refs')">👥<br />Referrals</div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+      <div class="modal-content">
+        <div>
+          <span class="modal-title" id="modalTitle"></span>
+          <span class="close" onclick="closeModal()">✖</span>
         </div>
 
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-label">Coins</div>
-            <div class="stat-value" id="coins">0</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Diamonds</div>
-            <div class="stat-value" id="diamonds">0</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Points</div>
-            <div class="stat-value" id="points">0</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">XP</div>
-            <div class="stat-value" id="xp">0</div>
-          </div>
-        </div>
+        <div id="modalBody"></div>
       </div>
-
-      <div class="card">
-        <div class="section-title">💰 Тапай і заробляй</div>
-        <div class="tap-zone">
-          <button class="tap-btn pulse" id="tapBtn">TAP</button>
-          <div class="tap-hint">Натискай кнопку, щоб отримати монети</div>
-        </div>
-        <div class="status-line" id="status">Готово</div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">📂 Меню</div>
-        <div class="menu-grid">
-          <button class="menu-btn" id="animalsBtn">🐔<br />Тварини</button>
-          <button class="menu-btn" id="storageBtn">📦<br />Склад</button>
-          <button class="menu-btn" id="dailyBtn">🎁<br />Daily</button>
-          <button class="menu-btn" id="questsBtn">📜<br />Квести</button>
-          <button class="menu-btn" id="wheelBtn">🎰<br />Wheel</button>
-          <button class="menu-btn" id="shopBtn">🛒<br />Shop</button>
-          <button class="menu-btn" id="boostBtn">⚡<br />Boosters</button>
-          <button class="menu-btn" id="refsBtn">👥<br />Referrals</button>
-          <button class="menu-btn" id="refreshBtn">🔄<br />Оновити</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">🐾 Тварини</div>
-        <div class="animals-grid">
-          <div class="tile">
-            <div class="tile-title">Курки</div>
-            <div class="tile-value" id="chickenCount">0</div>
-            <div class="small-row">
-              <span>Готово</span><span id="eggsReady">0</span>
-            </div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Вівці</div>
-            <div class="tile-value" id="sheepCount">0</div>
-            <div class="small-row">
-              <span>Готово</span><span id="woolReady">0</span>
-            </div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Корови</div>
-            <div class="tile-value" id="cowCount">0</div>
-            <div class="small-row">
-              <span>Готово</span><span id="milkReady">0</span>
-            </div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">VIP</div>
-            <div class="tile-value" id="vipState">OFF</div>
-            <div class="small-row">
-              <span>Boost</span><span id="boostState">OFF</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">📦 Склад</div>
-        <div class="storage-grid">
-          <div class="tile">
-            <div class="tile-title">Яйця</div>
-            <div class="tile-value" id="eggs">0</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Шерсть</div>
-            <div class="tile-value" id="wool">0</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Молоко</div>
-            <div class="tile-value" id="milk">0</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Capacity</div>
-            <div class="tile-value">
-              <span id="storageTotal">0</span>/<span id="storageCapacity"
-                >0</span
-              >
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">🎁 Daily / Quests / Wheel</div>
-        <div class="quest-grid">
-          <div class="tile">
-            <div class="tile-title">Daily streak</div>
-            <div class="tile-value" id="dailyStreak">0</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Wheel</div>
-            <div class="tile-value" id="wheelInfo">Ready</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Referrals</div>
-            <div class="tile-value" id="referralsInfo">0</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Boosters</div>
-            <div class="tile-value" id="boostersInfo">0</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">🛒 Shop</div>
-        <div class="shop-grid">
-          <div class="tile">
-            <div class="tile-title">Premium</div>
-            <div class="tile-value">Stars</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Мова</div>
-            <div class="tile-value">Українська</div>
-          </div>
-        </div>
-
-        <button class="main-btn" id="loadStateBtn">Оновити стан</button>
-        <button class="main-btn secondary" id="serverBtn">
-          Надіслати на сервер
-        </button>
-      </div>
-
-      <div class="card">
-        <div class="section-title">🧾 Відповідь сервера</div>
-        <div class="result-box" id="resultBox">ще нічого</div>
-      </div>
-
-      <div class="footer-space"></div>
     </div>
 
     <script>
-      const tg = window.Telegram?.WebApp;
-      const API = "https://tg-farm-api.onrender.com/api";
+      const modal = document.getElementById("modal");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalBody = document.getElementById("modalBody");
 
-      if (tg) {
-        tg.ready();
-        tg.expand();
-      }
+      function openModal(type) {
+        modal.style.display = "flex";
 
-      const initData = tg?.initData ?? "";
-      const resultBox = document.getElementById("resultBox");
-      const statusEl = document.getElementById("status");
+        if (type === "animals") {
+          modalTitle.innerText = "🐾 Тварини";
 
-      const coinsEl = document.getElementById("coins");
-      const diamondsEl = document.getElementById("diamonds");
-      const pointsEl = document.getElementById("points");
-      const xpEl = document.getElementById("xp");
-      const levelBadgeEl = document.getElementById("levelBadge");
+          modalBody.innerHTML = `
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('buy')">Купити</div>
+        <div class="tab" onclick="showTab('owned')">Мої</div>
+      </div>
 
-      const chickenCountEl = document.getElementById("chickenCount");
-      const sheepCountEl = document.getElementById("sheepCount");
-      const cowCountEl = document.getElementById("cowCount");
+      <div id="tabContent"></div>
+    `;
 
-      const eggsReadyEl = document.getElementById("eggsReady");
-      const woolReadyEl = document.getElementById("woolReady");
-      const milkReadyEl = document.getElementById("milkReady");
-
-      const eggsEl = document.getElementById("eggs");
-      const woolEl = document.getElementById("wool");
-      const milkEl = document.getElementById("milk");
-      const storageTotalEl = document.getElementById("storageTotal");
-      const storageCapacityEl = document.getElementById("storageCapacity");
-
-      const dailyStreakEl = document.getElementById("dailyStreak");
-      const vipStateEl = document.getElementById("vipState");
-      const boostStateEl = document.getElementById("boostState");
-      const wheelInfoEl = document.getElementById("wheelInfo");
-      const referralsInfoEl = document.getElementById("referralsInfo");
-      const boostersInfoEl = document.getElementById("boostersInfo");
-
-      const tapBtn = document.getElementById("tapBtn");
-      const loadStateBtn = document.getElementById("loadStateBtn");
-      const serverBtn = document.getElementById("serverBtn");
-      const refreshBtn = document.getElementById("refreshBtn");
-
-      function setStatus(text) {
-        statusEl.textContent = text;
-      }
-
-      function setResult(data) {
-        resultBox.textContent =
-          typeof data === "string" ? data : JSON.stringify(data, null, 2);
-      }
-
-      async function apiGet(path) {
-        const res = await fetch(`${API}${path}`, {
-          method: "GET",
-          headers: {
-            "x-telegram-init-data": initData,
-          },
-        });
-
-        const text = await res.text();
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
-          json = text;
-        }
-
-        return { ok: res.ok, data: json };
-      }
-
-      async function apiPost(path, body = {}) {
-        const res = await fetch(`${API}${path}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-telegram-init-data": initData,
-          },
-          body: JSON.stringify(body),
-        });
-
-        const text = await res.text();
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
-          json = text;
-        }
-
-        return { ok: res.ok, data: json };
-      }
-
-      function spawnFloatingText(text) {
-        const el = document.createElement("div");
-        el.className = "floating";
-        el.textContent = text;
-        el.style.bottom = "220px";
-        document.body.appendChild(el);
-
-        setTimeout(() => {
-          el.remove();
-        }, 900);
-      }
-
-      function applyState(data) {
-        coinsEl.textContent = data?.coins ?? 0;
-        diamondsEl.textContent = data?.diamonds ?? 0;
-        pointsEl.textContent = data?.points ?? 0;
-        xpEl.textContent = data?.xp ?? 0;
-        levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
-
-        chickenCountEl.textContent = data?.animals?.chicken ?? 0;
-        sheepCountEl.textContent = data?.animals?.sheep ?? 0;
-        cowCountEl.textContent = data?.animals?.cow ?? 0;
-
-        eggsReadyEl.textContent = data?.ready?.eggsReady ?? 0;
-        woolReadyEl.textContent = data?.ready?.woolReady ?? 0;
-        milkReadyEl.textContent = data?.ready?.milkReady ?? 0;
-
-        eggsEl.textContent = data?.storage?.eggs ?? 0;
-        woolEl.textContent = data?.storage?.wool ?? 0;
-        milkEl.textContent = data?.storage?.milk ?? 0;
-        storageTotalEl.textContent = data?.storage?.total ?? 0;
-        storageCapacityEl.textContent = data?.storage?.capacity ?? 0;
-
-        dailyStreakEl.textContent = data?.daily?.dailyStreak ?? 0;
-        vipStateEl.textContent = data?.vip?.active ? "ON" : "OFF";
-        boostStateEl.textContent = data?.boost?.active ? "ON" : "OFF";
-
-        wheelInfoEl.textContent = "Ready";
-        referralsInfoEl.textContent = "0";
-        boostersInfoEl.textContent =
-          (data?.boost?.active ? 1 : 0) +
-          (data?.vip?.active ? 1 : 0) +
-          (data?.autoCollect?.active ? 1 : 0);
-      }
-
-      async function loadState() {
-        try {
-          setStatus("loading...");
-          const res = await apiGet("/state");
-          setResult(res.data);
-
-          if (res.ok) {
-            applyState(res.data);
-            setStatus("ok");
-          } else {
-            setStatus("error");
-          }
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
+          showTab("buy");
+        } else if (type === "storage") {
+          modalTitle.innerText = "📦 Склад";
+          modalBody.innerHTML = `
+      <div class="grid">
+        <div class="card">Яйця<br>0</div>
+        <div class="card">Шерсть<br>0</div>
+        <div class="card">Молоко<br>0</div>
+        <div class="card">Capacity<br>0/1000</div>
+      </div>
+    `;
+        } else {
+          modalTitle.innerText = type;
+          modalBody.innerHTML = `<div class="card">В розробці 🚧</div>`;
         }
       }
 
-      async function collect() {
-        try {
-          setStatus("collect...");
-          const res = await apiPost("/collect");
-          setResult(res.data);
-
-          if (res.ok) {
-            spawnFloatingText(`+${res.data?.added ?? 10}`);
-            await loadState();
-            setStatus("ok");
-          } else {
-            setStatus("error");
-          }
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
-        }
+      function closeModal() {
+        modal.style.display = "none";
       }
 
-      async function pingServer() {
-        try {
-          setStatus("server...");
-          const res = await apiGet("/state");
-          setResult(res.data);
-          setStatus(res.ok ? "ok" : "error");
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
+      function showTab(tab) {
+        const tabs = document.querySelectorAll(".tab");
+        tabs.forEach((t) => t.classList.remove("active"));
+
+        if (tab === "buy") tabs[0].classList.add("active");
+        if (tab === "owned") tabs[1].classList.add("active");
+
+        const content = document.getElementById("tabContent");
+
+        if (tab === "buy") {
+          content.innerHTML = `
+      <div class="grid">
+        <div class="card">🐔 Курка<br><div class="buy-btn">Купити</div></div>
+        <div class="card">🐑 Вівця<br><div class="buy-btn">Купити</div></div>
+        <div class="card">🐄 Корова<br><div class="buy-btn">Купити</div></div>
+      </div>
+    `;
+        }
+
+        if (tab === "owned") {
+          content.innerHTML = `
+      <div class="grid">
+        <div class="card">🐔 Курки<br>0</div>
+        <div class="card">🐑 Вівці<br>0</div>
+        <div class="card">🐄 Корови<br>0</div>
+      </div>
+    `;
         }
       }
-
-      tapBtn.addEventListener("click", collect);
-      loadStateBtn.addEventListener("click", loadState);
-      serverBtn.addEventListener("click", pingServer);
-      refreshBtn.addEventListener("click", loadState);
-
-      document.getElementById("animalsBtn").addEventListener("click", () => {
-        setResult("🐔 Тварини\nТут далі підключимо buy / upgrade.");
-      });
-      document.getElementById("storageBtn").addEventListener("click", () => {
-        setResult("📦 Склад\nТут далі підключимо collect / sell.");
-      });
-      document.getElementById("dailyBtn").addEventListener("click", () => {
-        setResult("🎁 Daily Login\nТут далі підключимо нагороди.");
-      });
-      document.getElementById("questsBtn").addEventListener("click", () => {
-        setResult("📜 Quests + Achievements\nТут далі підключимо UI.");
-      });
-      document.getElementById("wheelBtn").addEventListener("click", () => {
-        setResult("🎰 Lucky Wheel\nТут далі підключимо spin.");
-      });
-      document.getElementById("shopBtn").addEventListener("click", () => {
-        setResult("🛒 Shop\nТут далі підключимо товари й Stars.");
-      });
-      document.getElementById("boostBtn").addEventListener("click", () => {
-        setResult("⚡ Boosters\nТут далі підключимо бустери.");
-      });
-      document.getElementById("refsBtn").addEventListener("click", () => {
-        setResult("👥 Referrals\nТут далі підключимо рефералку.");
-      });
-
-      loadState();
     </script>
   </body>
 </html>
