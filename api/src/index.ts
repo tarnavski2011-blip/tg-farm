@@ -29,6 +29,7 @@ import dailyLoginRouter from "./routes/dailyLogin";
 import boostersRouter from "./routes/boosters";
 import paymentsRouter from "./routes/payments";
 import telegramRouter from "./routes/telegram";
+import buyAnimalRouter from "./routes/buyAnimal";
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use("/api/shop", shopRouter);
 app.use("/api/daily-login", dailyLoginRouter);
 app.use("/api/boosters", boostersRouter);
 app.use("/api/payments", paymentsRouter);
+app.use("/api/buy-animal", buyAnimalRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
