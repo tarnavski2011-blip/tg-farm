@@ -3,10 +3,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
-const CHICKEN_RATE_PER_MIN = 1;
-const SHEEP_RATE_PER_MIN = 1;
-const COW_RATE_PER_MIN = 1;
-const MAX_OFFLINE_MINUTES = 8 * 60;
+const ANIMAL_PRODUCTION = {
+    CHICKEN: {
+        seconds: 10,
+        storageField: "eggs",
+    },
+    SHEEP: {
+        seconds: 30,
+        storageField: "wool",
+    },
+    COW: {
+        seconds: 60,
+        storageField: "milk",
+    },
+};
 function secondsLeft(futureDate) {
     if (!futureDate)
         return 0;
@@ -30,15 +40,25 @@ router.get("/", async (req, res) => {
             user = await prisma_1.prisma.user.create({
                 data: {
                     telegramId,
-                    coins: 0,
-                    diamonds: 0,
-                    points: 0,
-                    level: 1,
-                    xp: 0,
-                    warehouseLevel: 1,
-                    labLevel: 1,
-                    labMultiplier: 1,
-                    lastSeenAt: new Date(),
+                    storage: {
+                        create: {
+                            eggs: 0,
+                            wool: 0,
+                            milk: 0,
+                            capacity: 1000,
+                        },
+                    },
+                },
+                include: {
+                    animals: true,
+                    storage: true,
+                },
+            });
+        }
+        if (!user.storage) {
+            user = await prisma_1.prisma.user.update({
+                where: { id: user.id },
+                data: {
                     storage: {
                         create: {
                             eggs: 0,
@@ -55,78 +75,88 @@ router.get("/", async (req, res) => {
             });
         }
         const now = new Date();
-        const lastSeenAt = user.lastSeenAt ?? now;
-        let offlineMinutes = Math.floor((now.getTime() - lastSeenAt.getTime()) / 60000);
-        if (offlineMinutes < 0)
-            offlineMinutes = 0;
-        if (offlineMinutes > MAX_OFFLINE_MINUTES) {
-            offlineMinutes = MAX_OFFLINE_MINUTES;
+        let eggsAdd = 0;
+        let woolAdd = 0;
+        let milkAdd = 0;
+        const animalUpdates = [];
+        for (const animal of user.animals) {
+            const cfg = ANIMAL_PRODUCTION[animal.type];
+            const passedSec = Math.floor((now.getTime() - animal.lastClaim.getTime()) / 1000);
+            if (passedSec < cfg.seconds)
+                continue;
+            const produced = Math.floor(passedSec / cfg.seconds) * animal.level;
+            if (produced <= 0)
+                continue;
+            if (cfg.storageField === "eggs")
+                eggsAdd += produced;
+            if (cfg.storageField === "wool")
+                woolAdd += produced;
+            if (cfg.storageField === "milk")
+                milkAdd += produced;
+            const consumedSec = Math.floor(passedSec / cfg.seconds) * cfg.seconds;
+            const newLastClaim = new Date(animal.lastClaim.getTime() + consumedSec * 1000);
+            animalUpdates.push(prisma_1.prisma.animal.update({
+                where: { id: animal.id },
+                data: { lastClaim: newLastClaim },
+            }));
         }
-        const chickenCount = user.animals.filter((a) => a.type === "CHICKEN").length;
-        const sheepCount = user.animals.filter((a) => a.type === "SHEEP").length;
-        const cowCount = user.animals.filter((a) => a.type === "COW").length;
-        const feedActive = secondsLeft(user.feedUntil) > 0;
-        let offlineAdded = {
-            eggs: 0,
-            wool: 0,
-            milk: 0,
-        };
-        if (offlineMinutes > 0 && feedActive) {
-            offlineAdded = {
-                eggs: chickenCount * CHICKEN_RATE_PER_MIN * offlineMinutes,
-                wool: sheepCount * SHEEP_RATE_PER_MIN * offlineMinutes,
-                milk: cowCount * COW_RATE_PER_MIN * offlineMinutes,
-            };
-            const currentTotal = (user.storage?.eggs ?? 0) +
-                (user.storage?.wool ?? 0) +
-                (user.storage?.milk ?? 0);
-            const freeSpace = Math.max(0, (user.storage?.capacity ?? 0) - currentTotal);
-            const totalToAdd = offlineAdded.eggs + offlineAdded.wool + offlineAdded.milk;
-            if (totalToAdd > freeSpace && totalToAdd > 0) {
-                const ratio = freeSpace / totalToAdd;
-                offlineAdded.eggs = Math.floor(offlineAdded.eggs * ratio);
-                offlineAdded.wool = Math.floor(offlineAdded.wool * ratio);
-                offlineAdded.milk = Math.floor(offlineAdded.milk * ratio);
-            }
-            user = await prisma_1.prisma.user.update({
-                where: { id: user.id },
+        const currentTotal = (user.storage?.eggs ?? 0) +
+            (user.storage?.wool ?? 0) +
+            (user.storage?.milk ?? 0);
+        const capacity = user.storage?.capacity ?? 1000;
+        const freeSpace = Math.max(0, capacity - currentTotal);
+        let totalAdd = eggsAdd + woolAdd + milkAdd;
+        if (totalAdd > freeSpace && totalAdd > 0) {
+            const ratio = freeSpace / totalAdd;
+            eggsAdd = Math.floor(eggsAdd * ratio);
+            woolAdd = Math.floor(woolAdd * ratio);
+            milkAdd = Math.floor(milkAdd * ratio);
+            totalAdd = eggsAdd + woolAdd + milkAdd;
+        }
+        if (animalUpdates.length > 0) {
+            await Promise.all(animalUpdates);
+        }
+        if (totalAdd > 0) {
+            await prisma_1.prisma.storage.update({
+                where: { userId: user.id },
                 data: {
-                    lastSeenAt: now,
-                    storage: {
-                        update: {
-                            eggs: { increment: offlineAdded.eggs },
-                            wool: { increment: offlineAdded.wool },
-                            milk: { increment: offlineAdded.milk },
-                        },
-                    },
-                },
-                include: {
-                    animals: true,
-                    storage: true,
+                    eggs: { increment: eggsAdd },
+                    wool: { increment: woolAdd },
+                    milk: { increment: milkAdd },
                 },
             });
         }
-        else {
-            user = await prisma_1.prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    lastSeenAt: now,
-                },
-                include: {
-                    animals: true,
-                    storage: true,
-                },
-            });
-        }
-        const eggsReady = user.animals
-            .filter((a) => a.type === "CHICKEN")
-            .reduce((sum, a) => sum + a.level, 0);
-        const woolReady = user.animals
-            .filter((a) => a.type === "SHEEP")
-            .reduce((sum, a) => sum + a.level, 0);
-        const milkReady = user.animals
-            .filter((a) => a.type === "COW")
-            .reduce((sum, a) => sum + a.level, 0);
+        user = await prisma_1.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                lastSeenAt: now,
+            },
+            include: {
+                animals: true,
+                storage: true,
+            },
+        });
+        const chickenAnimals = user.animals.filter((a) => a.type === "CHICKEN");
+        const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
+        const cowAnimals = user.animals.filter((a) => a.type === "COW");
+        const eggsReady = chickenAnimals.reduce((sum, animal) => {
+            const passedSec = Math.floor((Date.now() - animal.lastClaim.getTime()) / 1000);
+            return (sum +
+                Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds) *
+                    animal.level);
+        }, 0);
+        const woolReady = sheepAnimals.reduce((sum, animal) => {
+            const passedSec = Math.floor((Date.now() - animal.lastClaim.getTime()) / 1000);
+            return (sum +
+                Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds) *
+                    animal.level);
+        }, 0);
+        const milkReady = cowAnimals.reduce((sum, animal) => {
+            const passedSec = Math.floor((Date.now() - animal.lastClaim.getTime()) / 1000);
+            return (sum +
+                Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds) *
+                    animal.level);
+        }, 0);
         const storageTotal = (user.storage?.eggs ?? 0) +
             (user.storage?.wool ?? 0) +
             (user.storage?.milk ?? 0);
@@ -137,16 +167,16 @@ router.get("/", async (req, res) => {
             level: user.level,
             xp: user.xp,
             animals: {
-                chicken: chickenCount,
-                sheep: sheepCount,
-                cow: cowCount,
+                chicken: chickenAnimals.length,
+                sheep: sheepAnimals.length,
+                cow: cowAnimals.length,
             },
             storage: {
                 eggs: user.storage?.eggs ?? 0,
                 wool: user.storage?.wool ?? 0,
                 milk: user.storage?.milk ?? 0,
                 total: storageTotal,
-                capacity: user.storage?.capacity ?? 0,
+                capacity: user.storage?.capacity ?? 1000,
             },
             ready: {
                 eggsReady,
@@ -160,7 +190,7 @@ router.get("/", async (req, res) => {
                 labMultiplier: user.labMultiplier,
             },
             feed: {
-                active: feedActive,
+                active: secondsLeft(user.feedUntil) > 0,
                 leftSec: secondsLeft(user.feedUntil),
                 waitSec: 0,
             },
@@ -180,8 +210,12 @@ router.get("/", async (req, res) => {
                 dailyStreak: user.dailyStreak,
             },
             offline: {
-                minutes: offlineMinutes,
-                added: offlineAdded,
+                minutes: 0,
+                added: {
+                    eggs: eggsAdd,
+                    wool: woolAdd,
+                    milk: milkAdd,
+                },
             },
         });
     }
