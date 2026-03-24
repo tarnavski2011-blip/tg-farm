@@ -4,161 +4,471 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Farm Clicker</title>
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
       * {
         box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+        -webkit-tap-highlight-color: transparent;
       }
 
       body {
+        margin: 0;
         font-family: Arial, sans-serif;
-        background: linear-gradient(180deg, #0f172a, #1e293b);
-        color: #fff;
+        color: #e5e7eb;
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(59, 130, 246, 0.18),
+            transparent 30%
+          ),
+          linear-gradient(180deg, #0b1220 0%, #111827 45%, #0f172a 100%);
       }
 
       .app {
         max-width: 480px;
-        margin: auto;
+        margin: 0 auto;
+        min-height: 100vh;
+        padding: 16px 14px 28px;
+      }
+
+      .card {
+        background: rgba(17, 24, 39, 0.88);
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: 24px;
         padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(8px);
+      }
+
+      .top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
       }
 
       .title {
-        font-size: 26px;
+        font-size: 28px;
         font-weight: 800;
-        margin-bottom: 16px;
+        color: #f8fafc;
+        line-height: 1.1;
       }
 
-      .menu {
+      .subtitle {
+        margin-top: 6px;
+        color: #94a3b8;
+        font-size: 13px;
+      }
+
+      .level-badge {
+        min-width: 90px;
+        text-align: center;
+        padding: 14px 12px;
+        border-radius: 18px;
+        font-size: 16px;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+
+      .stat-box {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 18px;
+        padding: 12px 8px;
+        text-align: center;
+      }
+
+      .stat-label {
+        color: #94a3b8;
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        color: #f8fafc;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #f8fafc;
+        margin-bottom: 12px;
+      }
+
+      .tap-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 0 2px;
+      }
+
+      .tap-btn {
+        width: 200px;
+        height: 200px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        color: white;
+        font-size: 34px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        background: radial-gradient(
+          circle at 30% 20%,
+          #93c5fd,
+          #3b82f6 55%,
+          #1d4ed8 100%
+        );
+        box-shadow:
+          0 20px 50px rgba(37, 99, 235, 0.34),
+          inset 0 8px 18px rgba(255, 255, 255, 0.22);
+        transition: transform 0.08s ease;
+      }
+
+      .tap-btn:active {
+        transform: scale(0.96);
+      }
+
+      .tap-hint {
+        margin-top: 18px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 14px;
+      }
+
+      .status-line {
+        margin-top: 14px;
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .menu-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 12px;
       }
 
-      .btn {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 16px;
-        text-align: center;
-        font-weight: 700;
+      .menu-btn {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 22px;
+        min-height: 98px;
+        padding: 12px 8px;
         cursor: pointer;
-        transition: 0.2s;
+        color: #f8fafc;
+        font-size: 13px;
+        font-weight: 800;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
       }
 
-      .btn:active {
-        transform: scale(0.95);
+      .menu-btn:active {
+        transform: scale(0.98);
       }
 
-      /* MODAL */
+      .menu-emoji {
+        font-size: 30px;
+        line-height: 1;
+      }
 
+      .main-btn {
+        width: 100%;
+        border: none;
+        border-radius: 18px;
+        padding: 16px;
+        margin-top: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+      }
+
+      .main-btn.secondary {
+        background: linear-gradient(135deg, #0f172a, #334155);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
+      }
+
+      .result-box {
+        background: #020617;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        color: #e2e8f0;
+        border-radius: 18px;
+        padding: 12px;
+        min-height: 100px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .floating {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 240px;
+        z-index: 999;
+        pointer-events: none;
+        font-size: 24px;
+        font-weight: 900;
+        color: #93c5fd;
+        text-shadow: 0 2px 14px rgba(59, 130, 246, 0.5);
+        animation: floatUp 0.9s ease forwards;
+      }
+
+      @keyframes floatUp {
+        0% {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0) scale(0.95);
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-70px) scale(1.12);
+        }
+      }
+
+      /* modal */
       .modal {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(2, 6, 23, 0.78);
         display: none;
-        justify-content: center;
         align-items: flex-end;
-        z-index: 100;
+        justify-content: center;
+        z-index: 1000;
+        padding: 0;
       }
 
-      .modal-content {
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-sheet {
         width: 100%;
         max-width: 480px;
         background: #0f172a;
-        border-radius: 20px 20px 0 0;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        border: 1px solid rgba(59, 130, 246, 0.16);
         padding: 16px;
-        animation: up 0.2s ease;
+        max-height: 86vh;
+        overflow: auto;
       }
 
-      @keyframes up {
-        from {
-          transform: translateY(100%);
-        }
-        to {
-          transform: translateY(0);
-        }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
       }
 
       .modal-title {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 800;
-        margin-bottom: 12px;
+        color: #f8fafc;
       }
 
-      .close {
-        float: right;
-        cursor: pointer;
+      .close-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        border: none;
+        background: rgba(30, 41, 59, 0.9);
+        color: #f8fafc;
         font-size: 18px;
+        cursor: pointer;
       }
 
       .tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-
-      .tab {
-        flex: 1;
-        text-align: center;
-        padding: 10px;
-        border-radius: 12px;
-        background: #1e293b;
-        cursor: pointer;
-      }
-
-      .tab.active {
-        background: #2563eb;
-      }
-
-      .grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
+        margin-bottom: 14px;
       }
 
-      .card {
-        background: #1e293b;
-        border-radius: 14px;
+      .tab-btn {
+        border: none;
+        border-radius: 16px;
         padding: 12px;
-        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 800;
+        color: #e2e8f0;
+        background: rgba(30, 41, 59, 0.9);
+      }
+
+      .tab-btn.active {
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .tile {
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 18px;
+        padding: 14px;
+      }
+
+      .tile-title {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .tile-value {
+        color: #f8fafc;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .tile-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+        color: #cbd5e1;
+        font-size: 13px;
       }
 
       .buy-btn {
-        margin-top: 8px;
-        padding: 8px;
-        background: #2563eb;
-        border-radius: 10px;
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        padding: 12px;
+        margin-top: 12px;
         cursor: pointer;
+        font-size: 14px;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+      }
+
+      .note {
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.45;
       }
     </style>
   </head>
-
   <body>
     <div class="app">
-      <div class="title">🚜 My Farm Clicker</div>
+      <div class="card">
+        <div class="top-row">
+          <div>
+            <div class="title">🚜 My Farm Clicker</div>
+            <div class="subtitle">Ферма в Telegram Mini App</div>
+          </div>
+          <div class="level-badge" id="levelBadge">LVL 1</div>
+        </div>
 
-      <div class="menu">
-        <div class="btn" onclick="openModal('animals')">🐔<br />Тварини</div>
-        <div class="btn" onclick="openModal('storage')">📦<br />Склад</div>
-        <div class="btn" onclick="openModal('daily')">🎁<br />Daily</div>
-        <div class="btn" onclick="openModal('quests')">📜<br />Квести</div>
-        <div class="btn" onclick="openModal('wheel')">🎰<br />Wheel</div>
-        <div class="btn" onclick="openModal('shop')">🛒<br />Shop</div>
-        <div class="btn" onclick="openModal('boost')">⚡<br />Boosters</div>
-        <div class="btn" onclick="openModal('refs')">👥<br />Referrals</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Coins</div>
+            <div class="stat-value" id="coins">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Diamonds</div>
+            <div class="stat-value" id="diamonds">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Points</div>
+            <div class="stat-value" id="points">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">XP</div>
+            <div class="stat-value" id="xp">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">💰 Тапай і заробляй</div>
+        <div class="tap-wrap">
+          <button class="tap-btn" id="tapBtn">TAP</button>
+          <div class="tap-hint">Натискай кнопку, щоб отримати монети</div>
+        </div>
+        <div class="status-line" id="status">ok</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🗂 Меню</div>
+        <div class="menu-grid">
+          <button class="menu-btn" id="animalsBtn">
+            <span class="menu-emoji">🐔</span><span>Тварини</span>
+          </button>
+          <button class="menu-btn" id="storageBtn">
+            <span class="menu-emoji">📦</span><span>Склад</span>
+          </button>
+          <button class="menu-btn" id="dailyBtn">
+            <span class="menu-emoji">🎁</span><span>Daily</span>
+          </button>
+          <button class="menu-btn" id="questsBtn">
+            <span class="menu-emoji">📜</span><span>Квести</span>
+          </button>
+          <button class="menu-btn" id="wheelBtn">
+            <span class="menu-emoji">🎰</span><span>Wheel</span>
+          </button>
+          <button class="menu-btn" id="shopBtn">
+            <span class="menu-emoji">🛒</span><span>Shop</span>
+          </button>
+          <button class="menu-btn" id="boostBtn">
+            <span class="menu-emoji">⚡</span><span>Boosters</span>
+          </button>
+          <button class="menu-btn" id="refsBtn">
+            <span class="menu-emoji">👥</span><span>Referrals</span>
+          </button>
+          <button class="menu-btn" id="refreshBtn">
+            <span class="menu-emoji">🔄</span><span>Оновити</span>
+          </button>
+        </div>
+
+        <button class="main-btn" id="loadStateBtn">Оновити стан</button>
+        <button class="main-btn secondary" id="serverBtn">
+          Надіслати на сервер
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🧾 Відповідь сервера</div>
+        <div class="result-box" id="resultBox">ще нічого</div>
       </div>
     </div>
 
-    <!-- MODAL -->
     <div class="modal" id="modal">
-      <div class="modal-content">
-        <div>
-          <span class="modal-title" id="modalTitle"></span>
-          <span class="close" onclick="closeModal()">✖</span>
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-title" id="modalTitle">Вікно</div>
+          <button class="close-btn" id="closeModalBtn">✕</button>
+        </div>
+
+        <div id="modalTabs" style="display: none">
+          <div class="tabs">
+            <button class="tab-btn active" id="tabBuyBtn">Купити</button>
+            <button class="tab-btn" id="tabOwnedBtn">Мої</button>
+          </div>
         </div>
 
         <div id="modalBody"></div>
@@ -166,75 +476,352 @@
     </div>
 
     <script>
+      const tg = window.Telegram?.WebApp;
+      const API = "https://tg-farm-api.onrender.com/api";
+
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
+
+      const initData = tg?.initData ?? "";
+
       const modal = document.getElementById("modal");
       const modalTitle = document.getElementById("modalTitle");
       const modalBody = document.getElementById("modalBody");
+      const modalTabs = document.getElementById("modalTabs");
+      const tabBuyBtn = document.getElementById("tabBuyBtn");
+      const tabOwnedBtn = document.getElementById("tabOwnedBtn");
 
-      function openModal(type) {
-        modal.style.display = "flex";
+      const resultBox = document.getElementById("resultBox");
+      const statusEl = document.getElementById("status");
 
-        if (type === "animals") {
-          modalTitle.innerText = "🐾 Тварини";
+      const coinsEl = document.getElementById("coins");
+      const diamondsEl = document.getElementById("diamonds");
+      const pointsEl = document.getElementById("points");
+      const xpEl = document.getElementById("xp");
+      const levelBadgeEl = document.getElementById("levelBadge");
 
-          modalBody.innerHTML = `
-      <div class="tabs">
-        <div class="tab active" onclick="showTab('buy')">Купити</div>
-        <div class="tab" onclick="showTab('owned')">Мої</div>
-      </div>
+      let currentState = null;
 
-      <div id="tabContent"></div>
-    `;
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
 
-          showTab("buy");
-        } else if (type === "storage") {
-          modalTitle.innerText = "📦 Склад";
-          modalBody.innerHTML = `
-      <div class="grid">
-        <div class="card">Яйця<br>0</div>
-        <div class="card">Шерсть<br>0</div>
-        <div class="card">Молоко<br>0</div>
-        <div class="card">Capacity<br>0/1000</div>
-      </div>
-    `;
-        } else {
-          modalTitle.innerText = type;
-          modalBody.innerHTML = `<div class="card">В розробці 🚧</div>`;
+      function setResult(data) {
+        resultBox.textContent =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      }
+
+      async function apiGet(path) {
+        const res = await fetch(`${API}${path}`, {
+          method: "GET",
+          headers: {
+            "x-telegram-init-data": initData,
+          },
+        });
+
+        const text = await res.text();
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = text;
         }
+
+        return { ok: res.ok, data: json };
+      }
+
+      async function apiPost(path, body = {}) {
+        const res = await fetch(`${API}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-telegram-init-data": initData,
+          },
+          body: JSON.stringify(body),
+        });
+
+        const text = await res.text();
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = text;
+        }
+
+        return { ok: res.ok, data: json };
+      }
+
+      function spawnFloatingText(text) {
+        const el = document.createElement("div");
+        el.className = "floating";
+        el.textContent = text;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+      }
+
+      function applyState(data) {
+        currentState = data;
+        coinsEl.textContent = data?.coins ?? 0;
+        diamondsEl.textContent = data?.diamonds ?? 0;
+        pointsEl.textContent = data?.points ?? 0;
+        xpEl.textContent = data?.xp ?? 0;
+        levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
+      }
+
+      async function loadState() {
+        try {
+          setStatus("loading...");
+          const res = await apiGet("/state");
+          setResult(res.data);
+
+          if (res.ok) {
+            applyState(res.data);
+            setStatus("ok");
+          } else {
+            setStatus("error");
+          }
+        } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      async function collect() {
+        try {
+          setStatus("collect...");
+          const res = await apiPost("/collect");
+          setResult(res.data);
+
+          if (res.ok) {
+            spawnFloatingText(`+${res.data?.added ?? 10}`);
+            await loadState();
+            setStatus("ok");
+          } else {
+            setStatus("error");
+          }
+        } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      async function pingServer() {
+        try {
+          setStatus("server...");
+          const res = await apiGet("/state");
+          setResult(res.data);
+          setStatus(res.ok ? "ok" : "error");
+        } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      function showModal() {
+        modal.classList.add("show");
       }
 
       function closeModal() {
-        modal.style.display = "none";
+        modal.classList.remove("show");
       }
 
-      function showTab(tab) {
-        const tabs = document.querySelectorAll(".tab");
-        tabs.forEach((t) => t.classList.remove("active"));
-
-        if (tab === "buy") tabs[0].classList.add("active");
-        if (tab === "owned") tabs[1].classList.add("active");
-
-        const content = document.getElementById("tabContent");
-
-        if (tab === "buy") {
-          content.innerHTML = `
-      <div class="grid">
-        <div class="card">🐔 Курка<br><div class="buy-btn">Купити</div></div>
-        <div class="card">🐑 Вівця<br><div class="buy-btn">Купити</div></div>
-        <div class="card">🐄 Корова<br><div class="buy-btn">Купити</div></div>
-      </div>
-    `;
-        }
-
-        if (tab === "owned") {
-          content.innerHTML = `
-      <div class="grid">
-        <div class="card">🐔 Курки<br>0</div>
-        <div class="card">🐑 Вівці<br>0</div>
-        <div class="card">🐄 Корови<br>0</div>
-      </div>
-    `;
+      async function buyAnimal(type) {
+        const res = await apiPost("/buy-animal", { type });
+        setResult(res.data);
+        if (res.ok) {
+          await loadState();
+          renderAnimalsOwned();
         }
       }
+
+      function renderAnimalsBuy() {
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">🐔 Курка</div>
+            <div class="tile-value">100 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Яйця</span></div>
+            <button class="buy-btn" data-animal="CHICKEN">Купити</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐑 Вівця</div>
+            <div class="tile-value">500 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div>
+            <button class="buy-btn" data-animal="SHEEP">Купити</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐄 Корова</div>
+            <div class="tile-value">1000 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Молоко</span></div>
+            <button class="buy-btn" data-animal="COW">Купити</button>
+          </div>
+        </div>
+      `;
+
+        modalBody.querySelectorAll(".buy-btn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const type = btn.dataset.animal;
+            await buyAnimal(type);
+          });
+        });
+      }
+
+      function renderAnimalsOwned() {
+        const animals = currentState?.animals || {};
+        const ready = currentState?.ready || {};
+
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">🐔 Курки</div>
+            <div class="tile-value">${animals.chicken ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐑 Вівці</div>
+            <div class="tile-value">${animals.sheep ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐄 Корови</div>
+            <div class="tile-value">${animals.cow ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">⚡ Статус</div>
+            <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+            <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+          </div>
+        </div>
+      `;
+      }
+
+      function openAnimalsModal() {
+        modalTitle.textContent = "🐾 Тварини";
+        modalTabs.style.display = "block";
+        tabBuyBtn.classList.add("active");
+        tabOwnedBtn.classList.remove("active");
+        renderAnimalsBuy();
+        showModal();
+      }
+
+      function openStorageModal() {
+        const storage = currentState?.storage || {};
+        modalTitle.textContent = "📦 Склад";
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">Яйця</div>
+            <div class="tile-value">${storage.eggs ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Шерсть</div>
+            <div class="tile-value">${storage.wool ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Молоко</div>
+            <div class="tile-value">${storage.milk ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Capacity</div>
+            <div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div>
+          </div>
+        </div>
+        <button class="buy-btn" id="sellAllBtn">Продати все</button>
+      `;
+        showModal();
+
+        document
+          .getElementById("sellAllBtn")
+          .addEventListener("click", async () => {
+            const res = await apiPost("/sell");
+            setResult(res.data);
+            if (res.ok) {
+              await loadState();
+              openStorageModal();
+            }
+          });
+      }
+
+      function openSimpleModal(title, text) {
+        modalTitle.textContent = title;
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `<div class="tile"><div class="note">${text}</div></div>`;
+        showModal();
+      }
+
+      document.getElementById("tapBtn").addEventListener("click", collect);
+      document
+        .getElementById("loadStateBtn")
+        .addEventListener("click", loadState);
+      document
+        .getElementById("serverBtn")
+        .addEventListener("click", pingServer);
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", loadState);
+
+      document
+        .getElementById("animalsBtn")
+        .addEventListener("click", openAnimalsModal);
+      document
+        .getElementById("storageBtn")
+        .addEventListener("click", openStorageModal);
+      document
+        .getElementById("dailyBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("🎁 Daily", "Тут буде щоденна нагорода."),
+        );
+      document
+        .getElementById("questsBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("📜 Квести", "Тут будуть квести та ачивки."),
+        );
+      document
+        .getElementById("wheelBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("🎰 Wheel", "Тут буде lucky wheel."),
+        );
+      document
+        .getElementById("shopBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("🛒 Shop", "Тут буде магазин і Stars."),
+        );
+      document
+        .getElementById("boostBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("⚡ Boosters", "Тут будуть бустери."),
+        );
+      document
+        .getElementById("refsBtn")
+        .addEventListener("click", () =>
+          openSimpleModal("👥 Referrals", "Тут буде реферальна система."),
+        );
+      document
+        .getElementById("closeModalBtn")
+        .addEventListener("click", closeModal);
+
+      tabBuyBtn.addEventListener("click", () => {
+        tabBuyBtn.classList.add("active");
+        tabOwnedBtn.classList.remove("active");
+        renderAnimalsBuy();
+      });
+
+      tabOwnedBtn.addEventListener("click", () => {
+        tabOwnedBtn.classList.remove("active");
+        tabBuyBtn.classList.remove("active");
+        tabOwnedBtn.classList.add("active");
+        renderAnimalsOwned();
+      });
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      loadState();
     </script>
   </body>
 </html>
