@@ -404,6 +404,13 @@
         </div>
       </div>
 
+      <div
+        id="boostStatus"
+        style="margin-top: 10px; font-size: 14px; opacity: 0.8"
+      >
+        ⚡ Boost: OFF | 🤖 Auto: OFF
+      </div>
+
       <div class="card">
         <div class="section-title">💰 Тапай і заробляй</div>
         <div class="tap-wrap">
@@ -579,6 +586,15 @@
           if (res.ok) {
             applyState(res.data);
             setStatus("ok");
+
+            const boostEl = document.getElementById("boostStatus");
+
+            const boostActive = res.data.boost?.active;
+            const autoActive = res.data.autoCollect?.active;
+
+            if (boostEl) {
+              boostEl.innerText = `⚡ Boost: ${boostActive ? "ON" : "OFF"} | 🤖 Auto: ${autoActive ? "ON" : "OFF"}`;
+            }
           } else {
             setStatus("error");
           }
@@ -638,27 +654,27 @@
 
       function renderAnimalsBuy() {
         modalBody.innerHTML = `
-        <div class="modal-grid">
-          <div class="tile">
-            <div class="tile-title">🐔 Курка</div>
-            <div class="tile-value">100 coins</div>
-            <div class="tile-row"><span>Ресурс</span><span>Яйця</span></div>
-            <button class="buy-btn" data-animal="CHICKEN">Купити</button>
-          </div>
-          <div class="tile">
-            <div class="tile-title">🐑 Вівця</div>
-            <div class="tile-value">500 coins</div>
-            <div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div>
-            <button class="buy-btn" data-animal="SHEEP">Купити</button>
-          </div>
-          <div class="tile">
-            <div class="tile-title">🐄 Корова</div>
-            <div class="tile-value">1000 coins</div>
-            <div class="tile-row"><span>Ресурс</span><span>Молоко</span></div>
-            <button class="buy-btn" data-animal="COW">Купити</button>
-          </div>
-        </div>
-      `;
+              <div class="modal-grid">
+                <div class="tile">
+                  <div class="tile-title">🐔 Курка</div>
+                  <div class="tile-value">100 coins</div>
+                  <div class="tile-row"><span>Ресурс</span><span>Яйця</span></div>
+                  <button class="buy-btn" data-animal="CHICKEN">Купити</button>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">🐑 Вівця</div>
+                  <div class="tile-value">500 coins</div>
+                  <div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div>
+                  <button class="buy-btn" data-animal="SHEEP">Купити</button>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">🐄 Корова</div>
+                  <div class="tile-value">1000 coins</div>
+                  <div class="tile-row"><span>Ресурс</span><span>Молоко</span></div>
+                  <button class="buy-btn" data-animal="COW">Купити</button>
+                </div>
+              </div>
+            `;
 
         modalBody.querySelectorAll(".buy-btn").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -673,29 +689,29 @@
         const ready = currentState?.ready || {};
 
         modalBody.innerHTML = `
-        <div class="modal-grid">
-          <div class="tile">
-            <div class="tile-title">🐔 Курки</div>
-            <div class="tile-value">${animals.chicken ?? 0}</div>
-            <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">🐑 Вівці</div>
-            <div class="tile-value">${animals.sheep ?? 0}</div>
-            <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">🐄 Корови</div>
-            <div class="tile-value">${animals.cow ?? 0}</div>
-            <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">⚡ Статус</div>
-            <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-            <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-          </div>
-        </div>
-      `;
+              <div class="modal-grid">
+                <div class="tile">
+                  <div class="tile-title">🐔 Курки</div>
+                  <div class="tile-value">${animals.chicken ?? 0}</div>
+                  <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">🐑 Вівці</div>
+                  <div class="tile-value">${animals.sheep ?? 0}</div>
+                  <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">🐄 Корови</div>
+                  <div class="tile-value">${animals.cow ?? 0}</div>
+                  <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">⚡ Статус</div>
+                  <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+                  <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+                </div>
+              </div>
+            `;
       }
 
       function openAnimalsModal() {
@@ -712,26 +728,26 @@
         modalTitle.textContent = "📦 Склад";
         modalTabs.style.display = "none";
         modalBody.innerHTML = `
-        <div class="modal-grid">
-          <div class="tile">
-            <div class="tile-title">Яйця</div>
-            <div class="tile-value">${storage.eggs ?? 0}</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Шерсть</div>
-            <div class="tile-value">${storage.wool ?? 0}</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Молоко</div>
-            <div class="tile-value">${storage.milk ?? 0}</div>
-          </div>
-          <div class="tile">
-            <div class="tile-title">Capacity</div>
-            <div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div>
-          </div>
-        </div>
-        <button class="buy-btn" id="sellAllBtn">Продати все</button>
-      `;
+              <div class="modal-grid">
+                <div class="tile">
+                  <div class="tile-title">Яйця</div>
+                  <div class="tile-value">${storage.eggs ?? 0}</div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">Шерсть</div>
+                  <div class="tile-value">${storage.wool ?? 0}</div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">Молоко</div>
+                  <div class="tile-value">${storage.milk ?? 0}</div>
+                </div>
+                <div class="tile">
+                  <div class="tile-title">Capacity</div>
+                  <div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div>
+                </div>
+              </div>
+              <button class="buy-btn" id="sellAllBtn">Продати все</button>
+            `;
         showModal();
 
         document
@@ -794,9 +810,9 @@
         openSimpleModal(
           "⚡ Boosters",
           `
-      <button onclick="activateAuto()">🤖 Auto Collect (1h)</button><br><br>
-      <button onclick="activateBoost()">⚡ Boost x2 (1h)</button>
-      `,
+            <button onclick="activateAuto()">🤖 Auto Collect (1h)</button><br><br>
+            <button onclick="activateBoost()">⚡ Boost x2 (1h)</button>
+            `,
         ),
       );
       document
