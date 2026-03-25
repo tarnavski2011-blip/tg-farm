@@ -83,9 +83,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
     const now = new Date();
 
-    let eggsAdd = 1;
-    let woolAdd = 1;
-    let milkAdd = 1;
+    let eggsAdd = 0;
+    let woolAdd = 0;
+    let milkAdd = 0;
 
     const animalUpdates: Promise<any>[] = [];
 
@@ -146,19 +146,14 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     }
 
     if (totalAdd > 0) {
-      const isAuto =
-        user.autoCollectUntil && user.autoCollectUntil > new Date();
-
-      if (isAuto) {
-        await prisma.storage.update({
-          where: { userId: user.id },
-          data: {
-            eggs: { increment: eggsAdd },
-            wool: { increment: woolAdd },
-            milk: { increment: milkAdd },
-          },
-        });
-      }
+      await prisma.storage.update({
+        where: { userId: user.id },
+        data: {
+          eggs: { increment: eggsAdd },
+          wool: { increment: woolAdd },
+          milk: { increment: milkAdd },
+        },
+      });
     }
 
     user = await prisma.user.update({
