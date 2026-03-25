@@ -83,9 +83,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
     const now = new Date();
 
-    let eggsAdd = 0;
-    let woolAdd = 0;
-    let milkAdd = 0;
+    let eggsAdd = 1;
+    let woolAdd = 1;
+    let milkAdd = 1;
 
     const animalUpdates: Promise<any>[] = [];
 
