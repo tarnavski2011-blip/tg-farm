@@ -790,11 +790,15 @@
         .addEventListener("click", () =>
           openSimpleModal("🛒 Shop", "Тут буде магазин і Stars."),
         );
-      document
-        .getElementById("boostBtn")
-        .addEventListener("click", () =>
-          openSimpleModal("⚡ Boosters", "Тут будуть бустери."),
-        );
+      document.getElementById("boostBtn").addEventListener("click", () =>
+        openSimpleModal(
+          "⚡ Boosters",
+          `
+      <button onclick="activateAuto()">🤖 Auto Collect (1h)</button><br><br>
+      <button onclick="activateBoost()">⚡ Boost x2 (1h)</button>
+      `,
+        ),
+      );
       document
         .getElementById("refsBtn")
         .addEventListener("click", () =>
@@ -822,6 +826,26 @@
       });
 
       loadState();
+
+      async function activateAuto() {
+        await fetch("/api/boost/auto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData }),
+        });
+
+        alert("Auto включено 🚀");
+      }
+
+      async function activateBoost() {
+        await fetch("/api/boost/boost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData }),
+        });
+
+        alert("Boost включено ⚡");
+      }
     </script>
   </body>
 </html>

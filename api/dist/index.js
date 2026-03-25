@@ -12,6 +12,7 @@ const collect_1 = __importDefault(require("./routes/collect"));
 const buyAnimal_1 = __importDefault(require("./routes/buyAnimal"));
 const sell_1 = __importDefault(require("./routes/sell"));
 const telegram_1 = __importDefault(require("./routes/telegram"));
+const boost_1 = __importDefault(require("./routes/boost"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -25,6 +26,7 @@ app.use("/api/state", state_1.default);
 app.use("/api/collect", collect_1.default);
 app.use("/api/buy-animal", buyAnimal_1.default);
 app.use("/api/sell", sell_1.default);
+app.use("/api/boost", boost_1.default);
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => {
     console.log(`API running on http://localhost:${port}`);

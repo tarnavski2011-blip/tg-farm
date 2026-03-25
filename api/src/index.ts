@@ -9,6 +9,7 @@ import collectRouter from "./routes/collect";
 import buyAnimalRouter from "./routes/buyAnimal";
 import sellRouter from "./routes/sell";
 import telegramRouter from "./routes/telegram";
+import boostRouter from "./routes/boost";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/state", stateRouter);
 app.use("/api/collect", collectRouter);
 app.use("/api/buy-animal", buyAnimalRouter);
 app.use("/api/sell", sellRouter);
+app.use("/api/boost", boostRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 

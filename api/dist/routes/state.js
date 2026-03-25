@@ -84,7 +84,11 @@ router.get("/", async (req, res) => {
             const passedSec = Math.floor((now.getTime() - animal.lastClaim.getTime()) / 1000);
             if (passedSec < cfg.seconds)
                 continue;
-            const produced = Math.floor(passedSec / cfg.seconds) * animal.level;
+            let produced = Math.floor(passedSec / cfg.seconds) * animal.level;
+            // BOOST x2
+            if (user.boostUntil && user.boostUntil > new Date()) {
+                produced *= 2;
+            }
             if (produced <= 0)
                 continue;
             if (cfg.storageField === "eggs")
@@ -117,14 +121,17 @@ router.get("/", async (req, res) => {
             await Promise.all(animalUpdates);
         }
         if (totalAdd > 0) {
-            await prisma_1.prisma.storage.update({
-                where: { userId: user.id },
-                data: {
-                    eggs: { increment: eggsAdd },
-                    wool: { increment: woolAdd },
-                    milk: { increment: milkAdd },
-                },
-            });
+            const isAuto = user.autoCollectUntil && user.autoCollectUntil > new Date();
+            if (isAuto) {
+                await prisma_1.prisma.storage.update({
+                    where: { userId: user.id },
+                    data: {
+                        eggs: { increment: eggsAdd },
+                        wool: { increment: woolAdd },
+                        milk: { increment: milkAdd },
+                    },
+                });
+            }
         }
         user = await prisma_1.prisma.user.update({
             where: { id: user.id },
