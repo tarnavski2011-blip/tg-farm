@@ -844,23 +844,31 @@
       loadState();
 
       async function activateAuto() {
-        await fetch("/api/boost/auto", {
+        const res = await fetch("/api/boost/auto", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ initData }),
         });
 
+        const data = await res.json();
+
         alert("Auto включено 🚀");
+
+        await loadState();
       }
 
       async function activateBoost() {
-        await fetch("/api/boost/boost", {
+        const res = await fetch("/api/boost/boost", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ initData }),
         });
 
+        const data = await res.json();
+
         alert("Boost включено ⚡");
+
+        await loadState();
       }
     </script>
   </body>
