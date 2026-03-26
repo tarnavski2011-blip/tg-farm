@@ -99,6 +99,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
       let produced = Math.floor(passedSec / cfg.seconds) * animal.level;
 
+      produced = Math.floor(produced * (user.labMultiplier || 1));
+
       // BOOST x2
       if (user.boostUntil && user.boostUntil > new Date()) {
         produced *= 2;
