@@ -17,70 +17,106 @@
       .app {
         max-width: 480px;
         margin: auto;
-        padding: 10px;
+        padding: 14px;
       }
 
+      /* ГОЛОВНИЙ БЛОК */
       .card {
         background: #1e293b;
-        border-radius: 15px;
-        padding: 12px;
-        margin-bottom: 10px;
+        border-radius: 20px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
       }
 
-      .stats {
+      /* СТАТИСТИКА */
+      .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        gap: 10px;
       }
 
-      .stat {
+      .stat-box {
+        background: #334155;
+        border-radius: 16px;
+        padding: 12px;
         text-align: center;
-        font-size: 14px;
       }
 
-      .tap {
-        width: 180px;
-        height: 180px;
-        border-radius: 50%;
-        background: #3b82f6;
-        margin: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 30px;
+      .stat-label {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      .stat-value {
+        font-size: 18px;
         font-weight: bold;
       }
 
-      .menu {
+      /* BOOST */
+      #boostStatus {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      /* TAP */
+      .tap-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 0;
+      }
+
+      .tap-btn {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        border: none;
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+        background: radial-gradient(circle, #60a5fa, #2563eb);
+        box-shadow: 0 20px 40px rgba(37, 99, 235, 0.4);
+      }
+
+      .tap-btn:active {
+        transform: scale(0.95);
+      }
+
+      /* МЕНЮ */
+      .menu-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        gap: 12px;
       }
 
-      .menu button {
-        padding: 12px;
-        border-radius: 10px;
-        border: none;
+      .menu-btn {
         background: #334155;
-        color: white;
+        border-radius: 16px;
+        padding: 14px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: bold;
       }
 
-      .modal {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #1e293b;
-        border-radius: 15px 15px 0 0;
-        display: none;
-        padding: 15px;
+      .menu-btn span {
+        display: block;
+        margin-top: 6px;
       }
 
-      button {
-        padding: 10px;
-        border-radius: 10px;
+      /* КНОПКА */
+      .main-btn {
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
         border: none;
-        margin-top: 5px;
+        font-weight: bold;
+        font-size: 16px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        margin-top: 12px;
       }
     </style>
   </head>
