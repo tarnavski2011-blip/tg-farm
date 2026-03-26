@@ -845,6 +845,7 @@
 
       async function activateAuto() {
         try {
+          setStatus("вмикаю auto...");
           const res = await fetch(`${API}/boost/auto`, {
             method: "POST",
             headers: {
@@ -856,8 +857,32 @@
 
           const data = await res.json();
           setResult(data);
+          setStatus("auto увімкнено");
           await loadState();
         } catch (e) {
+          setStatus("error");
+          setResult(String(e));
+        }
+      }
+
+      async function activateBoost() {
+        try {
+          setStatus("вмикаю boost...");
+          const res = await fetch(`${API}/boost/boost`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-telegram-init-data": initData,
+            },
+            body: JSON.stringify({}),
+          });
+
+          const data = await res.json();
+          setResult(data);
+          setStatus("boost увімкнено");
+          await loadState();
+        } catch (e) {
+          setStatus("error");
           setResult(String(e));
         }
       }
