@@ -844,31 +844,41 @@
       loadState();
 
       async function activateAuto() {
-        const res = await fetch("/api/boost/auto", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData }),
-        });
+        try {
+          const res = await fetch(`${API}/boost/auto`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-telegram-init-data": initData,
+            },
+            body: JSON.stringify({}),
+          });
 
-        const data = await res.json();
-
-        alert("Auto включено 🚀");
-
-        await loadState();
+          const data = await res.json();
+          setResult(data);
+          await loadState();
+        } catch (e) {
+          setResult(String(e));
+        }
       }
 
       async function activateBoost() {
-        const res = await fetch("/api/boost/boost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData }),
-        });
+        try {
+          const res = await fetch(`${API}/boost/boost`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-telegram-init-data": initData,
+            },
+            body: JSON.stringify({}),
+          });
 
-        const data = await res.json();
-
-        alert("Boost включено ⚡");
-
-        await loadState();
+          const data = await res.json();
+          setResult(data);
+          await loadState();
+        } catch (e) {
+          setResult(String(e));
+        }
       }
     </script>
   </body>
