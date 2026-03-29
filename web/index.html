@@ -108,6 +108,14 @@
         margin-bottom: 12px;
       }
 
+      .status-line {
+        margin-top: 12px;
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
       .tap-wrap {
         display: flex;
         flex-direction: column;
@@ -146,14 +154,6 @@
         text-align: center;
         color: #94a3b8;
         font-size: 14px;
-      }
-
-      .status-line {
-        margin-top: 14px;
-        text-align: center;
-        color: #cbd5e1;
-        font-size: 14px;
-        font-weight: 700;
       }
 
       .menu-grid {
@@ -207,18 +207,6 @@
         box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
       }
 
-      .result-box {
-        background: #020617;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        color: #e2e8f0;
-        border-radius: 18px;
-        padding: 12px;
-        min-height: 100px;
-        font-size: 12px;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
       .floating {
         position: fixed;
         left: 50%;
@@ -244,7 +232,6 @@
         }
       }
 
-      /* modal */
       .modal {
         position: fixed;
         inset: 0;
@@ -298,7 +285,7 @@
 
       .tabs {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
         margin-bottom: 14px;
       }
@@ -371,6 +358,16 @@
         font-size: 13px;
         line-height: 1.45;
       }
+
+      .mini-note {
+        margin-top: 8px;
+        color: #cbd5e1;
+        font-size: 12px;
+      }
+
+      #resultBox {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -402,9 +399,9 @@
             <div class="stat-value" id="xp">0</div>
           </div>
         </div>
-      </div>
 
-      <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
+        <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
+      </div>
 
       <div class="card">
         <div class="section-title">💰 Тапай і заробляй</div>
@@ -424,8 +421,8 @@
           <button class="menu-btn" id="storageBtn">
             <span class="menu-emoji">📦</span><span>Склад</span>
           </button>
-          <button class="menu-btn" id="dailyBtn">
-            <span class="menu-emoji">🎁</span><span>Daily</span>
+          <button class="menu-btn" id="labBtn">
+            <span class="menu-emoji">🧪</span><span>Лабораторія</span>
           </button>
           <button class="menu-btn" id="questsBtn">
             <span class="menu-emoji">📜</span><span>Квести</span>
@@ -448,15 +445,12 @@
         </div>
 
         <button class="main-btn" id="loadStateBtn">Оновити стан</button>
-        <button class="main-btn secondary" id="serverBtn">
+        <button class="main-btn secondary" id="serverBtn" style="display: none">
           Надіслати на сервер
         </button>
       </div>
 
-      <div class="card">
-        <div class="section-title">🧾 Відповідь сервера</div>
-        <div class="result-box" id="resultBox">ще нічого</div>
-      </div>
+      <div id="resultBox">ще нічого</div>
     </div>
 
     <div class="modal" id="modal">
@@ -470,6 +464,7 @@
           <div class="tabs">
             <button class="tab-btn active" id="tabBuyBtn">Купити</button>
             <button class="tab-btn" id="tabOwnedBtn">Мої</button>
+            <button class="tab-btn" id="tabUpgradeBtn">Upgrade</button>
           </div>
         </div>
 
@@ -494,6 +489,7 @@
       const modalTabs = document.getElementById("modalTabs");
       const tabBuyBtn = document.getElementById("tabBuyBtn");
       const tabOwnedBtn = document.getElementById("tabOwnedBtn");
+      const tabUpgradeBtn = document.getElementById("tabUpgradeBtn");
 
       const resultBox = document.getElementById("resultBox");
       const statusEl = document.getElementById("status");
@@ -503,6 +499,7 @@
       const pointsEl = document.getElementById("points");
       const xpEl = document.getElementById("xp");
       const levelBadgeEl = document.getElementById("levelBadge");
+      const boostStatusEl = document.getElementById("boostStatus");
 
       let currentState = null;
 
@@ -570,19 +567,11 @@
         pointsEl.textContent = data?.points ?? 0;
         xpEl.textContent = data?.xp ?? 0;
         levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
-        const boost =
-          data.boostUntil && new Date(data.boostUntil) > new Date()
-            ? "ON"
-            : "OFF";
-        const auto =
-          data.autoCollectUntil && new Date(data.autoCollectUntil) > new Date()
-            ? "ON"
-            : "OFF";
-        const vip =
-          data.vipUntil && new Date(data.vipUntil) > new Date() ? "ON" : "OFF";
 
-        document.getElementById("boostStatus").innerText =
-          `⚡ ${boost} | 🤖 ${auto} | 👑 ${vip}`;
+        const boost = data?.boost?.active ? "ON" : "OFF";
+        const auto = data?.autoCollect?.active ? "ON" : "OFF";
+        const vip = data?.vip?.active ? "ON" : "OFF";
+        boostStatusEl.innerText = `⚡ ${boost} | 🤖 ${auto} | 👑 ${vip}`;
       }
 
       async function loadState() {
@@ -622,18 +611,6 @@
         }
       }
 
-      async function pingServer() {
-        try {
-          setStatus("server...");
-          const res = await apiGet("/state");
-          setResult(res.data);
-          setStatus(res.ok ? "ok" : "error");
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
-        }
-      }
-
       function showModal() {
         modal.classList.add("show");
       }
@@ -652,28 +629,32 @@
       }
 
       function renderAnimalsBuy() {
+        tabBuyBtn.classList.add("active");
+        tabOwnedBtn.classList.remove("active");
+        tabUpgradeBtn.classList.remove("active");
+
         modalBody.innerHTML = `
-              <div class="modal-grid">
-                <div class="tile">
-                  <div class="tile-title">🐔 Курка</div>
-                  <div class="tile-value">100 coins</div>
-                  <div class="tile-row"><span>Ресурс</span><span>Яйця</span></div>
-                  <button class="buy-btn" data-animal="CHICKEN">Купити</button>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">🐑 Вівця</div>
-                  <div class="tile-value">500 coins</div>
-                  <div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div>
-                  <button class="buy-btn" data-animal="SHEEP">Купити</button>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">🐄 Корова</div>
-                  <div class="tile-value">1000 coins</div>
-                  <div class="tile-row"><span>Ресурс</span><span>Молоко</span></div>
-                  <button class="buy-btn" data-animal="COW">Купити</button>
-                </div>
-              </div>
-            `;
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">🐔 Курка</div>
+            <div class="tile-value">100 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Яйця</span></div>
+            <button class="buy-btn" data-animal="CHICKEN">Купити</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐑 Вівця</div>
+            <div class="tile-value">500 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div>
+            <button class="buy-btn" data-animal="SHEEP">Купити</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐄 Корова</div>
+            <div class="tile-value">1000 coins</div>
+            <div class="tile-row"><span>Ресурс</span><span>Молоко</span></div>
+            <button class="buy-btn" data-animal="COW">Купити</button>
+          </div>
+        </div>
+      `;
 
         modalBody.querySelectorAll(".buy-btn").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -684,40 +665,68 @@
       }
 
       function renderAnimalsOwned() {
+        tabBuyBtn.classList.remove("active");
+        tabOwnedBtn.classList.add("active");
+        tabUpgradeBtn.classList.remove("active");
+
         const animals = currentState?.animals || {};
         const ready = currentState?.ready || {};
 
         modalBody.innerHTML = `
-              <div class="modal-grid">
-                <div class="tile">
-                  <div class="tile-title">🐔 Курки</div>
-                  <div class="tile-value">${animals.chicken ?? 0}</div>
-                  <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">🐑 Вівці</div>
-                  <div class="tile-value">${animals.sheep ?? 0}</div>
-                  <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">🐄 Корови</div>
-                  <div class="tile-value">${animals.cow ?? 0}</div>
-                  <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">⚡ Статус</div>
-                  <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-                  <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-                </div>
-              </div>
-            `;
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">🐔 Курки</div>
+            <div class="tile-value">${animals.chicken ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐑 Вівці</div>
+            <div class="tile-value">${animals.sheep ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐄 Корови</div>
+            <div class="tile-value">${animals.cow ?? 0}</div>
+            <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">⚡ Статус</div>
+            <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+            <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+          </div>
+        </div>
+      `;
+      }
+
+      function renderAnimalsUpgrade() {
+        tabBuyBtn.classList.remove("active");
+        tabOwnedBtn.classList.remove("active");
+        tabUpgradeBtn.classList.add("active");
+
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">🐔 Курки upgrade</div>
+            <div class="tile-value">Скоро</div>
+            <div class="mini-note">Прокачка тварин буде тут</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐑 Вівці upgrade</div>
+            <div class="tile-value">Скоро</div>
+            <div class="mini-note">Прокачка тварин буде тут</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🐄 Корови upgrade</div>
+            <div class="tile-value">Скоро</div>
+            <div class="mini-note">Прокачка тварин буде тут</div>
+          </div>
+        </div>
+      `;
       }
 
       function openAnimalsModal() {
         modalTitle.textContent = "🐾 Тварини";
         modalTabs.style.display = "block";
-        tabBuyBtn.classList.add("active");
-        tabOwnedBtn.classList.remove("active");
         renderAnimalsBuy();
         showModal();
       }
@@ -727,26 +736,26 @@
         modalTitle.textContent = "📦 Склад";
         modalTabs.style.display = "none";
         modalBody.innerHTML = `
-              <div class="modal-grid">
-                <div class="tile">
-                  <div class="tile-title">Яйця</div>
-                  <div class="tile-value">${storage.eggs ?? 0}</div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">Шерсть</div>
-                  <div class="tile-value">${storage.wool ?? 0}</div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">Молоко</div>
-                  <div class="tile-value">${storage.milk ?? 0}</div>
-                </div>
-                <div class="tile">
-                  <div class="tile-title">Capacity</div>
-                  <div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div>
-                </div>
-              </div>
-              <button class="buy-btn" id="sellAllBtn">Продати все</button>
-            `;
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">Яйця</div>
+            <div class="tile-value">${storage.eggs ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Шерсть</div>
+            <div class="tile-value">${storage.wool ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Молоко</div>
+            <div class="tile-value">${storage.milk ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Capacity</div>
+            <div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div>
+          </div>
+        </div>
+        <button class="buy-btn" id="sellAllBtn">Продати все</button>
+      `;
         showModal();
 
         document
@@ -761,6 +770,90 @@
           });
       }
 
+      function openBoostersModal() {
+        modalTitle.textContent = "⚡ Boosters";
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">⚡ Boost x2</div>
+            <div class="tile-value">${currentState?.boost?.active ? "ON" : "1 година"}</div>
+            <button class="buy-btn" id="buyBoostBtn">${currentState?.boost?.active ? "ON" : "Активувати"}</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">🤖 Auto Collect</div>
+            <div class="tile-value">${currentState?.autoCollect?.active ? "ON" : "1 година"}</div>
+            <button class="buy-btn" id="buyAutoBtn">${currentState?.autoCollect?.active ? "ON" : "Активувати"}</button>
+          </div>
+          <div class="tile">
+            <div class="tile-title">👑 VIP</div>
+            <div class="tile-value">${currentState?.vip?.active ? "ON" : "Скоро"}</div>
+            <button class="buy-btn" id="buyVipBtn">${currentState?.vip?.active ? "ON" : "Скоро"}</button>
+          </div>
+        </div>
+      `;
+        showModal();
+
+        document.getElementById("buyBoostBtn").onclick = async () => {
+          if (currentState?.boost?.active) return;
+          await apiPost("/boost/boost");
+          await loadState();
+          openBoostersModal();
+        };
+
+        document.getElementById("buyAutoBtn").onclick = async () => {
+          if (currentState?.autoCollect?.active) return;
+          await apiPost("/boost/auto");
+          await loadState();
+          openBoostersModal();
+        };
+
+        document.getElementById("buyVipBtn").onclick = async () => {
+          setStatus("vip скоро");
+        };
+      }
+
+      async function openLabModal() {
+        modalTitle.textContent = "🧪 Лабораторія";
+        modalTabs.style.display = "none";
+
+        const res = await apiGet("/lab");
+        const data = res.data || {};
+
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div class="tile">
+            <div class="tile-title">Рівень</div>
+            <div class="tile-value">${data.level ?? 1}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Множник</div>
+            <div class="tile-value">x${data.multiplier ?? 1}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Наступна ціна</div>
+            <div class="tile-value">${data.nextCost ?? 0}</div>
+          </div>
+          <div class="tile">
+            <div class="tile-title">Наступний множник</div>
+            <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
+          </div>
+        </div>
+        <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
+      `;
+
+        showModal();
+
+        document.getElementById("labUpgradeBtn").onclick = async () => {
+          const upRes = await apiPost("/lab/upgrade");
+          setResult(upRes.data);
+          if (upRes.ok) {
+            await loadState();
+            await openLabModal();
+          }
+        };
+      }
+
       function openSimpleModal(title, text) {
         modalTitle.textContent = title;
         modalTabs.style.display = "none";
@@ -773,9 +866,6 @@
         .getElementById("loadStateBtn")
         .addEventListener("click", loadState);
       document
-        .getElementById("serverBtn")
-        .addEventListener("click", pingServer);
-      document
         .getElementById("refreshBtn")
         .addEventListener("click", loadState);
 
@@ -785,6 +875,10 @@
       document
         .getElementById("storageBtn")
         .addEventListener("click", openStorageModal);
+      document.getElementById("labBtn").addEventListener("click", openLabModal);
+      document
+        .getElementById("boostBtn")
+        .addEventListener("click", openBoostersModal);
       document
         .getElementById("dailyBtn")
         .addEventListener("click", () =>
@@ -806,11 +900,6 @@
           openSimpleModal("🛒 Shop", "Тут буде магазин і Stars."),
         );
       document
-        .getElementById("boostBtn")
-        .addEventListener("click", () =>
-          openSimpleModal("⚡ Boosters", "Тут будуть бустери."),
-        );
-      document
         .getElementById("refsBtn")
         .addEventListener("click", () =>
           openSimpleModal("👥 Referrals", "Тут буде реферальна система."),
@@ -819,22 +908,9 @@
         .getElementById("closeModalBtn")
         .addEventListener("click", closeModal);
 
-      tabBuyBtn.addEventListener("click", () => {
-        tabBuyBtn.classList.add("active");
-        tabOwnedBtn.classList.remove("active");
-        renderAnimalsBuy();
-      });
-
-      tabOwnedBtn.addEventListener("click", () => {
-        tabOwnedBtn.classList.remove("active");
-        tabBuyBtn.classList.remove("active");
-        tabOwnedBtn.classList.add("active");
-        renderAnimalsOwned();
-      });
-
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
+      tabBuyBtn.addEventListener("click", renderAnimalsBuy);
+      tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
+      tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
 
       loadState();
     </script>
