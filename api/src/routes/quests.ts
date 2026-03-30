@@ -1,157 +1,61 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
-import { ECONOMY } from "../config/economy";
-import { antiSpamPerUser } from "../middleware/antiSpam";
-import { requestLockByUser } from "../middleware/requestLock";
 
 const router = Router();
 
-type QuestDef = {
-  code: string;
-  title: string;
-  description: string;
-  target: number;
-  rewardCoins?: number;
-  rewardDiamonds?: number;
-  rewardXp?: number;
-  getProgress: (ctx: {
-    user: any;
-    storage: any;
-    counts: { chicken: number; sheep: number; cow: number };
-  }) => number;
-};
-
 function getTodayKey() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-const DAILY_QUESTS: QuestDef[] = [
-  {
-    code: "DAILY_COINS_1000",
-    title: "Coin Collector",
-    description: "Накопичити 1000 coins",
-    target: 1000,
-    rewardCoins: ECONOMY.quests.coinRewardBig,
-    rewardXp: ECONOMY.quests.xpMed,
-    getProgress: ({ user }) => user?.coins ?? 0,
-  },
-  {
-    code: "DAILY_EGGS_20",
-    title: "Egg Hunter",
-    description: "Мати 20 яєць на складі",
-    target: 20,
-    rewardCoins: ECONOMY.quests.coinRewardSmall,
-    rewardXp: ECONOMY.quests.xpSmall,
-    getProgress: ({ storage }) => storage?.eggs ?? 0,
-  },
-  {
-    code: "DAILY_CHICKEN_2",
-    title: "Chicken Keeper",
-    description: "Купити 2 курки",
-    target: 2,
-    rewardDiamonds: ECONOMY.quests.diamondRewardMed,
-    rewardXp: ECONOMY.quests.xpMed,
-    getProgress: ({ counts }) => counts.chicken,
-  },
-  {
-    code: "DAILY_SHEEP_1",
-    title: "Sheep Starter",
-    description: "Купити 1 вівцю",
-    target: 1,
-    rewardCoins: ECONOMY.quests.coinRewardMed,
-    rewardXp: ECONOMY.quests.xpMed,
-    getProgress: ({ counts }) => counts.sheep,
-  },
-];
+function getQuestList(user: {
+  coins: number;
+  dailyStreak: number;
+  animals: { type: string }[];
+}) {
+  const chickenCount = user.animals.filter((a) => a.type === "CHICKEN").length;
+
+  return [
+    {
+      code: "tap_master",
+      title: "Зароби 100 монет",
+      done: user.coins >= 100,
+      reward: 50,
+    },
+    {
+      code: "first_chicken",
+      title: "Купи 1 курку",
+      done: chickenCount >= 1,
+      reward: 75,
+    },
+    {
+      code: "daily_player",
+      title: "Забери daily reward",
+      done: user.dailyStreak >= 1,
+      reward: 100,
+    },
+  ];
+}
 
 router.get("/", async (req: TgAuthedRequest, res) => {
-  if (!req.telegramUser!.id) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const telegramId = BigInt(req.telegramUser!.id);
-  const today = getTodayKey();
-
-  const user = await prisma.user.findUnique({
-    where: { telegramId },
-    include: {
-      animals: true,
-      storage: true,
-      dailyQuestClaims: {
-        where: { claimDate: today },
-      },
-    },
-  });
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  const counts = {
-    chicken: user.animals.filter((a) => a.type === "CHICKEN").length,
-    sheep: user.animals.filter((a) => a.type === "SHEEP").length,
-    cow: user.animals.filter((a) => a.type === "COW").length,
-  };
-
-  const claimed = new Set(user.dailyQuestClaims.map((c) => c.code));
-
-  const items = DAILY_QUESTS.map((q) => {
-    const progress = q.getProgress({
-      user,
-      storage: user.storage,
-      counts,
-    });
-
-    return {
-      code: q.code,
-      title: q.title,
-      description: q.description,
-      target: q.target,
-      progress,
-      completed: progress >= q.target,
-      claimed: claimed.has(q.code),
-      rewardCoins: q.rewardCoins ?? 0,
-      rewardDiamonds: q.rewardDiamonds ?? 0,
-      rewardXp: q.rewardXp ?? 0,
-    };
-  });
-
-  return res.json({
-    date: today,
-    items,
-  });
-});
-
-router.post(
-  "/claim",
-  antiSpamPerUser(3000, 3),
-  requestLockByUser(2000),
-  async (req: TgAuthedRequest, res) => {
-    if (!req.telegramUser!.id) {
+  try {
+    if (!req.telegramUser?.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const telegramId = BigInt(req.telegramUser!.id);
-    const code = String(req.body?.code ?? "").trim();
+    const telegramId = BigInt(req.telegramUser.id);
     const today = getTodayKey();
-
-    const quest = DAILY_QUESTS.find((q) => q.code === code);
-    if (!quest) {
-      return res.status(400).json({ error: "Unknown quest code" });
-    }
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
       include: {
         animals: true,
-        storage: true,
         dailyQuestClaims: {
-          where: { claimDate: today, code },
+          where: { claimDate: today },
         },
       },
     });
@@ -160,59 +64,90 @@ router.post(
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.dailyQuestClaims.length > 0) {
-      return res.status(400).json({ error: "Quest already claimed today" });
+    const quests = getQuestList(user).map((q) => ({
+      ...q,
+      claimed: user.dailyQuestClaims.some((c) => c.code === q.code),
+    }));
+
+    return res.json({
+      ok: true,
+      quests,
+      date: today,
+    });
+  } catch (e) {
+    console.error("QUESTS GET ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/claim", async (req: TgAuthedRequest, res) => {
+  try {
+    if (!req.telegramUser?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const counts = {
-      chicken: user.animals.filter((a) => a.type === "CHICKEN").length,
-      sheep: user.animals.filter((a) => a.type === "SHEEP").length,
-      cow: user.animals.filter((a) => a.type === "COW").length,
-    };
+    const code = String(req.body?.code ?? "").trim();
+    if (!code) {
+      return res.status(400).json({ error: "Quest code required" });
+    }
 
-    const progress = quest.getProgress({
-      user,
-      storage: user.storage,
-      counts,
+    const telegramId = BigInt(req.telegramUser.id);
+    const today = getTodayKey();
+
+    const user = await prisma.user.findUnique({
+      where: { telegramId },
+      include: {
+        animals: true,
+        dailyQuestClaims: {
+          where: { claimDate: today },
+        },
+      },
     });
 
-    if (progress < quest.target) {
-      return res.status(400).json({ error: "Quest not completed yet" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.dailyQuestClaim.create({
+    const quest = getQuestList(user).find((q) => q.code === code);
+
+    if (!quest) {
+      return res.status(404).json({ error: "Quest not found" });
+    }
+
+    if (!quest.done) {
+      return res.status(400).json({ error: "Quest not completed" });
+    }
+
+    const alreadyClaimed = user.dailyQuestClaims.some((c) => c.code === code);
+    if (alreadyClaimed) {
+      return res.status(400).json({ error: "Already claimed" });
+    }
+
+    await prisma.$transaction([
+      prisma.dailyQuestClaim.create({
         data: {
           userId: user.id,
           code,
           claimDate: today,
         },
-      });
-
-      return await tx.user.update({
+      }),
+      prisma.user.update({
         where: { id: user.id },
         data: {
-          coins: { increment: quest.rewardCoins ?? 0 },
-          diamonds: { increment: quest.rewardDiamonds ?? 0 },
-          xp: { increment: quest.rewardXp ?? 0 },
+          coins: { increment: quest.reward },
         },
-        select: {
-          coins: true,
-          diamonds: true,
-          xp: true,
-        },
-      });
-    });
+      }),
+    ]);
 
     return res.json({
       ok: true,
       code,
-      rewardCoins: quest.rewardCoins ?? 0,
-      rewardDiamonds: quest.rewardDiamonds ?? 0,
-      rewardXp: quest.rewardXp ?? 0,
-      user: updated,
+      reward: quest.reward,
     });
-  },
-);
+  } catch (e) {
+    console.error("QUEST CLAIM ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 
 export default router;

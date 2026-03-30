@@ -11,6 +11,11 @@ import sellRouter from "./routes/sell";
 import telegramRouter from "./routes/telegram";
 import boostRouter from "./routes/boost";
 import labRouter from "./routes/lab";
+import dailyRouter from "./routes/daily";
+import questsRouter from "./routes/quests";
+import wheelRouter from "./routes/wheel";
+import shopRouter from "./routes/shop";
+import referralsRouter from "./routes/referrals";
 
 const app = express();
 
@@ -32,6 +37,11 @@ app.use("/api/buy-animal", buyAnimalRouter);
 app.use("/api/sell", sellRouter);
 app.use("/api/boost", boostRouter);
 app.use("/api/lab", labRouter);
+app.use("/api/daily", dailyRouter);
+app.use("/api/quests", questsRouter);
+app.use("/api/wheel", wheelRouter);
+app.use("/api/shop", shopRouter);
+app.use("/api/referrals", referralsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 

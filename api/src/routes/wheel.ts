@@ -4,140 +4,78 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-type WheelReward =
-  | { type: "coins"; amount: number; label: string; weight: number }
-  | { type: "diamonds"; amount: number; label: string; weight: number }
-  | { type: "boost"; minutes: number; label: string; weight: number };
+function isSameDay(a?: Date | null, b?: Date | null) {
+  if (!a || !b) return false;
+  return a.toDateString() === b.toDateString();
+}
 
-const rewards: WheelReward[] = [
-  { type: "coins", amount: 100, label: "100 coins", weight: 40 },
-  { type: "coins", amount: 300, label: "300 coins", weight: 25 },
-  { type: "coins", amount: 1000, label: "1000 coins", weight: 10 },
-  { type: "diamonds", amount: 2, label: "2 diamonds", weight: 15 },
-  { type: "diamonds", amount: 5, label: "5 diamonds", weight: 5 },
-  { type: "boost", minutes: 30, label: "x2 boost 30m", weight: 5 },
+// можливі нагороди
+const REWARDS = [
+  { type: "coins", amount: 50 },
+  { type: "coins", amount: 100 },
+  { type: "coins", amount: 200 },
+  { type: "diamonds", amount: 5 },
+  { type: "diamonds", amount: 10 },
+  { type: "nothing", amount: 0 },
 ];
 
-function pickReward(): WheelReward {
-  const total = rewards.reduce((sum, r) => sum + r.weight, 0);
-  let rnd = Math.random() * total;
-
-  for (const r of rewards) {
-    rnd -= r.weight;
-    if (rnd <= 0) {
-      return r;
-    }
-  }
-
-  return rewards[0]!;
+function getRandomReward() {
+  const index = Math.floor(Math.random() * REWARDS.length);
+  return REWARDS[index];
 }
-
-function getCooldown(lastSpinAt: Date | null): number {
-  if (!lastSpinAt) {
-    return 0;
-  }
-
-  const left = lastSpinAt.getTime() + 60 * 60 * 1000 - Date.now();
-  return left > 0 ? Math.ceil(left / 1000) : 0;
-}
-
-router.get("/state", async (req: TgAuthedRequest, res) => {
-  if (!req.telegramUser!.id) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const telegramId = BigInt(req.telegramUser!.id);
-
-  const user = await prisma.user.findUnique({
-    where: { telegramId },
-    select: {
-      diamonds: true,
-      lastWheelSpinAt: true,
-    },
-  });
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  return res.json({
-    diamonds: user.diamonds,
-    cooldown: getCooldown(user.lastWheelSpinAt),
-    rewards: rewards.map((r) => r.label),
-  });
-});
 
 router.post("/spin", async (req: TgAuthedRequest, res) => {
-  if (!req.telegramUser!.id) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  try {
+    if (!req.telegramUser?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
-  const telegramId = BigInt(req.telegramUser!.id);
+    const telegramId = BigInt(req.telegramUser.id);
 
-  const user = await prisma.user.findUnique({
-    where: { telegramId },
-    select: {
-      id: true,
-      diamonds: true,
-      boostUntil: true,
-      lastWheelSpinAt: true,
-    },
-  });
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  const cooldown = getCooldown(user.lastWheelSpinAt);
-  if (cooldown > 0) {
-    return res.status(400).json({ error: "Wait " + cooldown + "s" });
-  }
-
-  if (user.diamonds < 3) {
-    return res.status(400).json({ error: "Not enough diamonds" });
-  }
-
-  const reward = pickReward();
-  const now = new Date();
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      diamonds: { decrement: 3 },
-      lastWheelSpinAt: now,
-    },
-  });
-
-  if (reward.type === "coins") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        coins: { increment: reward.amount },
-      },
+    const user = await prisma.user.findUnique({
+      where: { telegramId },
     });
-  } else if (reward.type === "diamonds") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        diamonds: { increment: reward.amount },
-      },
-    });
-  } else if (reward.type === "boost") {
-    const base =
-      user.boostUntil && user.boostUntil > now ? user.boostUntil : now;
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        boostUntil: new Date(base.getTime() + reward.minutes * 60 * 1000),
-      },
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 1 раз в день
+    if (isSameDay(user.lastWheelSpinAt, new Date())) {
+      return res.status(400).json({
+        error: "Already spun today",
+      });
+    }
+
+    const reward = getRandomReward();
+
+    let updateData: any = {
+      lastWheelSpinAt: new Date(),
+    };
+
+    if (reward.type === "coins") {
+      updateData.coins = { increment: reward.amount };
+    }
+
+    if (reward.type === "diamonds") {
+      updateData.diamonds = { increment: reward.amount };
+    }
+
+    const updated = await prisma.user.update({
+      where: { telegramId },
+      data: updateData,
     });
+
+    return res.json({
+      ok: true,
+      reward,
+      coins: updated.coins,
+      diamonds: updated.diamonds,
+    });
+  } catch (e) {
+    console.error("WHEEL ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  return res.json({
-    ok: true,
-    reward: reward.label,
-  });
 });
 
 export default router;

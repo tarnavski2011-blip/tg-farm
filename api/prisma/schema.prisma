@@ -37,15 +37,17 @@ model User {
 
   warehouseLevel   Int      @default(1)
   labLevel         Int      @default(1)
-  labMultiplier    Int      @default(1)
+  labMultiplier    Float    @default(1)
 
   lastWheelSpinAt  DateTime?
+
+  referredById     Int?
 
   createdAt        DateTime @default(now())
   lastSeenAt       DateTime @default(now())
 
   referrals        Referral[]         @relation("Referrer")
-  referredBy       Referral?          @relation("Invited")
+  referredFrom     Referral[]         @relation("Referred")
   dailyQuestClaims DailyQuestClaim[]
   payments         Payment[]
   animals          Animal[]
@@ -94,11 +96,14 @@ model AchievementClaim {
 model Referral {
   id         Int      @id @default(autoincrement())
   referrerId Int
-  invitedId  Int      @unique
+  referredId Int      @unique
   createdAt  DateTime @default(now())
 
   referrer   User     @relation("Referrer", fields: [referrerId], references: [id])
-  invited    User     @relation("Invited", fields: [invitedId], references: [id])
+  referred   User     @relation("Referred", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredId])
 }
 
 model DailyQuestClaim {

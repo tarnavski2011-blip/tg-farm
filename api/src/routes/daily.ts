@@ -1,57 +1,48 @@
 import { Router } from "express";
-import type { TgAuthedRequest } from "../middleware/telegramAuth";
 import { prisma } from "../prisma";
+import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+router.post("/", async (req: TgAuthedRequest, res) => {
+  try {
+    const telegramId = BigInt(req.telegramUser!.id);
 
-function calcReward(streak: number) {
-  return 200 + 50 * streak;
-}
+    const user = await prisma.user.findUnique({
+      where: { telegramId },
+    });
 
-router.post("/claim", async (req: TgAuthedRequest, res) => {
-  if (!req.telegramUser!.id)
-    return res.status(401).json({ error: "Unauthorized" });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-  const telegramId = BigInt(req.telegramUser!.id);
-  const user = await prisma.user.upsert({
-    where: { telegramId },
-    update: {},
-    create: { telegramId },
-  });
+    const now = new Date();
+    const last = user.lastDailyAt;
 
-  const now = Date.now();
-  const last = user.lastDailyAt ? user.lastDailyAt.getTime() : 0;
+    const sameDay = last && last.toDateString() === now.toDateString();
 
-  if (last && now - last < DAY_MS) {
-    const nextInSec = Math.ceil((DAY_MS - (now - last)) / 1000);
-    return res.status(400).json({ error: "Too early", nextInSec });
+    if (sameDay) {
+      return res.status(400).json({ error: "Already claimed" });
+    }
+
+    const streak = user.dailyStreak + 1;
+    const reward = 100 + streak * 20;
+
+    const updated = await prisma.user.update({
+      where: { telegramId },
+      data: {
+        coins: { increment: reward },
+        lastDailyAt: now,
+        dailyStreak: streak,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      reward,
+      streak: updated.dailyStreak,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: "daily error" });
   }
-
-  const missedTooMuch = last && now - last > 2 * DAY_MS;
-  const newStreak = missedTooMuch
-    ? 1
-    : Math.min(7, (user.dailyStreak || 0) + 1);
-
-  const rewardCoins = calcReward(newStreak);
-
-  const updated = await prisma.user.update({
-    where: { telegramId },
-    data: {
-      dailyStreak: newStreak,
-      lastDailyAt: new Date(now),
-      coins: { increment: rewardCoins },
-    },
-  });
-
-  return res.json({
-    ok: true,
-    dailyStreak: updated.dailyStreak,
-    rewardCoins,
-    coins: updated.coins,
-    lastDailyAt: updated.lastDailyAt,
-  });
 });
 
 export default router;
