@@ -4,7 +4,6 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-// отримати дані
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -28,14 +27,17 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       ok: true,
       myCode: String(user.telegramId),
       totalRefs: user.referrals.length,
+      refs: user.referrals.map((r) => ({
+        id: r.id,
+        createdAt: r.createdAt,
+      })),
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Server error" });
+    console.error("REFERRALS GET ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
-// застосувати код
 router.post("/apply", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -43,7 +45,7 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
     }
 
     const telegramId = BigInt(req.telegramUser.id);
-    const code = String(req.body?.code ?? "");
+    const code = String(req.body?.code ?? "").trim();
 
     if (!code) {
       return res.status(400).json({ error: "Code required" });
@@ -61,46 +63,54 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.referredById) {
-      return res.status(400).json({ error: "Already has referral" });
-    }
-
     const refUser = await prisma.user.findUnique({
       where: { telegramId: BigInt(code) },
     });
 
     if (!refUser) {
-      return res.status(404).json({ error: "Ref not found" });
+      return res.status(404).json({ error: "Ref user not found" });
+    }
+
+    // перевірка: цього користувача вже хтось запросив?
+    const already = await prisma.referral.findFirst({
+      where: {
+        referredId: user.id,
+      },
+    });
+
+    if (already) {
+      return res.status(400).json({ error: "Already referred" });
     }
 
     await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { referredById: refUser.id },
-      }),
       prisma.referral.create({
         data: {
           referrerId: refUser.id,
           referredId: user.id,
-        },
+        } as any,
       }),
       prisma.user.update({
         where: { id: refUser.id },
-        data: { coins: { increment: 200 } },
+        data: {
+          coins: { increment: 200 },
+        },
       }),
       prisma.user.update({
         where: { id: user.id },
-        data: { coins: { increment: 100 } },
+        data: {
+          coins: { increment: 100 },
+        },
       }),
     ]);
 
-    res.json({
+    return res.json({
       ok: true,
-      reward: 100,
+      rewardYou: 100,
+      rewardRef: 200,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Server error" });
+    console.error("REF APPLY ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
