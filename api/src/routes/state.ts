@@ -101,7 +101,25 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
       if (passedSec < cfg.seconds) continue;
 
-      let produced = Math.floor(passedSec / cfg.seconds) * animal.level;
+      const fullCycles = Math.floor(passedSec / cfg.seconds);
+      if (fullCycles <= 0) continue;
+
+      let feedAvailable = 0;
+
+      if (animal.type === "CHICKEN") feedAvailable = chickenFeedLeft;
+      if (animal.type === "SHEEP") feedAvailable = sheepFeedLeft;
+      if (animal.type === "COW") feedAvailable = cowFeedLeft;
+
+      // без корму — нічого не виробляється
+      if (feedAvailable <= 0) continue;
+
+      // 1 цикл = animal.level одиниць ресурсу, отже треба level корму на цикл
+      const maxCyclesByFeed = Math.floor(feedAvailable / animal.level);
+      const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
+
+      if (usedCycles <= 0) continue;
+
+      let produced = usedCycles * animal.level;
 
       produced = Math.floor(produced * (user.labMultiplier || 1));
 
@@ -109,30 +127,23 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         produced *= 2;
       }
 
-      if (produced <= 0) continue;
-
       if (animal.type === "CHICKEN") {
-        produced = Math.min(produced, chickenFeedLeft);
-        chickenFeedLeft -= produced;
+        chickenFeedLeft -= usedCycles * animal.level;
       }
 
       if (animal.type === "SHEEP") {
-        produced = Math.min(produced, sheepFeedLeft);
-        sheepFeedLeft -= produced;
+        sheepFeedLeft -= usedCycles * animal.level;
       }
 
       if (animal.type === "COW") {
-        produced = Math.min(produced, cowFeedLeft);
-        cowFeedLeft -= produced;
+        cowFeedLeft -= usedCycles * animal.level;
       }
-
-      if (produced <= 0) continue;
 
       if (cfg.storageField === "eggs") eggsAdd += produced;
       if (cfg.storageField === "wool") woolAdd += produced;
       if (cfg.storageField === "milk") milkAdd += produced;
 
-      const consumedSec = Math.floor(passedSec / cfg.seconds) * cfg.seconds;
+      const consumedSec = usedCycles * cfg.seconds;
 
       const newLastClaim = new Date(
         animal.lastClaim.getTime() + consumedSec * 1000,
@@ -174,6 +185,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chickenFeed: chickenFeedLeft,
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
+        lastSeenAt: now,
       },
     });
 
@@ -188,55 +200,60 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       });
     }
 
-    user = await prisma.user.update({
+    user = await prisma.user.findUnique({
       where: { id: user.id },
-      data: {
-        lastSeenAt: now,
-      },
       include: {
         animals: true,
         storage: true,
       },
     });
 
+    if (!user || !user.storage) {
+      return res.status(404).json({ error: "User not found after update" });
+    }
+
     const chickenAnimals = user.animals.filter((a) => a.type === "CHICKEN");
     const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
     const cowAnimals = user.animals.filter((a) => a.type === "COW");
 
+    // READY теж рахуємо з урахуванням корму, щоб фронт не брехав
     const eggsReady = chickenAnimals.reduce((sum, animal) => {
       const passedSec = Math.floor(
         (Date.now() - animal.lastClaim.getTime()) / 1000,
       );
-      const raw =
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds) *
-        animal.level;
-      return sum + raw;
+      const fullCycles = Math.floor(
+        Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds,
+      );
+      const feedCycles = Math.floor((user.chickenFeed ?? 0) / animal.level);
+      return sum + Math.min(fullCycles, feedCycles) * animal.level;
     }, 0);
 
     const woolReady = sheepAnimals.reduce((sum, animal) => {
       const passedSec = Math.floor(
         (Date.now() - animal.lastClaim.getTime()) / 1000,
       );
-      const raw =
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds) *
-        animal.level;
-      return sum + raw;
+      const fullCycles = Math.floor(
+        Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds,
+      );
+      const feedCycles = Math.floor((user.sheepFeed ?? 0) / animal.level);
+      return sum + Math.min(fullCycles, feedCycles) * animal.level;
     }, 0);
 
     const milkReady = cowAnimals.reduce((sum, animal) => {
       const passedSec = Math.floor(
         (Date.now() - animal.lastClaim.getTime()) / 1000,
       );
-      const raw =
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds) *
-        animal.level;
-      return sum + raw;
+      const fullCycles = Math.floor(
+        Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds,
+      );
+      const feedCycles = Math.floor((user.cowFeed ?? 0) / animal.level);
+      return sum + Math.min(fullCycles, feedCycles) * animal.level;
     }, 0);
 
     const storageTotal =
-      (user.storage?.eggs ?? 0) +
-      (user.storage?.wool ?? 0) +
-      (user.storage?.milk ?? 0);
+      (user.storage.eggs ?? 0) +
+      (user.storage.wool ?? 0) +
+      (user.storage.milk ?? 0);
 
     return res.json({
       ok: true,
@@ -254,11 +271,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       },
 
       storage: {
-        eggs: user.storage?.eggs ?? 0,
-        wool: user.storage?.wool ?? 0,
-        milk: user.storage?.milk ?? 0,
+        eggs: user.storage.eggs ?? 0,
+        wool: user.storage.wool ?? 0,
+        milk: user.storage.milk ?? 0,
         total: storageTotal,
-        capacity: user.storage?.capacity ?? 1000,
+        capacity: user.storage.capacity ?? 1000,
       },
 
       feedStock: {
@@ -275,7 +292,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
       levels: {
         warehouseLevel: user.warehouseLevel,
-        warehouseCapacity: user.storage?.capacity ?? 1000,
+        warehouseCapacity: user.storage.capacity ?? 1000,
         labLevel: user.labLevel,
         labMultiplier: user.labMultiplier,
       },
