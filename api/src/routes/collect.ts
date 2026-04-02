@@ -23,7 +23,7 @@ router.post("/", async (req: any, res) => {
       });
     }
 
-    const addCoins = 10;
+    const addCoins = 1;
 
     const updated = await prisma.user.update({
       where: { telegramId },

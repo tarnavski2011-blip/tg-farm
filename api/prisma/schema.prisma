@@ -21,6 +21,10 @@ model User {
   diamonds         Int      @default(0)
   points           Int      @default(0)
 
+  chickenFeed Int @default(0)
+sheepFeed   Int @default(0)
+cowFeed     Int @default(0)
+
   level            Int      @default(1)
   xp               Int      @default(0)
 

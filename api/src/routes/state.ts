@@ -5,25 +5,10 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 const router = Router();
 
 const ANIMAL_PRODUCTION = {
-  CHICKEN: {
-    seconds: 10,
-    storageField: "eggs",
-  },
-  SHEEP: {
-    seconds: 30,
-    storageField: "wool",
-  },
-  COW: {
-    seconds: 60,
-    storageField: "milk",
-  },
+  CHICKEN: { seconds: 10, storageField: "eggs" },
+  SHEEP: { seconds: 30, storageField: "wool" },
+  COW: { seconds: 60, storageField: "milk" },
 } as const;
-
-function secondsLeft(futureDate?: Date | null) {
-  if (!futureDate) return 0;
-  const diff = Math.floor((futureDate.getTime() - Date.now()) / 1000);
-  return diff > 0 ? diff : 0;
-}
 
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
@@ -33,7 +18,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
     const telegramId = BigInt(req.telegramUser.id);
 
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { telegramId },
       include: {
         animals: true,
@@ -42,43 +27,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          telegramId,
-          storage: {
-            create: {
-              eggs: 0,
-              wool: 0,
-              milk: 0,
-              capacity: 1000,
-            },
-          },
-        },
-        include: {
-          animals: true,
-          storage: true,
-        },
-      });
-    }
-
-    if (!user.storage) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          storage: {
-            create: {
-              eggs: 0,
-              wool: 0,
-              milk: 0,
-              capacity: 1000,
-            },
-          },
-        },
-        include: {
-          animals: true,
-          storage: true,
-        },
-      });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const now = new Date();
@@ -87,10 +36,18 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let woolAdd = 0;
     let milkAdd = 0;
 
-    const animalUpdates: Promise<any>[] = [];
+    let chickenFeedLeft = user.chickenFeed ?? 0;
+    let sheepFeedLeft = user.sheepFeed ?? 0;
+    let cowFeedLeft = user.cowFeed ?? 0;
+
+    const animalUpdates: any[] = [];
 
     for (const animal of user.animals) {
-      const cfg = ANIMAL_PRODUCTION[animal.type];
+      const cfg =
+        ANIMAL_PRODUCTION[animal.type as keyof typeof ANIMAL_PRODUCTION];
+
+      if (!cfg) continue;
+
       const passedSec = Math.floor(
         (now.getTime() - animal.lastClaim.getTime()) / 1000,
       );
@@ -99,12 +56,32 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
       let produced = Math.floor(passedSec / cfg.seconds) * animal.level;
 
+      // лабораторія
       produced = Math.floor(produced * (user.labMultiplier || 1));
 
-      // BOOST x2
-      if (user.boostUntil && user.boostUntil > new Date()) {
+      // BOOST
+      if (user.boostUntil && user.boostUntil > now) {
         produced *= 2;
       }
+
+      if (produced <= 0) continue;
+
+      // 🔥 корм по тваринах
+      if (animal.type === "CHICKEN") {
+        produced = Math.min(produced, chickenFeedLeft);
+        chickenFeedLeft -= produced;
+      }
+
+      if (animal.type === "SHEEP") {
+        produced = Math.min(produced, sheepFeedLeft);
+        sheepFeedLeft -= produced;
+      }
+
+      if (animal.type === "COW") {
+        produced = Math.min(produced, cowFeedLeft);
+        cowFeedLeft -= produced;
+      }
+
       if (produced <= 0) continue;
 
       if (cfg.storageField === "eggs") eggsAdd += produced;
@@ -125,27 +102,21 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       );
     }
 
-    const currentTotal =
-      (user.storage?.eggs ?? 0) +
-      (user.storage?.wool ?? 0) +
-      (user.storage?.milk ?? 0);
-
-    const capacity = user.storage?.capacity ?? 1000;
-    const freeSpace = Math.max(0, capacity - currentTotal);
-
-    let totalAdd = eggsAdd + woolAdd + milkAdd;
-
-    if (totalAdd > freeSpace && totalAdd > 0) {
-      const ratio = freeSpace / totalAdd;
-      eggsAdd = Math.floor(eggsAdd * ratio);
-      woolAdd = Math.floor(woolAdd * ratio);
-      milkAdd = Math.floor(milkAdd * ratio);
-      totalAdd = eggsAdd + woolAdd + milkAdd;
-    }
-
     if (animalUpdates.length > 0) {
-      await Promise.all(animalUpdates);
+      await prisma.$transaction(animalUpdates);
     }
+
+    // 🔥 зберігаємо корм
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        chickenFeed: chickenFeedLeft,
+        sheepFeed: sheepFeedLeft,
+        cowFeed: cowFeedLeft,
+      },
+    });
+
+    const totalAdd = eggsAdd + woolAdd + milkAdd;
 
     if (totalAdd > 0) {
       await prisma.storage.update({
@@ -158,133 +129,40 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       });
     }
 
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastSeenAt: now,
-      },
-      include: {
-        animals: true,
-        storage: true,
-      },
+    const updatedStorage = await prisma.storage.findUnique({
+      where: { userId: user.id },
     });
-
-    const chickenAnimals = user.animals.filter((a) => a.type === "CHICKEN");
-    const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
-    const cowAnimals = user.animals.filter((a) => a.type === "COW");
-
-    const eggsReady = chickenAnimals.reduce((sum, animal) => {
-      const passedSec = Math.floor(
-        (Date.now() - animal.lastClaim.getTime()) / 1000,
-      );
-      return (
-        sum +
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds) *
-          animal.level
-      );
-    }, 0);
-
-    const woolReady = sheepAnimals.reduce((sum, animal) => {
-      const passedSec = Math.floor(
-        (Date.now() - animal.lastClaim.getTime()) / 1000,
-      );
-      return (
-        sum +
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds) *
-          animal.level
-      );
-    }, 0);
-
-    const milkReady = cowAnimals.reduce((sum, animal) => {
-      const passedSec = Math.floor(
-        (Date.now() - animal.lastClaim.getTime()) / 1000,
-      );
-      return (
-        sum +
-        Math.floor(Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds) *
-          animal.level
-      );
-    }, 0);
-
-    const storageTotal =
-      (user.storage?.eggs ?? 0) +
-      (user.storage?.wool ?? 0) +
-      (user.storage?.milk ?? 0);
 
     return res.json({
+      ok: true,
+
       coins: user.coins,
       diamonds: user.diamonds,
-      points: user.points,
-      level: user.level,
-      xp: user.xp,
-
-      animals: {
-        chicken: chickenAnimals.length,
-        sheep: sheepAnimals.length,
-        cow: cowAnimals.length,
-      },
 
       storage: {
-        eggs: user.storage?.eggs ?? 0,
-        wool: user.storage?.wool ?? 0,
-        milk: user.storage?.milk ?? 0,
-        total: storageTotal,
-        capacity: user.storage?.capacity ?? 1000,
+        eggs: updatedStorage?.eggs ?? 0,
+        wool: updatedStorage?.wool ?? 0,
+        milk: updatedStorage?.milk ?? 0,
       },
 
-      ready: {
-        eggsReady,
-        woolReady,
-        milkReady,
+      feedStock: {
+        chicken: chickenFeedLeft,
+        sheep: sheepFeedLeft,
+        cow: cowFeedLeft,
       },
 
-      levels: {
-        warehouseLevel: user.warehouseLevel,
-        warehouseCapacity: user.storage?.capacity ?? 1000,
-        labLevel: user.labLevel,
-        labMultiplier: user.labMultiplier,
-      },
+      animals: user.animals,
 
-      feed: {
-        active: secondsLeft(user.feedUntil) > 0,
-        leftSec: secondsLeft(user.feedUntil),
-        waitSec: 0,
-      },
+      boost: user.boostUntil,
+      autoCollect: user.autoCollectUntil,
+      vip: user.vipUntil,
 
-      boost: {
-        active: secondsLeft(user.boostUntil) > 0,
-        leftSec: secondsLeft(user.boostUntil),
-      },
-
-      autoCollect: {
-        active: secondsLeft(user.autoCollectUntil) > 0,
-        leftSec: secondsLeft(user.autoCollectUntil),
-      },
-
-      vip: {
-        active: secondsLeft(user.vipUntil) > 0,
-        leftSec: secondsLeft(user.vipUntil),
-      },
-
-      daily: {
-        dailyStreak: user.dailyStreak,
-      },
-
-      offline: {
-        minutes: 0,
-        added: {
-          eggs: eggsAdd,
-          wool: woolAdd,
-          milk: milkAdd,
-        },
-      },
+      labMultiplier: user.labMultiplier,
+      labLevel: user.labLevel,
     });
   } catch (e) {
-    console.error("STATE ERROR FULL:", e);
-    return res.status(500).json({
-      error: "Server error",
-      details: String(e),
-    });
+    console.error("STATE ERROR:", e);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 

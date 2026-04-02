@@ -5,12 +5,26 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 const router = Router();
 
 const SHOP_ITEMS = {
-  feed_pack_small: {
-    code: "feed_pack_small",
-    title: "Малий корм-пак",
+  chicken_feed_10: {
+    code: "chicken_feed_10",
+    title: "Корм для курки x10",
     currency: "coins",
-    price: 100,
-    effect: "feed_30m",
+    price: 50,
+    effect: "chicken_feed_10",
+  },
+  sheep_feed_10: {
+    code: "sheep_feed_10",
+    title: "Корм для вівці x10",
+    currency: "coins",
+    price: 120,
+    effect: "sheep_feed_10",
+  },
+  cow_feed_10: {
+    code: "cow_feed_10",
+    title: "Корм для корови x10",
+    currency: "coins",
+    price: 250,
+    effect: "cow_feed_10",
   },
   boost_1h: {
     code: "boost_1h",
@@ -82,8 +96,7 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
     }
 
     const now = Date.now();
-
-    let data: any = {};
+    const data: any = {};
 
     if (item.currency === "coins") {
       data.coins = { decrement: item.price };
@@ -93,9 +106,16 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       data.diamonds = { decrement: item.price };
     }
 
-    if (item.effect === "feed_30m") {
-      data.feedUntil = new Date(now + 30 * 60 * 1000);
-      data.feedActivatedAt = new Date(now);
+    if (item.effect === "chicken_feed_10") {
+      data.chickenFeed = { increment: 10 };
+    }
+
+    if (item.effect === "sheep_feed_10") {
+      data.sheepFeed = { increment: 10 };
+    }
+
+    if (item.effect === "cow_feed_10") {
+      data.cowFeed = { increment: 10 };
     }
 
     if (item.effect === "boost_1h") {
@@ -128,10 +148,12 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       select: {
         coins: true,
         diamonds: true,
+        chickenFeed: true,
+        sheepFeed: true,
+        cowFeed: true,
         boostUntil: true,
         autoCollectUntil: true,
         vipUntil: true,
-        feedUntil: true,
       },
     });
 
