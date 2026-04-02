@@ -5,46 +5,61 @@ const router = Router();
 
 router.post("/", async (req: any, res) => {
   try {
-    const user = req.telegramUser;
+    const telegramId = req.telegramUser.id;
 
-    if (!user) {
-      return res.status(401).json({ error: "No user" });
-    }
-
-    const telegramId = BigInt(user.id);
-
-    let dbUser = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { telegramId },
     });
 
-    if (!dbUser) {
-      dbUser = await prisma.user.create({
-        data: { telegramId },
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let eggs = user.eggs;
+    let milk = user.milk;
+    let wool = user.wool;
+
+    // 🐔 КУРКИ
+    if (user.chickens > 0 && user.chickenFeed > 0) {
+      eggs += user.chickens;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { chickenFeed: { decrement: user.chickens } },
       });
     }
 
-    const addCoins = 1;
+    // 🐄 КОРОВИ
+    if (user.cows > 0 && user.cowFeed > 0) {
+      milk += user.cows;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { cowFeed: { decrement: user.cows } },
+      });
+    }
 
-    const updated = await prisma.user.update({
-      where: { telegramId },
+    // 🐑 ВІВЦІ
+    if (user.sheep > 0 && user.sheepFeed > 0) {
+      wool += user.sheep;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { sheepFeed: { decrement: user.sheep } },
+      });
+    }
+
+    // 💾 зберігаємо ресурси
+    await prisma.user.update({
+      where: { id: user.id },
       data: {
-        coins: { increment: addCoins },
-        lastTapAt: new Date(),
+        eggs,
+        milk,
+        wool,
       },
     });
 
-    return res.json({
-      ok: true,
-      added: addCoins,
-      total: updated.coins,
-    });
+    res.json({ eggs, milk, wool });
   } catch (e) {
-    console.error("COLLECT ERROR:", e);
-
-    return res.status(500).json({
-      error: "Server error",
-      details: String(e),
-    });
+    console.error(e);
+    res.status(500).json({ error: "collect error" });
   }
 });
 
