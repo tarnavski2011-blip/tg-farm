@@ -73,6 +73,17 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
+      select: {
+        id: true,
+        coins: true,
+        diamonds: true,
+        boostUntil: true,
+        autoCollectUntil: true,
+        vipUntil: true,
+        chickenFeed: true,
+        sheepFeed: true,
+        cowFeed: true,
+      },
     });
 
     if (!user) {
