@@ -117,6 +117,7 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       data.diamonds = { decrement: item.price };
     }
 
+    // КУПІВЛЯ КОРМУ — ТІЛЬКИ КОРМ, БЕЗ РЕСУРСІВ
     if (item.effect === "chicken_feed_10") {
       data.chickenFeed = { increment: 10 };
     }

@@ -110,14 +110,30 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       if (animal.type === "SHEEP") feedAvailable = sheepFeedLeft;
       if (animal.type === "COW") feedAvailable = cowFeedLeft;
 
-      // без корму — нічого не виробляється
-      if (feedAvailable <= 0) continue;
+      // БЕЗ КОРМУ — НІЧОГО НЕ ВИРОБЛЯЄТЬСЯ І БОРГ НЕ НАКОПИЧУЄТЬСЯ
+      if (feedAvailable <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
+        continue;
+      }
 
-      // 1 цикл = animal.level одиниць ресурсу, отже треба level корму на цикл
+      // 1 корм = 1 одиниця базового ресурсу
       const maxCyclesByFeed = Math.floor(feedAvailable / animal.level);
       const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
 
-      if (usedCycles <= 0) continue;
+      if (usedCycles <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
+        continue;
+      }
 
       let produced = usedCycles * animal.level;
 
@@ -216,7 +232,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
     const cowAnimals = user.animals.filter((a) => a.type === "COW");
 
-    // READY теж рахуємо з урахуванням корму, щоб фронт не брехав
     const eggsReady = chickenAnimals.reduce((sum, animal) => {
       const passedSec = Math.floor(
         (Date.now() - animal.lastClaim.getTime()) / 1000,
