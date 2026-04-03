@@ -6,15 +6,15 @@ const router = Router();
 
 const ANIMAL_PRODUCTION = {
   CHICKEN: {
-    seconds: 10,
+    seconds: 20,
     storageField: "eggs",
   },
   SHEEP: {
-    seconds: 30,
+    seconds: 45,
     storageField: "wool",
   },
   COW: {
-    seconds: 60,
+    seconds: 90,
     storageField: "milk",
   },
 } as const;
