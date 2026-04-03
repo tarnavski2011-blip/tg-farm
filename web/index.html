@@ -478,275 +478,312 @@
       </div>
     </div>
     <script>
-      const tg = window.Telegram?.WebApp;
-      const API = "https://tg-farm-api.onrender.com/api";
-      const BOT_USERNAME = "my_farm_clicker_bot";
-      if (tg) {
-        tg.ready();
-        tg.expand();
-      }
-      const initData = tg?.initData ?? "";
-      const shareBase = `https://t.me/${BOT_USERNAME}?startapp=ref_`;
-      const modal = document.getElementById("modal"),
-        modalTitle = document.getElementById("modalTitle"),
-        modalBody = document.getElementById("modalBody"),
-        modalTabs = document.getElementById("modalTabs"),
-        tabBuyBtn = document.getElementById("tabBuyBtn"),
-        tabOwnedBtn = document.getElementById("tabOwnedBtn"),
-        tabUpgradeBtn = document.getElementById("tabUpgradeBtn"),
-        resultBox = document.getElementById("resultBox"),
-        statusEl = document.getElementById("status"),
-        coinsEl = document.getElementById("coins"),
-        diamondsEl = document.getElementById("diamonds"),
-        pointsEl = document.getElementById("points"),
-        xpEl = document.getElementById("xp"),
-        levelBadgeEl = document.getElementById("levelBadge"),
-        boostStatusEl = document.getElementById("boostStatus");
-      let currentState = null;
-      let wheelRotation = 0;
-      function setStatus(t) {
-        statusEl.textContent = t;
-      }
-      function setResult(d) {
-        resultBox.textContent =
-          typeof d === "string" ? d : JSON.stringify(d, null, 2);
-      }
-      async function apiGet(path) {
-        const res = await fetch(`${API}${path}`, {
-          method: "GET",
-          headers: { "x-telegram-init-data": initData },
-        });
-        const text = await res.text();
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
-          json = text;
-        }
-        return { ok: res.ok, data: json };
-      }
-      async function apiPost(path, body = {}) {
-        const res = await fetch(`${API}${path}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-telegram-init-data": initData,
-          },
-          body: JSON.stringify(body),
-        });
-        const text = await res.text();
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
-          json = text;
-        }
-        return { ok: res.ok, data: json };
-      }
-      function spawnFloatingText(text) {
-        const el = document.createElement("div");
-        el.className = "floating";
-        el.textContent = text;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 900);
-      }
-      function showToast(text) {
-        spawnFloatingText(text);
-      }
-      function applyState(data) {
-        currentState = data;
-        coinsEl.textContent = data?.coins ?? 0;
-        diamondsEl.textContent = data?.diamonds ?? 0;
-        pointsEl.textContent = data?.points ?? 0;
-        xpEl.textContent = data?.xp ?? 0;
-        levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
-        const boost = data?.boost?.active ? "ON" : "OFF";
-        const auto = data?.autoCollect?.active ? "ON" : "OFF";
-        const vip = data?.vip?.active ? "ON" : "OFF";
-        boostStatusEl.innerText = `⚡ ${boost} | 🤖 ${auto} | 👑 ${vip}`;
-      }
-      async function loadState() {
-        try {
-          setStatus("loading...");
-          const res = await apiGet("/state");
-          setResult(res.data);
-          if (res.ok) {
-            applyState(res.data);
-            setStatus("ok");
-          } else {
-            setStatus("error");
-          }
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
-        }
-      }
-      async function collect() {
-        try {
-          setStatus("collect...");
-          const res = await apiPost("/collect");
-          setResult(res.data);
-          if (res.ok) {
-            showToast(`+${res.data?.added ?? 1}`);
-            await loadState();
-            setStatus("ok");
-          } else {
-            setStatus("error");
-          }
-        } catch (e) {
-          setStatus("error");
-          setResult(String(e));
-        }
-      }
-      function showModal() {
-        modal.classList.add("show");
-      }
-      function closeModal() {
-        modal.classList.remove("show");
-      }
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
-      async function buyAnimal(type) {
-        const res = await apiPost("/buy-animal", { type });
-        setResult(res.data);
-        if (res.ok) {
-          showToast("Куплено");
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка");
-        }
-      }
-      function renderAnimalsBuy() {
-        tabBuyBtn.classList.add("active");
-        tabOwnedBtn.classList.remove("active");
-        tabUpgradeBtn.classList.remove("active");
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курка</div><div class="tile-value">100 coins</div><div class="tile-row"><span>Ресурс</span><span>Яйця</span></div><button class="buy-btn" data-animal="CHICKEN">Купити</button></div><div class="tile"><div class="tile-title">🐑 Вівця</div><div class="tile-value">500 coins</div><div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div><button class="buy-btn" data-animal="SHEEP">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корова</div><div class="tile-value">1000 coins</div><div class="tile-row"><span>Ресурс</span><span>Молоко</span></div><button class="buy-btn" data-animal="COW">Купити</button></div></div>`;
-        modalBody
-          .querySelectorAll(".buy-btn")
-          .forEach((btn) =>
-            btn.addEventListener(
-              "click",
-              async () => await buyAnimal(btn.dataset.animal),
-            ),
-          );
-      }
-      function animalFeedWarning(v) {
-        return v > 0
-          ? `<div class="tile-row"><span>Корм</span><span>${v}</span></div>`
-          : `<div class="warn">Немає корму ❌</div>`;
-      }
-      function renderAnimalsOwned() {
-        tabBuyBtn.classList.remove("active");
-        tabOwnedBtn.classList.add("active");
-        tabUpgradeBtn.classList.remove("active");
-        const animals = currentState?.animals || {},
-          ready = currentState?.ready || {},
-          feed = currentState?.feedStock || {};
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки</div><div class="tile-value">${animals.chicken ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>${animalFeedWarning(feed.chicken ?? 0)}</div><div class="tile"><div class="tile-title">🐑 Вівці</div><div class="tile-value">${animals.sheep ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>${animalFeedWarning(feed.sheep ?? 0)}</div><div class="tile"><div class="tile-title">🐄 Корови</div><div class="tile-value">${animals.cow ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>${animalFeedWarning(feed.cow ?? 0)}</div><div class="tile"><div class="tile-title">⚙ Статус</div><div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div><div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div></div></div>`;
-      }
-      function renderAnimalsUpgrade() {
-        tabBuyBtn.classList.remove("active");
-        tabOwnedBtn.classList.remove("active");
-        tabUpgradeBtn.classList.add("active");
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐑 Вівці upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐄 Корови upgrade</div><div class="tile-value">Скоро</div></div></div>`;
-      }
-      function openAnimalsModal() {
-        modalTitle.textContent = "🐾 Тварини";
-        modalTabs.style.display = "block";
-        renderAnimalsBuy();
-        showModal();
-      }
-      function openStorageModal() {
-        const storage = currentState?.storage || {};
-        modalTitle.textContent = "📦 Склад";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Яйця</div><div class="tile-value">${storage.eggs ?? 0}</div></div><div class="tile"><div class="tile-title">Шерсть</div><div class="tile-value">${storage.wool ?? 0}</div></div><div class="tile"><div class="tile-title">Молоко</div><div class="tile-value">${storage.milk ?? 0}</div></div><div class="tile"><div class="tile-title">Capacity</div><div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div></div></div><button class="buy-btn" id="sellAllBtn">Продати все</button>`;
-        showModal();
-        document.getElementById("sellAllBtn").onclick = async () => {
-          const res = await apiPost("/sell");
-          setResult(res.data);
-          if (res.ok) {
-            showToast(`+${res.data?.sold ?? 0}`);
-            await loadState();
-            openStorageModal();
-          }
-        };
-      }
-      function openFeedModal() {
-        const feed = currentState?.feedStock || {};
-        modalTitle.textContent = "🌾 Корм";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
-        showModal();
-        modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
-          btn.onclick = async () => {
-            const code = btn.getAttribute("data-feed");
-            const res = await apiPost("/shop/buy", { code });
-            setResult(res.data);
-            if (res.ok) {
-              showToast("Корм куплено");
-              await loadState();
-              openFeedModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
+            const tg = window.Telegram?.WebApp;
+            const API = "https://tg-farm-api.onrender.com/api";
+            const BOT_USERNAME = "my_farm_clicker_bot";
+            if (tg) {
+              tg.ready();
+              tg.expand();
             }
-          };
-        });
-      }
-      function openBoostersModal() {
-        modalTitle.textContent = "⚡ Boosters";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">${currentState?.boost?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.boost?.active ? "green" : ""}" id="buyBoostBtn">${currentState?.boost?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">🤖 Auto Collect</div><div class="tile-value">${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}" id="buyAutoBtn">${currentState?.autoCollect?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">👑 VIP</div><div class="tile-value">${currentState?.vip?.active ? "ON" : "50 diamonds"}</div><button class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}" id="buyVipBtn">${currentState?.vip?.active ? "ON" : "Купити"}</button></div></div>`;
-        showModal();
-        document.getElementById("buyBoostBtn").onclick = async () => {
-          if (currentState?.boost?.active) return;
-          const res = await apiPost("/shop/buy", { code: "boost_1h" });
-          setResult(res.data);
-          if (res.ok) {
-            showToast("Boost куплено");
-            await loadState();
-            openBoostersModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
-        document.getElementById("buyAutoBtn").onclick = async () => {
-          if (currentState?.autoCollect?.active) return;
-          const res = await apiPost("/shop/buy", { code: "auto_1h" });
-          setResult(res.data);
-          if (res.ok) {
-            showToast("Auto куплено");
-            await loadState();
-            openBoostersModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
-        document.getElementById("buyVipBtn").onclick = async () => {
-          if (currentState?.vip?.active) return;
-          const res = await apiPost("/shop/buy", { code: "vip_1d" });
-          setResult(res.data);
-          if (res.ok) {
-            showToast("VIP куплено");
-            await loadState();
-            openBoostersModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
-      }
-      async function openLabModal() {
+            const initData = tg?.initData ?? "";
+            const shareBase = `https://t.me/${BOT_USERNAME}?startapp=ref_`;
+            const modal = document.getElementById("modal"),
+              modalTitle = document.getElementById("modalTitle"),
+              modalBody = document.getElementById("modalBody"),
+              modalTabs = document.getElementById("modalTabs"),
+              tabBuyBtn = document.getElementById("tabBuyBtn"),
+              tabOwnedBtn = document.getElementById("tabOwnedBtn"),
+              tabUpgradeBtn = document.getElementById("tabUpgradeBtn"),
+              resultBox = document.getElementById("resultBox"),
+              statusEl = document.getElementById("status"),
+              coinsEl = document.getElementById("coins"),
+              diamondsEl = document.getElementById("diamonds"),
+              pointsEl = document.getElementById("points"),
+              xpEl = document.getElementById("xp"),
+              levelBadgeEl = document.getElementById("levelBadge"),
+              boostStatusEl = document.getElementById("boostStatus");
+            let currentState = null;
+            let wheelRotation = 0;
+            function setStatus(t) {
+              statusEl.textContent = t;
+            }
+            function setResult(d) {
+              resultBox.textContent =
+                typeof d === "string" ? d : JSON.stringify(d, null, 2);
+            }
+            async function apiGet(path) {
+              const res = await fetch(`${API}${path}`, {
+                method: "GET",
+                headers: { "x-telegram-init-data": initData },
+              });
+              const text = await res.text();
+              let json;
+              try {
+                json = JSON.parse(text);
+              } catch {
+                json = text;
+              }
+              return { ok: res.ok, data: json };
+            }
+            async function apiPost(path, body = {}) {
+              const res = await fetch(`${API}${path}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-telegram-init-data": initData,
+                },
+                body: JSON.stringify(body),
+              });
+              const text = await res.text();
+              let json;
+              try {
+                json = JSON.parse(text);
+              } catch {
+                json = text;
+              }
+              return { ok: res.ok, data: json };
+            }
+            function spawnFloatingText(text) {
+              const el = document.createElement("div");
+              el.className = "floating";
+              el.textContent = text;
+              document.body.appendChild(el);
+              setTimeout(() => el.remove(), 900);
+            }
+            function showToast(text) {
+              spawnFloatingText(text);
+            }
+            function applyState(data) {
+              currentState = data;
+              coinsEl.textContent = data?.coins ?? 0;
+              diamondsEl.textContent = data?.diamonds ?? 0;
+              pointsEl.textContent = data?.points ?? 0;
+              xpEl.textContent = data?.xp ?? 0;
+              levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
+              const boost = data?.boost?.active ? "ON" : "OFF";
+              const auto = data?.autoCollect?.active ? "ON" : "OFF";
+              const vip = data?.vip?.active ? "ON" : "OFF";
+              boostStatusEl.innerText = `⚡ ${boost} | 🤖 ${auto} | 👑 ${vip}`;
+            }
+            async function loadState() {
+              try {
+                setStatus("loading...");
+                const res = await apiGet("/state");
+                setResult(res.data);
+                if (res.ok) {
+                  applyState(res.data);
+                  setStatus("ok");
+                } else {
+                  setStatus("error");
+                }
+              } catch (e) {
+                setStatus("error");
+                setResult(String(e));
+              }
+            }
+            async function collect() {
+              try {
+                setStatus("collect...");
+                const res = await apiPost("/collect");
+                setResult(res.data);
+                if (res.ok) {
+                  showToast(`+${res.data?.added ?? 1}`);
+                  await loadState();
+                  setStatus("ok");
+                } else {
+                  setStatus("error");
+                }
+              } catch (e) {
+                setStatus("error");
+                setResult(String(e));
+              }
+            }
+            function showModal() {
+              modal.classList.add("show");
+            }
+            function closeModal() {
+              modal.classList.remove("show");
+            }
+            modal.addEventListener("click", (e) => {
+              if (e.target === modal) closeModal();
+            });
+            async function buyAnimal(type) {
+              const res = await apiPost("/buy-animal", { type });
+              setResult(res.data);
+              if (res.ok) {
+                showToast("Куплено");
+                await loadState();
+                renderAnimalsOwned();
+              } else {
+                showToast(res.data?.error || "Помилка");
+              }
+            }
+            function renderAnimalsBuy() {
+              tabBuyBtn.classList.add("active");
+              tabOwnedBtn.classList.remove("active");
+              tabUpgradeBtn.classList.remove("active");
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курка</div><div class="tile-value">100 coins</div><div class="tile-row"><span>Ресурс</span><span>Яйця</span></div><button class="buy-btn" data-animal="CHICKEN">Купити</button></div><div class="tile"><div class="tile-title">🐑 Вівця</div><div class="tile-value">500 coins</div><div class="tile-row"><span>Ресурс</span><span>Шерсть</span></div><button class="buy-btn" data-animal="SHEEP">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корова</div><div class="tile-value">1000 coins</div><div class="tile-row"><span>Ресурс</span><span>Молоко</span></div><button class="buy-btn" data-animal="COW">Купити</button></div></div>`;
+              modalBody
+                .querySelectorAll(".buy-btn")
+                .forEach((btn) =>
+                  btn.addEventListener(
+                    "click",
+                    async () => await buyAnimal(btn.dataset.animal),
+                  ),
+                );
+            }
+            function animalFeedWarning(v) {
+              return v > 0
+                ? `<div class="tile-row"><span>Корм</span><span>${v}</span></div>`
+                : `<div class="warn">Немає корму ❌</div>`;
+            }
+            function renderAnimalsOwned() {
+              tabBuyBtn.classList.remove("active");
+              tabOwnedBtn.classList.add("active");
+              tabUpgradeBtn.classList.remove("active");
+              const animals = currentState?.animals || {},
+                ready = currentState?.ready || {},
+                feed = currentState?.feedStock || {};
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки</div><div class="tile-value">${animals.chicken ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>${animalFeedWarning(feed.chicken ?? 0)}</div><div class="tile"><div class="tile-title">🐑 Вівці</div><div class="tile-value">${animals.sheep ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>${animalFeedWarning(feed.sheep ?? 0)}</div><div class="tile"><div class="tile-title">🐄 Корови</div><div class="tile-value">${animals.cow ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>${animalFeedWarning(feed.cow ?? 0)}</div><div class="tile"><div class="tile-title">⚙ Статус</div><div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div><div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div></div></div>`;
+            }
+            function renderAnimalsUpgrade() {
+              tabBuyBtn.classList.remove("active");
+              tabOwnedBtn.classList.remove("active");
+              tabUpgradeBtn.classList.add("active");
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐑 Вівці upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐄 Корови upgrade</div><div class="tile-value">Скоро</div></div></div>`;
+            }
+            function openAnimalsModal() {
+              modalTitle.textContent = "🐾 Тварини";
+              modalTabs.style.display = "block";
+              renderAnimalsBuy();
+              showModal();
+            }
+            function openStorageModal() {
+              const storage = currentState?.storage || {};
+              modalTitle.textContent = "📦 Склад";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Яйця</div><div class="tile-value">${storage.eggs ?? 0}</div></div><div class="tile"><div class="tile-title">Шерсть</div><div class="tile-value">${storage.wool ?? 0}</div></div><div class="tile"><div class="tile-title">Молоко</div><div class="tile-value">${storage.milk ?? 0}</div></div><div class="tile"><div class="tile-title">Capacity</div><div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div></div></div><button class="buy-btn" id="sellAllBtn">Продати все</button>`;
+              showModal();
+              document.getElementById("sellAllBtn").onclick = async () => {
+                const res = await apiPost("/sell");
+                setResult(res.data);
+                if (res.ok) {
+                  showToast(`+${res.data?.sold ?? 0}`);
+                  await loadState();
+                  openStorageModal();
+                }
+              };
+            }
+            function openFeedModal() {
+              const feed = currentState?.feedStock || {};
+              modalTitle.textContent = "🌾 Корм";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
+              showModal();
+              modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
+                btn.onclick = async () => {
+                  const code = btn.getAttribute("data-feed");
+                  const res = await apiPost("/shop/buy", { code });
+                  setResult(res.data);
+                  if (res.ok) {
+                    showToast("Корм куплено");
+                    await loadState();
+                    openFeedModal();
+                  } else {
+                    showToast(res.data?.error || "Помилка");
+                  }
+                };
+              });
+            }
+            function openBoostersModal() {
+              modalTitle.textContent = "⚡ Boosters";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">${currentState?.boost?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.boost?.active ? "green" : ""}" id="buyBoostBtn">${currentState?.boost?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">🤖 Auto Collect</div><div class="tile-value">${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}" id="buyAutoBtn">${currentState?.autoCollect?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">👑 VIP</div><div class="tile-value">${currentState?.vip?.active ? "ON" : "50 diamonds"}</div><button class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}" id="buyVipBtn">${currentState?.vip?.active ? "ON" : "Купити"}</button></div></div>`;
+              showModal();
+              document.getElementById("buyBoostBtn").onclick = async () => {
+                if (currentState?.boost?.active) return;
+                const res = await apiPost("/shop/buy", { code: "boost_1h" });
+                setResult(res.data);
+                if (res.ok) {
+                  showToast("Boost куплено");
+                  await loadState();
+                  openBoostersModal();
+                } else {
+                  showToast(res.data?.error || "Помилка");
+                }
+              };
+              document.getElementById("buyAutoBtn").onclick = async () => {
+                if (currentState?.autoCollect?.active) return;
+                const res = await apiPost("/shop/buy", { code: "auto_1h" });
+                setResult(res.data);
+                if (res.ok) {
+                  showToast("Auto куплено");
+                  await loadState();
+                  openBoostersModal();
+                } else {
+                  showToast(res.data?.error || "Помилка");
+                }
+              };
+              document.getElementById("buyVipBtn").onclick = async () => {
+                if (currentState?.vip?.active) return;
+                const res = await apiPost("/shop/buy", { code: "vip_1d" });
+                setResult(res.data);
+                if (res.ok) {
+                  showToast("VIP куплено");
+                  await loadState();
+                  openBoostersModal();
+                } else {
+                  showToast(res.data?.error || "Помилка");
+                }
+              };
+            }
+            async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
         modalTabs.style.display = "none";
-        const res = await apiGet("/lab"),
-          data = res.data || {};
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Рівень</div><div class="tile-value">${data.level ?? 1}</div></div><div class="tile"><div class="tile-title">Множник</div><div class="tile-value">x${data.multiplier ?? 1}</div></div><div class="tile"><div class="tile-title">Наступна ціна</div><div class="tile-value">${data.nextCost ?? 0}</div></div><div class="tile"><div class="tile-title">Наступний множник</div><div class="tile-value">x${data.nextMultiplier ?? 1}</div></div></div><button class="buy-btn" id="labUpgradeBtn">Покращити</button>`;
+
+        const res = await apiGet("/lab");
+        const data = res.data || {};
+
+        const coinsCost = data.nextCostCoins ?? 0;
+        const diamondsCost = data.nextCostDiamonds ?? 0;
+
+        let priceText = ${coinsCost} coins;
+        if (diamondsCost > 0) {
+          priceText +=  + ${diamondsCost} diamonds;
+        }
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile">
+              <div class="tile-title">Рівень</div>
+              <div class="tile-value">${data.level ?? 1}</div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">Множник</div>
+              <div class="tile-value">x${data.multiplier ?? 1}</div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">Наступна ціна</div>
+              <div class="tile-value">${priceText}</div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">Наступний множник</div>
+              <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
+            </div>
+          </div>
+
+          <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
+        `;
+
         showModal();
+
         document.getElementById("labUpgradeBtn").onclick = async () => {
           const upRes = await apiPost("/lab/upgrade");
           setResult(upRes.data);
+
           if (upRes.ok) {
             showToast(`x${upRes.data?.multiplier ?? ""}`);
             await loadState();
@@ -756,173 +793,173 @@
           }
         };
       }
-      async function openDailyModal() {
-        modalTitle.textContent = "🎁 Daily";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="tile"><div class="note">Щоденна нагорода</div><button class="buy-btn" id="claimDailyBtn">Забрати</button></div>`;
-        showModal();
-        document.getElementById("claimDailyBtn").onclick = async () => {
-          const res = await apiPost("/daily");
-          setResult(res.data);
-          if (res.ok) {
-            showToast(`+${res.data?.reward ?? 0}`);
-            await loadState();
-            closeModal();
-          } else {
-            showToast(res.data?.error || "Вже забрано");
-          }
-        };
-      }
-      async function openQuestsModal() {
-        modalTitle.textContent = "📜 Квести";
-        modalTabs.style.display = "none";
-        const res = await apiGet("/quests"),
-          quests = res.data?.quests || [];
-        modalBody.innerHTML = quests
-          .map(
-            (q) =>
-              `<div class="tile"><div class="tile-title">${q.title}</div><div class="tile-value">${q.done ? "Готово" : "Не готово"}</div><div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div><button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}">${q.claimed ? "Забрано" : "Забрати"}</button></div>`,
-          )
-          .join("");
-        showModal();
-        modalBody.querySelectorAll("[data-quest]").forEach((btn) => {
-          btn.onclick = async () => {
-            const code = btn.getAttribute("data-quest"),
-              resp = await apiPost("/quests/claim", { code });
-            setResult(resp.data);
-            if (resp.ok) {
-              showToast(`+${resp.data?.reward ?? 0}`);
-              await loadState();
-              await openQuestsModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
+            async function openDailyModal() {
+              modalTitle.textContent = "🎁 Daily";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="tile"><div class="note">Щоденна нагорода</div><button class="buy-btn" id="claimDailyBtn">Забрати</button></div>`;
+              showModal();
+              document.getElementById("claimDailyBtn").onclick = async () => {
+                const res = await apiPost("/daily");
+                setResult(res.data);
+                if (res.ok) {
+                  showToast(`+${res.data?.reward ?? 0}`);
+                  await loadState();
+                  closeModal();
+                } else {
+                  showToast(res.data?.error || "Вже забрано");
+                }
+              };
             }
-          };
-        });
-      }
-      async function openWheelModal() {
-        modalTitle.textContent = "🎰 Wheel";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="wheel-wrap"><div class="wheel-pointer"></div><div class="wheel-disc" id="wheelDisc"><div class="wheel-center">SPIN</div></div><button class="buy-btn" id="spinWheelBtn">Крутити</button></div>`;
-        showModal();
-        document.getElementById("spinWheelBtn").onclick = async () => {
-          const disc = document.getElementById("wheelDisc");
-          wheelRotation += 1800 + Math.floor(Math.random() * 720);
-          disc.style.transform = `rotate(${wheelRotation}deg)`;
-          const res = await apiPost("/wheel/spin");
-          setResult(res.data);
-          setTimeout(async () => {
-            if (res.ok) {
-              const reward = res.data?.reward;
-              const txt =
-                reward?.type === "nothing"
-                  ? "Нічого 😅"
-                  : `+${reward?.amount ?? 0} ${reward?.type ?? ""}`;
-              showToast(txt);
-              await loadState();
-              closeModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
+            async function openQuestsModal() {
+              modalTitle.textContent = "📜 Квести";
+              modalTabs.style.display = "none";
+              const res = await apiGet("/quests"),
+                quests = res.data?.quests || [];
+              modalBody.innerHTML = quests
+                .map(
+                  (q) =>
+                    `<div class="tile"><div class="tile-title">${q.title}</div><div class="tile-value">${q.done ? "Готово" : "Не готово"}</div><div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div><button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}">${q.claimed ? "Забрано" : "Забрати"}</button></div>`,
+                )
+                .join("");
+              showModal();
+              modalBody.querySelectorAll("[data-quest]").forEach((btn) => {
+                btn.onclick = async () => {
+                  const code = btn.getAttribute("data-quest"),
+                    resp = await apiPost("/quests/claim", { code });
+                  setResult(resp.data);
+                  if (resp.ok) {
+                    showToast(`+${resp.data?.reward ?? 0}`);
+                    await loadState();
+                    await openQuestsModal();
+                  } else {
+                    showToast(resp.data?.error || "Помилка");
+                  }
+                };
+              });
             }
-          }, 3200);
-        };
-      }
-      async function openShopModal() {
-        modalTitle.textContent = "💎 Diamonds за Stars";
-        modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Малий пакет</div><div class="tile-value">50 💎</div><div class="tile-row"><span>Ціна</span><span>25 Stars</span></div><button class="buy-btn" data-stars="small">Купити</button></div><div class="tile"><div class="tile-title">Середній пакет</div><div class="tile-value">120 💎</div><div class="tile-row"><span>Ціна</span><span>50 Stars</span></div><button class="buy-btn" data-stars="medium">Купити</button></div><div class="tile"><div class="tile-title">Великий пакет</div><div class="tile-value">300 💎</div><div class="tile-row"><span>Ціна</span><span>100 Stars</span></div><button class="buy-btn" data-stars="large">Купити</button></div><div class="tile full"><div class="note">UI для diamonds за Stars готовий. Для реальної покупки треба додати Stars інвойс на бекенді.</div></div></div>`;
-        showModal();
-        modalBody.querySelectorAll("[data-stars]").forEach((btn) => {
-          btn.onclick = async () => {
-            if (tg?.showAlert)
-              tg.showAlert(
-                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
-              );
-            else
-              alert(
-                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
-              );
-          };
-        });
-      }
-      async function openRefsModal() {
-        modalTitle.textContent = "👥 Referrals";
-        modalTabs.style.display = "none";
-        const res = await apiGet("/referrals"),
-          data = res.data || {},
-          shareLink = `${shareBase}${data.myCode ?? ""}`;
-        modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
-        showModal();
-        document.getElementById("copyRefBtn").onclick = async () => {
-          await navigator.clipboard.writeText(shareLink);
-          showToast("Скопійовано");
-        };
-        document.getElementById("shareRefBtn").onclick = async () => {
-          if (tg?.openTelegramLink)
-            tg.openTelegramLink(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
-            );
-          else
-            window.open(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
-              "_blank",
-            );
-        };
-        document.getElementById("applyRefBtn").onclick = async () => {
-          const code = document.getElementById("refCodeInput").value,
-            resp = await apiPost("/referrals/apply", { code });
-          setResult(resp.data);
-          if (resp.ok) {
-            showToast(`+${resp.data?.rewardYou ?? 0}`);
-            await loadState();
-            await openRefsModal();
-          } else {
-            showToast(resp.data?.error || "Помилка");
-          }
-        };
-      }
-      document.getElementById("tapBtn").addEventListener("click", collect);
-      document
-        .getElementById("loadStateBtn")
-        .addEventListener("click", loadState);
-      document
-        .getElementById("refreshBtn")
-        .addEventListener("click", loadState);
-      document
-        .getElementById("animalsBtn")
-        .addEventListener("click", openAnimalsModal);
-      document
-        .getElementById("storageBtn")
-        .addEventListener("click", openStorageModal);
-      document
-        .getElementById("feedBtn")
-        .addEventListener("click", openFeedModal);
-      document.getElementById("labBtn").addEventListener("click", openLabModal);
-      document
-        .getElementById("boostBtn")
-        .addEventListener("click", openBoostersModal);
-      document
-        .getElementById("dailyBtn")
-        .addEventListener("click", openDailyModal);
-      document
-        .getElementById("questsBtn")
-        .addEventListener("click", openQuestsModal);
-      document
-        .getElementById("wheelBtn")
-        .addEventListener("click", openWheelModal);
-      document
-        .getElementById("shopBtn")
-        .addEventListener("click", openShopModal);
-      document
-        .getElementById("refsBtn")
-        .addEventListener("click", openRefsModal);
-      document
-        .getElementById("closeModalBtn")
-        .addEventListener("click", closeModal);
-      tabBuyBtn.addEventListener("click", renderAnimalsBuy);
-      tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
-      tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
-      loadState();
+            async function openWheelModal() {
+              modalTitle.textContent = "🎰 Wheel";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="wheel-wrap"><div class="wheel-pointer"></div><div class="wheel-disc" id="wheelDisc"><div class="wheel-center">SPIN</div></div><button class="buy-btn" id="spinWheelBtn">Крутити</button></div>`;
+              showModal();
+              document.getElementById("spinWheelBtn").onclick = async () => {
+                const disc = document.getElementById("wheelDisc");
+                wheelRotation += 1800 + Math.floor(Math.random() * 720);
+                disc.style.transform = `rotate(${wheelRotation}deg)`;
+                const res = await apiPost("/wheel/spin");
+                setResult(res.data);
+                setTimeout(async () => {
+                  if (res.ok) {
+                    const reward = res.data?.reward;
+                    const txt =
+                      reward?.type === "nothing"
+                        ? "Нічого 😅"
+                        : `+${reward?.amount ?? 0} ${reward?.type ?? ""}`;
+                    showToast(txt);
+                    await loadState();
+                    closeModal();
+                  } else {
+                    showToast(res.data?.error || "Помилка");
+                  }
+                }, 3200);
+              };
+            }
+            async function openShopModal() {
+              modalTitle.textContent = "💎 Diamonds за Stars";
+              modalTabs.style.display = "none";
+              modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Малий пакет</div><div class="tile-value">50 💎</div><div class="tile-row"><span>Ціна</span><span>25 Stars</span></div><button class="buy-btn" data-stars="small">Купити</button></div><div class="tile"><div class="tile-title">Середній пакет</div><div class="tile-value">120 💎</div><div class="tile-row"><span>Ціна</span><span>50 Stars</span></div><button class="buy-btn" data-stars="medium">Купити</button></div><div class="tile"><div class="tile-title">Великий пакет</div><div class="tile-value">300 💎</div><div class="tile-row"><span>Ціна</span><span>100 Stars</span></div><button class="buy-btn" data-stars="large">Купити</button></div><div class="tile full"><div class="note">UI для diamonds за Stars готовий. Для реальної покупки треба додати Stars інвойс на бекенді.</div></div></div>`;
+              showModal();
+              modalBody.querySelectorAll("[data-stars]").forEach((btn) => {
+                btn.onclick = async () => {
+                  if (tg?.showAlert)
+                    tg.showAlert(
+                      "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
+                    );
+                  else
+                    alert(
+                      "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
+                    );
+                };
+              });
+            }
+            async function openRefsModal() {
+              modalTitle.textContent = "👥 Referrals";
+              modalTabs.style.display = "none";
+              const res = await apiGet("/referrals"),
+                data = res.data || {},
+                shareLink = `${shareBase}${data.myCode ?? ""}`;
+              modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
+              showModal();
+              document.getElementById("copyRefBtn").onclick = async () => {
+                await navigator.clipboard.writeText(shareLink);
+                showToast("Скопійовано");
+              };
+              document.getElementById("shareRefBtn").onclick = async () => {
+                if (tg?.openTelegramLink)
+                  tg.openTelegramLink(
+                    `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
+                  );
+                else
+                  window.open(
+                    `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
+                    "_blank",
+                  );
+              };
+              document.getElementById("applyRefBtn").onclick = async () => {
+                const code = document.getElementById("refCodeInput").value,
+                  resp = await apiPost("/referrals/apply", { code });
+                setResult(resp.data);
+                if (resp.ok) {
+                  showToast(`+${resp.data?.rewardYou ?? 0}`);
+                  await loadState();
+                  await openRefsModal();
+                } else {
+                  showToast(resp.data?.error || "Помилка");
+                }
+              };
+            }
+            document.getElementById("tapBtn").addEventListener("click", collect);
+            document
+              .getElementById("loadStateBtn")
+              .addEventListener("click", loadState);
+            document
+              .getElementById("refreshBtn")
+              .addEventListener("click", loadState);
+            document
+              .getElementById("animalsBtn")
+              .addEventListener("click", openAnimalsModal);
+            document
+              .getElementById("storageBtn")
+              .addEventListener("click", openStorageModal);
+            document
+              .getElementById("feedBtn")
+              .addEventListener("click", openFeedModal);
+            document.getElementById("labBtn").addEventListener("click", openLabModal);
+            document
+              .getElementById("boostBtn")
+              .addEventListener("click", openBoostersModal);
+            document
+              .getElementById("dailyBtn")
+              .addEventListener("click", openDailyModal);
+            document
+              .getElementById("questsBtn")
+              .addEventListener("click", openQuestsModal);
+            document
+              .getElementById("wheelBtn")
+              .addEventListener("click", openWheelModal);
+            document
+              .getElementById("shopBtn")
+              .addEventListener("click", openShopModal);
+            document
+              .getElementById("refsBtn")
+              .addEventListener("click", openRefsModal);
+            document
+              .getElementById("closeModalBtn")
+              .addEventListener("click", closeModal);
+            tabBuyBtn.addEventListener("click", renderAnimalsBuy);
+            tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
+            tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
+            loadState();
     </script>
   </body>
 </html>
