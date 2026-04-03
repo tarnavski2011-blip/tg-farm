@@ -7,15 +7,17 @@ const router = Router();
 function getLabUpgradeCost(level: number) {
   switch (level) {
     case 1:
-      return 1000;
+      return { coins: 1000, diamonds: 0 };
     case 2:
-      return 3000;
+      return { coins: 3000, diamonds: 0 };
     case 3:
-      return 10000;
+      return { coins: 10000, diamonds: 10 };
     case 4:
-      return 50000;
+      return { coins: 25000, diamonds: 25 };
+    case 5:
+      return { coins: 60000, diamonds: 50 };
     default:
-      return 100000;
+      return { coins: 100000, diamonds: 75 };
   }
 }
 
@@ -26,11 +28,13 @@ function getNextMultiplier(level: number) {
     case 2:
       return 1.5;
     case 3:
-      return 2;
+      return 2.0;
     case 4:
-      return 3;
+      return 2.5;
+    case 5:
+      return 3.0;
     default:
-      return 3;
+      return 3.0;
   }
 }
 
@@ -48,6 +52,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         labLevel: true,
         labMultiplier: true,
         coins: true,
+        diamonds: true,
       },
     });
 
@@ -55,12 +60,16 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const nextCost = getLabUpgradeCost(user.labLevel);
+
     return res.json({
       ok: true,
       level: user.labLevel,
       multiplier: user.labMultiplier,
       coins: user.coins,
-      nextCost: getLabUpgradeCost(user.labLevel),
+      diamonds: user.diamonds,
+      nextCostCoins: nextCost.coins,
+      nextCostDiamonds: nextCost.diamonds,
       nextMultiplier: getNextMultiplier(user.labLevel),
     });
   } catch (e) {
@@ -82,6 +91,7 @@ router.post("/upgrade", async (req: TgAuthedRequest, res) => {
       select: {
         id: true,
         coins: true,
+        diamonds: true,
         labLevel: true,
         labMultiplier: true,
       },
@@ -94,23 +104,33 @@ router.post("/upgrade", async (req: TgAuthedRequest, res) => {
     const cost = getLabUpgradeCost(user.labLevel);
     const nextMultiplier = getNextMultiplier(user.labLevel);
 
-    if (user.coins < cost) {
+    if (user.coins < cost.coins) {
       return res.status(400).json({
         error: "Not enough coins",
-        need: cost,
-        have: user.coins,
+        needCoins: cost.coins,
+        haveCoins: user.coins,
+      });
+    }
+
+    if (user.diamonds < cost.diamonds) {
+      return res.status(400).json({
+        error: "Not enough diamonds",
+        needDiamonds: cost.diamonds,
+        haveDiamonds: user.diamonds,
       });
     }
 
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        coins: { decrement: cost },
+        coins: { decrement: cost.coins },
+        diamonds: { decrement: cost.diamonds },
         labLevel: { increment: 1 },
         labMultiplier: nextMultiplier,
       },
       select: {
         coins: true,
+        diamonds: true,
         labLevel: true,
         labMultiplier: true,
       },
@@ -119,6 +139,7 @@ router.post("/upgrade", async (req: TgAuthedRequest, res) => {
     return res.json({
       ok: true,
       coins: updated.coins,
+      diamonds: updated.diamonds,
       level: updated.labLevel,
       multiplier: updated.labMultiplier,
     });
