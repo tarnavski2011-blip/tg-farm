@@ -166,7 +166,7 @@ function questCard(q) {
     `${q.rewardCoins ? `💰 ${q.rewardCoins}` : q.reward ? `💰 ${q.reward}` : ""}` +
     `${(q.rewardCoins || q.reward) && q.rewardDiamonds ? " · " : ""}` +
     `${q.rewardDiamonds ? `💎 ${q.rewardDiamonds}` : ""}` +
-    `${(q.rewardCoins || q.reward || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
+    `${((q.rewardCoins || q.reward) || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
     `${q.rewardXp ? `⭐ ${q.rewardXp} XP` : ""}`;
 
   return `
@@ -234,18 +234,13 @@ function wheelCard(wheelState) {
   );
   const cooldown = wheelState?.cooldownSec ?? wheelState?.cooldown ?? 0;
   const disabled = cooldown > 0;
-  const buttonText = disabled ? `Cooldown ${fmtSeconds(cooldown)}` : `Spin`;
+  const buttonText = disabled
+    ? `Cooldown ${fmtSeconds(cooldown)}`
+    : `Spin`;
 
   const shownRewards = rewards.length
     ? rewards
-    : [
-        "50 coins",
-        "100 coins",
-        "200 coins",
-        "5 diamonds",
-        "10 diamonds",
-        "Nothing",
-      ];
+    : ["50 coins", "100 coins", "200 coins", "5 diamonds", "10 diamonds", "Nothing"];
 
   return `
     <div class="wheel-box">
@@ -394,7 +389,8 @@ function dailyDaysRow(dailyLoginData) {
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">
       ${rewards
         .map((r) => {
-          const claimed = r.day < nextDay || (!canClaim && r.day === streak);
+          const claimed =
+            r.day < nextDay || (!canClaim && r.day === streak);
           const current = canClaim && r.day === nextDay;
 
           return `
@@ -800,15 +796,116 @@ async function applyReferralFromUrl() {
   const sessionKey = `farm_ref_applied_${ref}`;
   if (sessionStorage.getItem(sessionKey) === "1") return;
 
-  sessionStorage.setItem(sessionKey, "1");
-
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
     code: ref,
   });
 
   if (ok) {
+    sessionStorage.setItem(sessionKey, "1");
     showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
+    await loadStateSilently();
   }
+}
+
+async function loadStateSilently() {
+  const stateRes = await apiGet(`${API}/state`);
+  if (!stateRes.ok) return;
+
+  let levelData = {
+    level: stateRes.json?.level ?? 1,
+    xp: stateRes.json?.xp ?? 0,
+  };
+
+  let leaderboard = [];
+  const lbRes = await apiGet(`${API}/leaderboard`);
+  if (lbRes.ok && Array.isArray(lbRes.json)) leaderboard = lbRes.json;
+
+  let achievements = [];
+  const achRes = await apiGet(`${API}/achievements`);
+  if (achRes.ok && Array.isArray(achRes.json?.items)) {
+    achievements = achRes.json.items;
+  }
+
+  let questsData = { items: [] };
+  const questRes = await apiGet(`${API}/quests`);
+  if (questRes.ok) questsData = questRes.json;
+
+  let referralsData = { myCode: "", totalRefs: 0, refs: [] };
+  const refRes = await apiGet(`${API}/referrals`);
+  if (refRes.ok) referralsData = refRes.json;
+
+  let wheelState = { costDiamonds: 0, cooldownSec: 0, rewards: [] };
+  const wheelRes = await apiGet(`${API}/wheel/state`);
+  if (wheelRes.ok) wheelState = normalizeWheelState(wheelRes.json);
+
+  let shopData = { items: [] };
+  const shopRes = await apiGet(`${API}/shop`);
+  if (shopRes.ok) shopData = shopRes.json;
+
+  let premiumProductsData = { items: [] };
+  const premiumProductsRes = await apiGet(`${API}/payments/products`);
+  if (premiumProductsRes.ok) premiumProductsData = premiumProductsRes.json;
+
+  let dailyLoginData = {
+    streak: 0,
+    claimedToday: false,
+    nextDay: 1,
+    reward: null,
+    rewards: [],
+    canClaim: true,
+  };
+
+  const dailyRes = await apiGet(`${API}/daily/status`);
+  if (dailyRes.ok) {
+    dailyLoginData = { ...dailyLoginData, ...dailyRes.json };
+  }
+
+  let boostersData = {
+    boost: { active: false, leftSec: 0 },
+    autoCollect: { active: false, leftSec: 0 },
+    vip: { active: false, leftSec: 0 },
+    feed: { active: false, leftSec: 0 },
+  };
+
+  const boostersRes = await apiGet(`${API}/boosters/status`);
+  if (boostersRes.ok) {
+    boostersData = boostersRes.json;
+  } else {
+    boostersData = {
+      boost: {
+        active: !!stateRes.json?.boost?.active,
+        leftSec: stateRes.json?.boost?.leftSec ?? 0,
+      },
+      autoCollect: {
+        active: !!stateRes.json?.autoCollect?.active,
+        leftSec: stateRes.json?.autoCollect?.leftSec ?? 0,
+      },
+      vip: {
+        active: !!stateRes.json?.vip?.active,
+        leftSec: stateRes.json?.vip?.leftSec ?? 0,
+      },
+      feed: {
+        active: !!stateRes.json?.feed?.active,
+        leftSec: stateRes.json?.feed?.leftSec ?? 0,
+      },
+    };
+  }
+
+  render(
+    stateRes.json,
+    levelData,
+    leaderboard,
+    achievements,
+    referralsData,
+    wheelState,
+    questsData,
+    shopData,
+    premiumProductsData,
+    dailyLoginData,
+    boostersData,
+  );
+
+  bindHandlers();
 }
 
 async function loadState() {
@@ -1047,60 +1144,56 @@ function bindHandlers() {
     }
   });
 
-  document
-    .getElementById("shareRefBtn")
-    ?.addEventListener("click", async () => {
-      const input = document.getElementById("refLinkInput");
-      const value = input?.value ?? "";
-      if (!value) return;
+  document.getElementById("shareRefBtn")?.addEventListener("click", async () => {
+    const input = document.getElementById("refLinkInput");
+    const value = input?.value ?? "";
+    if (!value) return;
 
-      if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink(
-          `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
-        );
-        return;
-      }
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(
+        `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
+      );
+      return;
+    }
 
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: "My Farm Clicker",
-            text: "🚜 Заходь у мою гру My Farm Clicker",
-            url: value,
-          });
-          return;
-        } catch {}
-      }
-
+    if (navigator.share) {
       try {
-        await navigator.clipboard.writeText(value);
-        showToast("Посилання скопійовано");
-      } catch {
-        showToast("Не вдалося поділитися");
-      }
-    });
-
-  document
-    .getElementById("applyRefBtn")
-    ?.addEventListener("click", async () => {
-      const input = document.getElementById("refCodeInput");
-      const code = String(input?.value ?? "").trim();
-
-      if (!code) {
-        showToast("Введи код");
+        await navigator.share({
+          title: "My Farm Clicker",
+          text: "🚜 Заходь у мою гру My Farm Clicker",
+          url: value,
+        });
         return;
-      }
+      } catch {}
+    }
 
-      const { ok, json } = await apiPost(`${API}/referrals/apply`, { code });
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast("Посилання скопійовано");
+    } catch {
+      showToast("Не вдалося поділитися");
+    }
+  });
 
-      if (!ok) {
-        showToast(json?.error || "Помилка реферала");
-        return;
-      }
+  document.getElementById("applyRefBtn")?.addEventListener("click", async () => {
+    const input = document.getElementById("refCodeInput");
+    const code = String(input?.value ?? "").trim();
 
-      showToast(`🎁 +${json.rewardYou ?? 0} coins`);
-      loadState();
-    });
+    if (!code) {
+      showToast("Введи код");
+      return;
+    }
+
+    const { ok, json } = await apiPost(`${API}/referrals/apply`, { code });
+
+    if (!ok) {
+      showToast(json?.error || "Помилка реферала");
+      return;
+    }
+
+    showToast(`🎁 +${json.rewardYou ?? 0} coins`);
+    loadState();
+  });
 
   document
     .getElementById("spinWheelBtn")
@@ -1140,7 +1233,10 @@ function bindHandlers() {
 }
 
 async function tap() {
-  const variants = [`${API}/tap`, `${API}/collect`];
+  const variants = [
+    `${API}/tap`,
+    `${API}/collect`,
+  ];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, { telegramId: TELEGRAM_ID });
@@ -1155,7 +1251,10 @@ async function tap() {
 }
 
 async function buy(type) {
-  const variants = [`${API}/animals/buy`, `${API}/buy-animal`];
+  const variants = [
+    `${API}/animals/buy`,
+    `${API}/buy-animal`,
+  ];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1178,7 +1277,9 @@ async function buy(type) {
 }
 
 async function upgrade(type) {
-  const variants = [`${API}/animal-upgrade`];
+  const variants = [
+    `${API}/animal-upgrade`,
+  ];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1196,7 +1297,10 @@ async function upgrade(type) {
 }
 
 async function collect() {
-  const variants = [`${API}/collect/claim`, `${API}/collect`];
+  const variants = [
+    `${API}/collect/claim`,
+    `${API}/collect`,
+  ];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1218,7 +1322,10 @@ async function collect() {
 }
 
 async function sellAll() {
-  const variants = [`${API}/sell/all`, `${API}/sell`];
+  const variants = [
+    `${API}/sell/all`,
+    `${API}/sell`,
+  ];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
