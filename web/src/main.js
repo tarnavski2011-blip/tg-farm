@@ -1,158 +1,1354 @@
-// =======================
-// TELEGRAM INIT
-// =======================
+import "./style.css";
+
+const app = document.querySelector("#app");
 const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
+
+tg?.ready?.();
+tg?.expand?.();
+
+const API = "/api";
+const TELEGRAM_ID = String(
+  window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? "",
+);
+const BOT_NAME = "my_farm_clicker_bot";
+
+let uiState = {
+  modal: null,
+};
+
+const pendingActions = new Set();
+
+function withActionLock(key, fn) {
+  if (pendingActions.has(key)) return;
+  pendingActions.add(key);
+
+  Promise.resolve()
+    .then(fn)
+    .finally(() => {
+      pendingActions.delete(key);
+    });
 }
 
-// =======================
-// API URL
-// =======================
-const API = "https://tg-farm-api.onrender.com/api";
-
-// =======================
-// USER ID
-// =======================
-const userId =
-  tg?.initDataUnsafe?.user?.id ||
-  new URLSearchParams(window.location.search).get("user_id") ||
-  "123";
-
-// =======================
-// REFERRAL CODE (ГОЛОВНЕ)
-// =======================
-const urlParams = new URLSearchParams(window.location.search);
-const refCode = urlParams.get("ref");
-
-if (refCode) {
-  localStorage.setItem("ref_code", refCode);
+function tgHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "",
+  };
 }
 
-// =======================
-// APPLY REFERRAL (ОДИН РАЗ)
-// =======================
-async function applyReferral() {
-  const savedRef = localStorage.getItem("ref_code");
-  const applied = localStorage.getItem("ref_applied");
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 1800);
+}
 
-  if (!savedRef || applied) return;
+function fmtSeconds(sec) {
+  const s = Math.max(0, Number(sec || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
 
-  try {
-    await fetch(`${API}/referrals/apply`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  if (h > 0) return `${h}г ${m}хв ${ss}с`;
+  if (m > 0) return `${m}хв ${ss}с`;
+  return `${ss}с`;
+}
+
+function pct(v, total) {
+  const t = Math.max(1, Number(total || 1));
+  return Math.max(0, Math.min(100, Math.round((Number(v || 0) / t) * 100)));
+}
+
+function xpNeed(level) {
+  return 100 + level * 50;
+}
+
+function statCard(icon, label, value) {
+  return `
+    <div class="stat-card">
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-body">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value">${value}</div>
+      </div>
+    </div>
+  `;
+}
+
+function animalCard(
+  emoji,
+  title,
+  desc,
+  owned,
+  buyPrice,
+  upgradePrice,
+  idBuy,
+  idUpgrade,
+  cls,
+) {
+  return `
+    <div class="animal-card ${cls}">
+      <div class="animal-head">
+        <div class="animal-icon">${emoji}</div>
+        <div>
+          <div class="animal-title">${title}</div>
+          <div class="animal-desc">${desc}</div>
+        </div>
+      </div>
+      <div class="animal-owned">Кількість: <b>${owned}</b></div>
+      <button id="${idBuy}" class="animal-btn">Купити (${buyPrice})</button>
+      <button id="${idUpgrade}" class="animal-btn secondary-btn">Upgrade (${upgradePrice})</button>
+    </div>
+  `;
+}
+
+function resourceCard(icon, title, value, ready) {
+  return `
+    <div class="resource-card">
+      <div class="resource-top">
+        <div class="resource-icon">${icon}</div>
+        <div>
+          <div class="resource-title">${title}</div>
+          <div class="resource-ready">Готово: ${ready}</div>
+        </div>
+      </div>
+      <div class="resource-value">${value}</div>
+    </div>
+  `;
+}
+
+function achievementCard(a) {
+  const progress = Math.min(a.progress ?? 0, a.target ?? 1);
+  const percent = pct(progress, a.target);
+  const rewardText =
+    `${a.rewardCoins ? `💰 ${a.rewardCoins}` : ""}` +
+    `${a.rewardCoins && a.rewardDiamonds ? " · " : ""}` +
+    `${a.rewardDiamonds ? `💎 ${a.rewardDiamonds}` : ""}`;
+
+  return `
+    <div class="ach-card ${a.claimed ? "ach-claimed" : a.completed ? "ach-ready" : ""}">
+      <div class="ach-top">
+        <div>
+          <div class="ach-title">${a.title}</div>
+          <div class="ach-desc">${a.description}</div>
+        </div>
+        <div class="ach-reward">${rewardText || "Нагорода"}</div>
+      </div>
+      <div class="ach-progress-head">
+        <span>${progress} / ${a.target}</span>
+        <span>${percent}%</span>
+      </div>
+      <div class="ach-track">
+        <div class="ach-fill" style="width:${percent}%"></div>
+      </div>
+      <div class="ach-bottom">
+        <div class="ach-status">${a.claimed ? "Забрано" : a.completed ? "Готово" : "В процесі"}</div>
+        ${
+          a.claimed
+            ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
+            : a.completed
+              ? `<button class="ach-btn" data-ach-claim="${a.code}">Claim reward</button>`
+              : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function questCard(q) {
+  const completed = q.completed ?? q.done ?? false;
+  const claimed = !!q.claimed;
+  const progress = completed ? 1 : 0;
+  const percent = completed ? 100 : 0;
+
+  const rewardText =
+    `${q.rewardCoins ? `💰 ${q.rewardCoins}` : q.reward ? `💰 ${q.reward}` : ""}` +
+    `${(q.rewardCoins || q.reward) && q.rewardDiamonds ? " · " : ""}` +
+    `${q.rewardDiamonds ? `💎 ${q.rewardDiamonds}` : ""}` +
+    `${(q.rewardCoins || q.reward || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
+    `${q.rewardXp ? `⭐ ${q.rewardXp} XP` : ""}`;
+
+  return `
+    <div class="ach-card ${claimed ? "ach-claimed" : completed ? "ach-ready" : ""}">
+      <div class="ach-top">
+        <div>
+          <div class="ach-title">${q.title}</div>
+          <div class="ach-desc">${q.description ?? ""}</div>
+        </div>
+        <div class="ach-reward">${rewardText || "Нагорода"}</div>
+      </div>
+      <div class="ach-progress-head">
+        <span>${completed ? "Готово" : "В процесі"}</span>
+        <span>${percent}%</span>
+      </div>
+      <div class="ach-track">
+        <div class="ach-fill" style="width:${percent}%"></div>
+      </div>
+      <div class="ach-bottom">
+        <div class="ach-status">${claimed ? "Забрано" : completed ? "Готово" : "Ще не готово"}</div>
+        ${
+          claimed
+            ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
+            : completed
+              ? `<button class="ach-btn" data-quest-claim="${q.code}">Claim quest</button>`
+              : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function shopItemCard(item) {
+  const price =
+    item.priceCoins != null
+      ? `💰 ${item.priceCoins}`
+      : item.price != null && item.currency === "coins"
+        ? `💰 ${item.price}`
+        : item.priceDiamonds != null
+          ? `💎 ${item.priceDiamonds}`
+          : item.currency === "diamonds"
+            ? `💎 ${item.price ?? 0}`
+            : `💰 ${item.price ?? 0}`;
+
+  return `
+    <div class="ach-card">
+      <div class="ach-top">
+        <div>
+          <div class="ach-title">${item.title}</div>
+          <div class="ach-desc">${item.description ?? "Купити в магазині"}</div>
+        </div>
+        <div class="ach-reward">${price}</div>
+      </div>
+      <div class="ach-bottom">
+        <div class="ach-status">Shop item</div>
+        <button class="ach-btn" data-shop-buy="${item.code}">Buy</button>
+      </div>
+    </div>
+  `;
+}
+
+function wheelCard(wheelState) {
+  const rewards = (wheelState?.rewards ?? []).map((r) =>
+    typeof r === "string" ? r : r.label,
+  );
+  const cooldown = wheelState?.cooldownSec ?? wheelState?.cooldown ?? 0;
+  const disabled = cooldown > 0;
+  const buttonText = disabled ? `Cooldown ${fmtSeconds(cooldown)}` : `Spin`;
+
+  const shownRewards = rewards.length
+    ? rewards
+    : [
+        "50 coins",
+        "100 coins",
+        "200 coins",
+        "5 diamonds",
+        "10 diamonds",
+        "Nothing",
+      ];
+
+  return `
+    <div class="wheel-box">
+      <div class="wheel-title">Lucky Wheel</div>
+      <div class="wheel-sub">Можна виграти: ${shownRewards.join(" • ")}</div>
+      <div class="wheel-casino-wrap">
+        <div class="wheel-pointer-top">▼</div>
+        <div id="casinoWheel" class="casino-wheel">
+          ${shownRewards
+            .slice(0, 6)
+            .map(
+              (label, i) => `
+                <div class="wheel-segment seg-${i}">
+                  <span>${label}</span>
+                </div>
+              `,
+            )
+            .join("")}
+          <div class="wheel-center">🎰</div>
+        </div>
+      </div>
+      <button id="spinWheelBtn" class="primary-btn ${disabled ? "" : "green"}" ${disabled ? "disabled" : ""}>
+        ${buttonText}
+      </button>
+    </div>
+  `;
+}
+
+function productionSection(state) {
+  const animals = state.animals ?? {};
+  const ready = state.ready ?? {};
+
+  const row = (emoji, title, owned, rate, unit) => `
+    <div class="prod-row">
+      <div class="prod-left">
+        <div class="prod-icon">${emoji}</div>
+        <div>
+          <div class="prod-title">${title}</div>
+          <div class="prod-owned">x${owned}</div>
+        </div>
+      </div>
+      <div class="prod-right">Готово: ${rate} ${unit}</div>
+    </div>
+  `;
+
+  return `
+    <section class="panel">
+      <div class="panel-title">🌾 Farm Production</div>
+      <div class="prod-grid">
+        ${row("🐔", "Chicken", animals.chicken ?? 0, ready.eggsReady ?? 0, "eggs")}
+        ${row("🐑", "Sheep", animals.sheep ?? 0, ready.woolReady ?? 0, "wool")}
+        ${row("🐄", "Cow", animals.cow ?? 0, ready.milkReady ?? 0, "milk")}
+      </div>
+    </section>
+  `;
+}
+
+function boostersSection(boostersData) {
+  const item = (icon, title, active, leftSec) => `
+    <div class="boost-row ${active ? "boost-active" : ""}">
+      <div class="boost-left">
+        <div class="boost-icon">${icon}</div>
+        <div>
+          <div class="boost-title">${title}</div>
+          <div class="boost-status">${active ? "Активний" : "Неактивний"}</div>
+        </div>
+      </div>
+      <div class="boost-right">${active ? fmtSeconds(leftSec ?? 0) : "—"}</div>
+    </div>
+  `;
+
+  return `
+    <section class="panel">
+      <div class="panel-title">🚀 Boosters</div>
+      <div class="boost-grid">
+        ${item("⚡", "x2 Coins", boostersData?.boost?.active, boostersData?.boost?.leftSec)}
+        ${item("🤖", "Auto Collect", boostersData?.autoCollect?.active, boostersData?.autoCollect?.leftSec)}
+        ${item("👑", "VIP", boostersData?.vip?.active, boostersData?.vip?.leftSec)}
+        ${item("🌽", "Feed Active", boostersData?.feed?.active, boostersData?.feed?.leftSec)}
+      </div>
+    </section>
+  `;
+}
+
+function leaderboardSection(items, myTelegramId) {
+  const rows = (items || [])
+    .slice(0, 10)
+    .map((u, i) => {
+      const idStr = String(u.telegramId ?? "");
+      const isMe = myTelegramId && idStr === myTelegramId;
+      const medal =
+        i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+      const shortId = idStr ? `ID ${idStr.slice(-5)}` : "Player";
+      return `
+        <div class="lb-row ${isMe ? "lb-me" : ""}">
+          <div class="lb-rank">${medal}</div>
+          <div class="lb-user">
+            <div class="lb-name">${isMe ? "Ти" : shortId}</div>
+            <div class="lb-level">Рівень ${u.level ?? 1}</div>
+          </div>
+          <div class="lb-coins">${u.coins ?? 0} 💰</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <section class="panel">
+      <div class="panel-title">🏆 Топ гравців</div>
+      <div class="leaderboard">
+        ${rows || `<div class="lb-empty">Поки що немає даних</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function xpSection(level, xp) {
+  const need = xpNeed(level);
+  const percent = pct(xp, need);
+  return `
+    <section class="panel">
+      <div class="panel-title">⭐ Рівень гравця</div>
+      <div class="xp-header">
+        <div class="xp-level-badge">LVL ${level}</div>
+        <div class="xp-meta">
+          <div class="xp-title">Прогрес рівня</div>
+          <div class="xp-sub">${xp} / ${need} XP</div>
+        </div>
+      </div>
+      <div class="xp-track">
+        <div class="xp-fill" style="width:${percent}%"></div>
+      </div>
+    </section>
+  `;
+}
+
+function dailyDaysRow(dailyLoginData) {
+  const rewards = dailyLoginData?.rewards ?? [];
+  const streak = Number(dailyLoginData?.streak ?? 0);
+  const canClaim = !!dailyLoginData?.canClaim;
+  const nextDay = Number(dailyLoginData?.nextDay ?? 1);
+
+  if (!rewards.length) return "";
+
+  return `
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">
+      ${rewards
+        .map((r) => {
+          const claimed = r.day < nextDay || (!canClaim && r.day === streak);
+          const current = canClaim && r.day === nextDay;
+
+          return `
+            <div style="
+              padding:10px 6px;
+              border-radius:14px;
+              text-align:center;
+              border:1px solid rgba(255,255,255,0.08);
+              background:${claimed ? "rgba(55,201,93,0.18)" : current ? "rgba(93,156,255,0.22)" : "rgba(255,255,255,0.05)"};
+            ">
+              <div style="font-size:12px;color:#aebedd;">${r.day}</div>
+              <div style="margin-top:6px;font-size:12px;font-weight:800;">
+                ${r.coins ? `💰${r.coins}` : ""}
+                ${r.diamonds ? `<br>💎${r.diamonds}` : ""}
+                ${r.freeWheelSpin ? `<br>🎰` : ""}
+              </div>
+              <div style="margin-top:6px;font-size:11px;color:#cbd5e1;">
+                ${claimed ? "✓" : current ? "зараз" : ""}
+              </div>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderModal(
+  state,
+  achievements = [],
+  referralsData = null,
+  wheelState = null,
+  questsData = { items: [] },
+  shopData = { items: [] },
+  premiumProductsData = { items: [] },
+) {
+  const animals = state.animals ?? {};
+  const storage = state.storage ?? {};
+  const ready = state.ready ?? {};
+
+  if (!uiState.modal) return "";
+
+  let title = "";
+  let body = "";
+
+  if (uiState.modal === "animals") {
+    title = "🐾 Тварини";
+    body = `
+      <div class="modal-grid">
+        ${animalCard("🐔", "Курка", "Дає яйця", animals.chicken ?? 0, 100, 100, "buyChicken", "upgradeChicken", "green-card")}
+        ${animalCard("🐑", "Вівця", "Дає шерсть", animals.sheep ?? 0, 500, 200, "buySheep", "upgradeSheep", "blue-card")}
+        ${animalCard("🐮", "Корова", "Дає молоко", animals.cow ?? 0, 1000, 400, "buyCow", "upgradeCow", "orange-card")}
+      </div>
+    `;
+  }
+
+  if (uiState.modal === "storage") {
+    title = "📦 Склад";
+    body = `
+      <div class="modal-grid">
+        ${resourceCard("🥚", "Яйця", storage.eggs ?? 0, ready.eggsReady ?? 0)}
+        ${resourceCard("🧶", "Шерсть", storage.wool ?? 0, ready.woolReady ?? 0)}
+        ${resourceCard("🥛", "Молоко", storage.milk ?? 0, ready.milkReady ?? 0)}
+      </div>
+      <div class="warehouse">
+        <div class="warehouse-head">
+          <span>Заповнення складу</span>
+          <span>${storage.total ?? 0} / ${storage.capacity ?? 0}</span>
+        </div>
+        <div class="warehouse-track">
+          <div class="warehouse-fill" style="width:${pct(storage.total ?? 0, storage.capacity ?? 0)}%"></div>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="collectBtn" class="secondary-btn">📥 Зібрати в склад</button>
+        <button id="sellBtn" class="secondary-btn">📦 Продати все</button>
+      </div>
+    `;
+  }
+
+  if (uiState.modal === "achievements") {
+    title = "🏆 Achievements";
+    body = `<div class="ach-grid">${achievements.map(achievementCard).join("")}</div>`;
+  }
+
+  if (uiState.modal === "quests") {
+    title = "📜 Quests";
+    body = `<div class="ach-grid">${(questsData?.items ?? questsData?.quests ?? []).map(questCard).join("")}</div>`;
+  }
+
+  if (uiState.modal === "referrals") {
+    const myCode = String(referralsData?.myCode ?? TELEGRAM_ID ?? "");
+    const myLink = `https://t.me/${BOT_NAME}?start=ref_${myCode}`;
+    const list = referralsData?.refs ?? [];
+    const total = referralsData?.totalRefs ?? 0;
+
+    title = "👥 Referrals";
+    body = `
+      <div class="panel">
+        <div class="panel-title">Мій код</div>
+        <div class="panel-sub" style="font-size:26px;font-weight:900;color:white;">${myCode}</div>
+        <div class="panel-sub">Запрошено друзів: ${total}</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Моє посилання</div>
+        <div class="ref-box">
+          <input id="refLinkInput" class="ref-input" value="${myLink}" readonly />
+          <button id="copyRefBtn" class="secondary-btn">Копія</button>
+        </div>
+        <div class="panel-actions" style="margin-top:12px;">
+          <button id="shareRefBtn" class="primary-btn green">Поділитися</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Ввести код</div>
+        <div class="ref-box">
+          <input id="refCodeInput" class="ref-input" placeholder="Введи код друга" />
+          <button id="applyRefBtn" class="secondary-btn">Застосувати</button>
+        </div>
+      </div>
+
+      <div class="ach-grid">
+        ${
+          list.length
+            ? list
+                .map(
+                  (r) => `
+              <div class="lb-row">
+                <div class="lb-rank">👤</div>
+                <div class="lb-user">
+                  <div class="lb-name">Referral #${r.id}</div>
+                  <div class="lb-level">${new Date(r.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+            `,
+                )
+                .join("")
+            : `<div class="lb-empty">Ще немає рефералів</div>`
+        }
+      </div>
+    `;
+  }
+
+  if (uiState.modal === "wheel") {
+    title = "🎰 Lucky Wheel";
+    body = wheelCard(wheelState);
+  }
+
+  if (uiState.modal === "shop") {
+    title = "🛒 Shop";
+    body = `
+      <div class="panel">
+        <div class="panel-title">Баланс</div>
+        <div class="panel-sub">💰 ${state.coins ?? 0} · 💎 ${state.diamonds ?? 0}</div>
+      </div>
+
+      <div class="ach-grid">
+        ${(shopData?.items ?? []).map(shopItemCard).join("")}
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">⭐ Premium Shop</div>
+        <div class="ach-grid">
+          ${(premiumProductsData?.items ?? [])
+            .map(
+              (item) => `
+                <div class="ach-card">
+                  <div class="ach-top">
+                    <div>
+                      <div class="ach-title">${item.title}</div>
+                      <div class="ach-desc">${item.description}</div>
+                    </div>
+                    <div class="ach-reward">⭐ ${item.starsAmount}</div>
+                  </div>
+                  <div class="ach-bottom">
+                    <div class="ach-status">Telegram Stars</div>
+                    <button class="ach-btn" data-stars-buy="${item.code}">Buy with Stars</button>
+                  </div>
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal-window">
+        <div class="modal-header">
+          <div class="modal-title">${title}</div>
+          <button class="modal-close" id="modalClose">✕</button>
+        </div>
+        <div class="modal-body">
+          ${body}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function render(
+  state,
+  levelData = { level: 1, xp: 0 },
+  leaderboard = [],
+  achievements = [],
+  referralsData = null,
+  wheelState = null,
+  questsData = { items: [] },
+  shopData = { items: [] },
+  premiumProductsData = { items: [] },
+  dailyLoginData = {
+    streak: 0,
+    claimedToday: false,
+    nextDay: 1,
+    reward: null,
+    rewards: [],
+    canClaim: true,
+  },
+  boostersData = {
+    boost: { active: false, leftSec: 0 },
+    autoCollect: { active: false, leftSec: 0 },
+    vip: { active: false, leftSec: 0 },
+    feed: { active: false, leftSec: 0 },
+  },
+) {
+  const canClaimDaily = dailyLoginData.canClaim ?? !dailyLoginData.claimedToday;
+
+  app.innerHTML = `
+    <div class="screen">
+      <section class="hero">
+        <div class="hero-left">
+          <div class="hero-logo">🚜</div>
+          <div>
+            <div class="hero-title">Farm Game</div>
+            <div class="hero-sub">Ферма в Telegram Mini App</div>
+          </div>
+        </div>
+        <div class="hero-bell">🏆</div>
+      </section>
+
+      <section class="top-stats">
+        ${statCard("🪙", "Coins", state.coins ?? 0)}
+        ${statCard("💎", "Diamonds", state.diamonds ?? 0)}
+        ${statCard("⭐", "Points", state.points ?? 0)}
+      </section>
+
+      ${xpSection(levelData.level ?? state.level ?? 1, levelData.xp ?? state.xp ?? 0)}
+      ${productionSection(state)}
+      ${boostersSection(boostersData)}
+
+      <section class="panel">
+        <div class="panel-title">📂 Меню гри</div>
+        <div class="menu-grid">
+          <button id="tapBtn" class="menu-btn green-btn">⚡ Tap</button>
+          <button id="openAnimalsBtn" class="menu-btn">🐾 Тварини</button>
+          <button id="openStorageBtn" class="menu-btn">📦 Склад</button>
+          <button id="openAchievementsBtn" class="menu-btn">🏆 Achievements</button>
+          <button id="openQuestsBtn" class="menu-btn">📜 Quests</button>
+          <button id="openReferralsBtn" class="menu-btn">👥 Referrals</button>
+          <button id="openWheelBtn" class="menu-btn">🎰 Lucky Wheel</button>
+          <button id="openShopBtn" class="menu-btn">🛒 Shop</button>
+          <button id="dailyLoginTopBtn" class="menu-btn">🎁 Daily Login</button>
+        </div>
+      </section>
+
+      ${leaderboardSection(leaderboard, TELEGRAM_ID)}
+
+      <section class="panel">
+        <div class="panel-title">🎁 Daily Login</div>
+        <div class="daily-box">
+          <div class="daily-circle">${dailyLoginData.nextDay ?? 1}</div>
+          <div class="daily-text">
+            <div class="daily-title">Day ${dailyLoginData.nextDay ?? 1}</div>
+            <div class="daily-sub">
+              Reward:
+              ${dailyLoginData.reward?.coins ? `💰 ${dailyLoginData.reward.coins}` : ""}
+              ${dailyLoginData.reward?.diamonds ? ` 💎 ${dailyLoginData.reward.diamonds}` : ""}
+              ${dailyLoginData.reward?.freeWheelSpin ? ` 🎰 Free wheel spin` : ""}
+            </div>
+          </div>
+          <button id="dailyLoginBtn" class="secondary-btn" ${canClaimDaily ? "" : "disabled"}>
+            ${canClaimDaily ? "Claim login" : "Забрано"}
+          </button>
+        </div>
+
+        ${dailyDaysRow(dailyLoginData)}
+      </section>
+
+      ${renderModal(state, achievements, referralsData, wheelState, questsData, shopData, premiumProductsData)}
+
+      <div class="toast" id="toast"></div>
+    </div>
+  `;
+}
+
+async function apiGet(url) {
+  const res = await fetch(url, {
+    headers: {
+      "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "",
+    },
+  });
+  const json = await res.json().catch(() => ({}));
+  return { ok: res.ok, json };
+}
+
+async function apiPost(url, body = {}) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: tgHeaders(),
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  return { ok: res.ok, json };
+}
+
+function showOfflinePopup(minutes, added) {
+  const old = document.getElementById("offlinePopup");
+  if (old) old.remove();
+
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const timeText = h > 0 ? `${h}г ${m}хв` : `${m}хв`;
+
+  const html = `
+    <div class="modal-backdrop" id="offlinePopup">
+      <div class="modal-window offline-popup">
+        <div class="modal-header">
+          <div class="modal-title">💰 Welcome back</div>
+          <button class="modal-close" id="offlineCloseBtn">✕</button>
+        </div>
+        <div class="offline-box">
+          <div class="offline-time">Офлайн: <b>${timeText}</b></div>
+          <div class="offline-rewards">
+            <div class="offline-reward">🥚 +${added.eggs ?? 0}</div>
+            <div class="offline-reward">🧶 +${added.wool ?? 0}</div>
+            <div class="offline-reward">🥛 +${added.milk ?? 0}</div>
+          </div>
+          <button id="offlineOkBtn" class="primary-btn green">Забрати</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", html);
+  document.getElementById("offlineCloseBtn")?.addEventListener("click", () => {
+    document.getElementById("offlinePopup")?.remove();
+  });
+  document.getElementById("offlineOkBtn")?.addEventListener("click", () => {
+    document.getElementById("offlinePopup")?.remove();
+  });
+}
+
+function showTutorialPopup() {
+  const alreadySeen = localStorage.getItem("farm_tutorial_seen");
+  if (alreadySeen === "1") return;
+
+  const html = `
+    <div class="modal-backdrop" id="tutorialPopup">
+      <div class="modal-window tutorial-popup">
+        <div class="modal-header">
+          <div class="modal-title">👨‍🌾 Welcome to Farm Game</div>
+        </div>
+        <div class="tutorial-box">
+          <div class="tutorial-step">1️⃣ Tap, щоб заробити перші coins</div>
+          <div class="tutorial-step">2️⃣ Купи курку у вкладці Animals</div>
+          <div class="tutorial-step">3️⃣ Купи корм, щоб тварини працювали</div>
+          <div class="tutorial-step">4️⃣ Збери ресурси і продай їх</div>
+          <button id="tutorialStartBtn" class="primary-btn green">Почати</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", html);
+  document.getElementById("tutorialStartBtn")?.addEventListener("click", () => {
+    localStorage.setItem("farm_tutorial_seen", "1");
+    document.getElementById("tutorialPopup")?.remove();
+  });
+}
+
+function normalizeWheelState(json) {
+  return {
+    costDiamonds: json?.costDiamonds ?? 0,
+    cooldownSec: json?.cooldownSec ?? json?.cooldown ?? 0,
+    rewards: Array.isArray(json?.rewards)
+      ? json.rewards.map((r) => (typeof r === "string" ? { label: r } : r))
+      : [],
+  };
+}
+
+async function applyReferralFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = String(params.get("ref") ?? "").trim();
+
+  if (!ref) return;
+  if (!TELEGRAM_ID) return;
+  if (ref === TELEGRAM_ID) return;
+
+  const sessionKey = `farm_ref_applied_${ref}`;
+  if (sessionStorage.getItem(sessionKey) === "1") return;
+
+  sessionStorage.setItem(sessionKey, "1");
+
+  const { ok, json } = await apiPost(`${API}/referrals/apply`, {
+    code: ref,
+  });
+
+  if (ok) {
+    showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
+  }
+}
+
+async function loadState() {
+  const stateRes = await apiGet(`${API}/state`);
+  if (!stateRes.ok) return showToast(stateRes.json?.error || "State error");
+
+  let levelData = {
+    level: stateRes.json?.level ?? 1,
+    xp: stateRes.json?.xp ?? 0,
+  };
+
+  let leaderboard = [];
+  const lbRes = await apiGet(`${API}/leaderboard`);
+  if (lbRes.ok && Array.isArray(lbRes.json)) leaderboard = lbRes.json;
+
+  let achievements = [];
+  const achRes = await apiGet(`${API}/achievements`);
+  if (achRes.ok && Array.isArray(achRes.json?.items)) {
+    achievements = achRes.json.items;
+  }
+
+  let questsData = { items: [] };
+  const questRes = await apiGet(`${API}/quests`);
+  if (questRes.ok) questsData = questRes.json;
+
+  let referralsData = { myCode: "", totalRefs: 0, refs: [] };
+  const refRes = await apiGet(`${API}/referrals`);
+  if (refRes.ok) referralsData = refRes.json;
+
+  let wheelState = { costDiamonds: 0, cooldownSec: 0, rewards: [] };
+  const wheelRes = await apiGet(`${API}/wheel/state`);
+  if (wheelRes.ok) wheelState = normalizeWheelState(wheelRes.json);
+
+  let shopData = { items: [] };
+  const shopRes = await apiGet(`${API}/shop`);
+  if (shopRes.ok) shopData = shopRes.json;
+
+  let premiumProductsData = { items: [] };
+  const premiumProductsRes = await apiGet(`${API}/payments/products`);
+  if (premiumProductsRes.ok) premiumProductsData = premiumProductsRes.json;
+
+  let dailyLoginData = {
+    streak: 0,
+    claimedToday: false,
+    nextDay: 1,
+    reward: null,
+    rewards: [],
+    canClaim: true,
+  };
+
+  const dailyRes = await apiGet(`${API}/daily/status`);
+  if (dailyRes.ok) {
+    dailyLoginData = { ...dailyLoginData, ...dailyRes.json };
+  }
+
+  let boostersData = {
+    boost: { active: false, leftSec: 0 },
+    autoCollect: { active: false, leftSec: 0 },
+    vip: { active: false, leftSec: 0 },
+    feed: { active: false, leftSec: 0 },
+  };
+
+  const boostersRes = await apiGet(`${API}/boosters/status`);
+  if (boostersRes.ok) {
+    boostersData = boostersRes.json;
+  } else {
+    boostersData = {
+      boost: {
+        active: !!stateRes.json?.boost?.active,
+        leftSec: stateRes.json?.boost?.leftSec ?? 0,
       },
-      body: JSON.stringify({
-        userId,
-        refCode: savedRef,
-      }),
+      autoCollect: {
+        active: !!stateRes.json?.autoCollect?.active,
+        leftSec: stateRes.json?.autoCollect?.leftSec ?? 0,
+      },
+      vip: {
+        active: !!stateRes.json?.vip?.active,
+        leftSec: stateRes.json?.vip?.leftSec ?? 0,
+      },
+      feed: {
+        active: !!stateRes.json?.feed?.active,
+        leftSec: stateRes.json?.feed?.leftSec ?? 0,
+      },
+    };
+  }
+
+  render(
+    stateRes.json,
+    levelData,
+    leaderboard,
+    achievements,
+    referralsData,
+    wheelState,
+    questsData,
+    shopData,
+    premiumProductsData,
+    dailyLoginData,
+    boostersData,
+  );
+
+  await applyReferralFromUrl();
+
+  const off = stateRes.json?.offline;
+  if (off && off.minutes > 0) {
+    const added = off.added ?? {};
+    const total = (added.eggs ?? 0) + (added.wool ?? 0) + (added.milk ?? 0);
+    if (total > 0) showOfflinePopup(off.minutes, added);
+  }
+
+  bindHandlers();
+  showTutorialPopup();
+}
+
+function openModal(type) {
+  uiState.modal = type;
+  loadState();
+}
+
+function closeModal() {
+  uiState.modal = null;
+  loadState();
+}
+
+function animateCasinoWheelToReward(rewardLabel, rewards) {
+  return new Promise((resolve) => {
+    const wheel = document.getElementById("casinoWheel");
+    if (!wheel) return resolve();
+
+    const labels = rewards.map((r) => (typeof r === "string" ? r : r.label));
+    let index = labels.findIndex((x) => x === rewardLabel);
+    if (index < 0) index = 0;
+
+    const segmentAngle = 360 / Math.max(1, labels.length || 6);
+    const targetAngle = 360 - index * segmentAngle - segmentAngle / 2;
+    const spins = 5;
+    const finalDeg = spins * 360 + targetAngle;
+
+    wheel.style.transition = "transform 4s cubic-bezier(0.12, 0.8, 0.18, 1)";
+    wheel.style.transform = `rotate(${finalDeg}deg)`;
+
+    setTimeout(() => resolve(), 4000);
+  });
+}
+
+function bindHandlers() {
+  document
+    .getElementById("tapBtn")
+    ?.addEventListener("click", () => withActionLock("tap", tap));
+
+  document
+    .getElementById("openAnimalsBtn")
+    ?.addEventListener("click", () => openModal("animals"));
+  document
+    .getElementById("openStorageBtn")
+    ?.addEventListener("click", () => openModal("storage"));
+  document
+    .getElementById("openAchievementsBtn")
+    ?.addEventListener("click", () => openModal("achievements"));
+  document
+    .getElementById("openQuestsBtn")
+    ?.addEventListener("click", () => openModal("quests"));
+  document
+    .getElementById("openReferralsBtn")
+    ?.addEventListener("click", () => openModal("referrals"));
+  document
+    .getElementById("openWheelBtn")
+    ?.addEventListener("click", () => openModal("wheel"));
+  document
+    .getElementById("openShopBtn")
+    ?.addEventListener("click", () => openModal("shop"));
+  document
+    .getElementById("dailyLoginBtn")
+    ?.addEventListener("click", () =>
+      withActionLock("dailyLogin", claimDailyLogin),
+    );
+  document
+    .getElementById("dailyLoginTopBtn")
+    ?.addEventListener("click", () =>
+      withActionLock("dailyLoginTop", claimDailyLogin),
+    );
+
+  document.getElementById("modalClose")?.addEventListener("click", closeModal);
+  document.getElementById("modalBackdrop")?.addEventListener("click", (e) => {
+    if (e.target?.id === "modalBackdrop") closeModal();
+  });
+
+  document
+    .getElementById("buyChicken")
+    ?.addEventListener("click", () =>
+      withActionLock("buyChicken", () => buy("CHICKEN")),
+    );
+  document
+    .getElementById("buySheep")
+    ?.addEventListener("click", () =>
+      withActionLock("buySheep", () => buy("SHEEP")),
+    );
+  document
+    .getElementById("buyCow")
+    ?.addEventListener("click", () =>
+      withActionLock("buyCow", () => buy("COW")),
+    );
+
+  document
+    .getElementById("upgradeChicken")
+    ?.addEventListener("click", () =>
+      withActionLock("upgradeChicken", () => upgrade("CHICKEN")),
+    );
+  document
+    .getElementById("upgradeSheep")
+    ?.addEventListener("click", () =>
+      withActionLock("upgradeSheep", () => upgrade("SHEEP")),
+    );
+  document
+    .getElementById("upgradeCow")
+    ?.addEventListener("click", () =>
+      withActionLock("upgradeCow", () => upgrade("COW")),
+    );
+
+  document
+    .getElementById("collectBtn")
+    ?.addEventListener("click", () => withActionLock("collect", collect));
+  document
+    .getElementById("sellBtn")
+    ?.addEventListener("click", () => withActionLock("sellAll", sellAll));
+
+  document.getElementById("copyRefBtn")?.addEventListener("click", async () => {
+    const input = document.getElementById("refLinkInput");
+    const value = input?.value ?? "";
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast("Посилання скопійовано");
+    } catch {
+      showToast("Помилка копіювання");
+    }
+  });
+
+  document
+    .getElementById("shareRefBtn")
+    ?.addEventListener("click", async () => {
+      const input = document.getElementById("refLinkInput");
+      const value = input?.value ?? "";
+      if (!value) return;
+
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(
+          `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
+        );
+        return;
+      }
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "My Farm Clicker",
+            text: "🚜 Заходь у мою гру My Farm Clicker",
+            url: value,
+          });
+          return;
+        } catch {}
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+        showToast("Посилання скопійовано");
+      } catch {
+        showToast("Не вдалося поділитися");
+      }
     });
 
-    localStorage.setItem("ref_applied", "1");
-    console.log("Referral applied:", savedRef);
-  } catch (e) {
-    console.log("Referral error", e);
-  }
-}
+  document
+    .getElementById("applyRefBtn")
+    ?.addEventListener("click", async () => {
+      const input = document.getElementById("refCodeInput");
+      const code = String(input?.value ?? "").trim();
 
-// =======================
-// STATE LOAD
-// =======================
-async function loadState() {
-  const res = await fetch(`${API}/state?userId=${userId}`);
-  const data = await res.json();
+      if (!code) {
+        showToast("Введи код");
+        return;
+      }
 
-  document.getElementById("coins").innerText = data.coins;
-  document.getElementById("diamonds").innerText = data.diamonds;
-  document.getElementById("points").innerText = data.points;
-  document.getElementById("xp").innerText = data.xp;
-}
+      const { ok, json } = await apiPost(`${API}/referrals/apply`, { code });
 
-// =======================
-// TAP
-// =======================
-async function tap() {
-  await fetch(`${API}/tap`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ userId }),
-  });
+      if (!ok) {
+        showToast(json?.error || "Помилка реферала");
+        return;
+      }
 
-  loadState();
-}
+      showToast(`🎁 +${json.rewardYou ?? 0} coins`);
+      loadState();
+    });
 
-document.getElementById("tapBtn")?.addEventListener("click", tap);
+  document
+    .getElementById("spinWheelBtn")
+    ?.addEventListener("click", () => withActionLock("wheel", spinWheel));
 
-// =======================
-// DAILY LOGIN
-// =======================
-async function dailyLogin() {
-  const res = await fetch(`${API}/daily-login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ userId }),
-  });
-
-  const data = await res.json();
-  alert(`День ${data.day} отримано! +${data.reward} coins`);
-
-  loadState();
-}
-
-// =======================
-// WHEEL
-// =======================
-async function spinWheel() {
-  const res = await fetch(`${API}/wheel`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ userId }),
-  });
-
-  const data = await res.json();
-
-  alert(`Ти виграв: ${data.reward} coins 🎉`);
-  loadState();
-}
-
-// =======================
-// BUY DIAMONDS (UI only)
-// =======================
-function buyDiamonds(amount) {
-  alert(`Покупка ${amount} diamonds (поки тільки UI)`);
-}
-
-// =======================
-// SHARE REFERRAL
-// =======================
-function shareReferral() {
-  const link = `https://t.me/my_farm_clicker_bot?start=ref_${userId}`;
-
-  if (tg) {
-    tg.openTelegramLink(
-      `https://t.me/share/url?url=${encodeURIComponent(link)}`,
+  document.querySelectorAll("[data-shop-buy]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      withActionLock(`shop:${btn.getAttribute("data-shop-buy")}`, () =>
+        buyShopItem(btn.getAttribute("data-shop-buy") || ""),
+      ),
     );
-  } else {
-    navigator.clipboard.writeText(link);
-    alert("Скопійовано!");
+  });
+
+  document.querySelectorAll("[data-stars-buy]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      withActionLock(`stars:${btn.getAttribute("data-stars-buy")}`, () =>
+        buyWithStars(btn.getAttribute("data-stars-buy") || ""),
+      ),
+    );
+  });
+
+  document.querySelectorAll("[data-quest-claim]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      withActionLock(`quest:${btn.getAttribute("data-quest-claim")}`, () =>
+        claimQuest(btn.getAttribute("data-quest-claim") || ""),
+      ),
+    );
+  });
+
+  document.querySelectorAll("[data-ach-claim]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      withActionLock(`ach:${btn.getAttribute("data-ach-claim")}`, () =>
+        claimAchievement(btn.getAttribute("data-ach-claim") || ""),
+      ),
+    );
+  });
+}
+
+async function tap() {
+  const variants = [`${API}/tap`, `${API}/collect`];
+
+  for (const url of variants) {
+    const { ok, json } = await apiPost(url, { telegramId: TELEGRAM_ID });
+    if (!ok) continue;
+
+    showToast(`+${json.coinsAdded ?? json.added ?? json.coins ?? 1} coin`);
+    loadState();
+    return;
   }
+
+  showToast("Tap error");
 }
 
-// =======================
-// INIT
-// =======================
-async function init() {
-  await applyReferral();
-  await loadState();
+async function buy(type) {
+  const variants = [`${API}/animals/buy`, `${API}/buy-animal`];
+
+  for (const url of variants) {
+    const { ok, json } = await apiPost(url, {
+      type,
+      telegramId: TELEGRAM_ID,
+    });
+    if (!ok) continue;
+
+    const names = {
+      CHICKEN: "Курка",
+      SHEEP: "Вівця",
+      COW: "Корова",
+    };
+    showToast(`Куплено: ${names[type]}`);
+    loadState();
+    return;
+  }
+
+  showToast("Buy error");
 }
 
-init();
+async function upgrade(type) {
+  const variants = [`${API}/animal-upgrade`];
+
+  for (const url of variants) {
+    const { ok, json } = await apiPost(url, {
+      type,
+      telegramId: TELEGRAM_ID,
+    });
+    if (!ok) continue;
+
+    showToast(`Upgrade! Level ${json.level}`);
+    loadState();
+    return;
+  }
+
+  showToast("Upgrade error");
+}
+
+async function collect() {
+  const variants = [`${API}/collect/claim`, `${API}/collect`];
+
+  for (const url of variants) {
+    const { ok, json } = await apiPost(url, {
+      telegramId: TELEGRAM_ID,
+    });
+    if (!ok) continue;
+
+    const a = json?.added ?? json ?? {};
+    if (a.eggs != null || a.wool != null || a.milk != null) {
+      showToast(`+🥚${a.eggs ?? 0} +🧶${a.wool ?? 0} +🥛${a.milk ?? 0}`);
+    } else {
+      showToast(`+${json?.added ?? 1}`);
+    }
+    loadState();
+    return;
+  }
+
+  showToast("Collect error");
+}
+
+async function sellAll() {
+  const variants = [`${API}/sell/all`, `${API}/sell`];
+
+  for (const url of variants) {
+    const { ok, json } = await apiPost(url, {
+      telegramId: TELEGRAM_ID,
+    });
+    if (!ok) continue;
+
+    showToast(`💰 +${json.earned ?? json.totalCoins ?? 0}`);
+    loadState();
+    return;
+  }
+
+  showToast("Sell error");
+}
+
+async function claimAchievement(code) {
+  const { ok, json } = await apiPost(`${API}/achievements/claim`, {
+    code,
+    telegramId: TELEGRAM_ID,
+  });
+  if (!ok) return showToast(json?.error || "Claim error");
+  showToast(
+    `🎉 Нагорода: +${json.rewardCoins ?? 0} coins, +${json.rewardDiamonds ?? 0} diamonds`,
+  );
+  loadState();
+}
+
+async function claimQuest(code) {
+  const { ok, json } = await apiPost(`${API}/quests/claim`, {
+    code,
+    telegramId: TELEGRAM_ID,
+  });
+  if (!ok) return showToast(json?.error || "Quest error");
+  showToast(
+    `📜 +${json.rewardCoins ?? json.reward ?? 0} coins +${json.rewardDiamonds ?? 0} diamonds +${json.rewardXp ?? 0} XP`,
+  );
+  loadState();
+}
+
+async function spinWheel() {
+  const spinBtn = document.getElementById("spinWheelBtn");
+  if (spinBtn) spinBtn.disabled = true;
+
+  const wheelStateRes = await apiGet(`${API}/wheel/state`);
+  const rewards = wheelStateRes.ok
+    ? normalizeWheelState(wheelStateRes.json).rewards
+    : [];
+
+  const res = await apiPost(`${API}/wheel/spin`, { telegramId: TELEGRAM_ID });
+  if (!res.ok) {
+    showToast(res.json?.error || "Wheel error");
+    if (spinBtn) spinBtn.disabled = false;
+    return;
+  }
+
+  const reward =
+    typeof res.json.reward === "string"
+      ? res.json.reward
+      : res.json.reward?.label || "Reward";
+
+  await animateCasinoWheelToReward(reward, rewards);
+  showToast(`🎰 ${reward}`);
+  loadState();
+}
+
+async function buyShopItem(code) {
+  const { ok, json } = await apiPost(`${API}/shop/buy`, {
+    code,
+    telegramId: TELEGRAM_ID,
+  });
+  if (!ok) return showToast(json?.error || "Shop error");
+  showToast(`🛒 Куплено: ${json.item?.title ?? json.title ?? code}`);
+  loadState();
+}
+
+async function claimDailyLogin() {
+  const { ok, json } = await apiPost(`${API}/daily/claim`, {
+    telegramId: TELEGRAM_ID,
+  });
+
+  if (!ok) {
+    return showToast(json?.error || "Daily login error");
+  }
+
+  const reward = json.reward ?? {};
+  const day = json.day ?? json.streak ?? 1;
+
+  const rewardText =
+    `${reward.coins ? `💰 ${reward.coins}` : ""}` +
+    `${reward.coins && reward.diamonds ? " " : ""}` +
+    `${reward.diamonds ? `💎 ${reward.diamonds}` : ""}` +
+    `${(reward.coins || reward.diamonds) && reward.freeWheelSpin ? " " : ""}` +
+    `${reward.freeWheelSpin ? "🎰 free spin" : ""}`;
+
+  showToast(`🎁 Day ${day}: ${rewardText}`);
+  loadState();
+}
+
+async function buyWithStars(productCode) {
+  const { ok, json } = await apiPost(`${API}/payments/create-invoice`, {
+    productCode,
+    telegramId: TELEGRAM_ID,
+  });
+
+  if (!ok) {
+    showToast(json?.error || "Invoice error");
+    return;
+  }
+
+  const link = json.invoiceLink;
+  if (!link) {
+    showToast("No invoice link");
+    return;
+  }
+
+  if (window.Telegram?.WebApp?.openInvoice) {
+    window.Telegram.WebApp.openInvoice(link, (status) => {
+      if (status === "paid") {
+        showToast("⭐ Payment success");
+        setTimeout(loadState, 1200);
+      } else if (status === "cancelled") {
+        showToast("Payment cancelled");
+      } else {
+        showToast(status || "Invoice closed");
+      }
+    });
+    return;
+  }
+
+  window.open(link, "_blank");
+}
+
+loadState();
