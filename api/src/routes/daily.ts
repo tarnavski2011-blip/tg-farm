@@ -16,7 +16,7 @@ const DAILY_REWARDS = [
   { day: 7, coins: 700, diamonds: 5, freeWheelSpin: true },
 ];
 
-function isSameDay(a, b) {
+function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -24,13 +24,13 @@ function isSameDay(a, b) {
   );
 }
 
-function isYesterday(a, b) {
+function isYesterday(a: Date, b: Date) {
   const y = new Date(b);
   y.setDate(y.getDate() - 1);
   return isSameDay(a, y);
 }
 
-function getRewardForDay(day) {
+function getRewardForDay(day: number) {
   const safeDay = Math.min(Math.max(day, 1), 7);
   return DAILY_REWARDS[safeDay - 1];
 }
@@ -133,7 +133,13 @@ router.post(
 
       const reward = getRewardForDay(newStreak);
 
-      const data: any = {
+      const data: {
+        coins: { increment: number };
+        diamonds: { increment: number };
+        dailyStreak: number;
+        lastDailyAt: Date;
+        lastWheelSpinAt?: null;
+      } = {
         coins: { increment: reward.coins },
         diamonds: { increment: reward.diamonds },
         dailyStreak: newStreak,
