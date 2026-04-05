@@ -8,16 +8,38 @@ router.post("/", async (req, res) => {
     process.stdout.write(JSON.stringify(req.body) + "\n");
 
     const message = req.body?.message;
-    const text = message?.text;
+    const text = String(message?.text ?? "");
     const chatId = message?.chat?.id;
 
-    if (text === "/start" && chatId) {
+    if (!chatId) {
+      return res.sendStatus(200);
+    }
+
+    if (text.startsWith("/start")) {
       const token = process.env.TELEGRAM_BOT_TOKEN;
 
       if (!token) {
         process.stdout.write("ERROR: TELEGRAM_BOT_TOKEN missing\n");
         return res.sendStatus(200);
       }
+
+      const startPayload = text.replace("/start", "").trim();
+
+      let refCode = "";
+
+      if (startPayload.startsWith("ref_")) {
+        refCode = startPayload.replace("ref_", "").trim();
+      } else if (startPayload.length > 0) {
+        refCode = startPayload;
+      }
+
+      const webAppUrl = refCode
+        ? `https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}`
+        : "https://tg-farm-web.onrender.com";
+
+      const replyText = refCode
+        ? "🚜 Ласкаво просимо в My Farm Clicker!\n\nТебе запросив друг. Натисни кнопку нижче, щоб відкрити гру 👇"
+        : "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇";
 
       const tgRes = await fetch(
         `https://api.telegram.org/bot${token}/sendMessage`,
@@ -28,14 +50,14 @@ router.post("/", async (req, res) => {
           },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "🚜 Welcome to My Farm Clicker!\n\nTap below to start playing 👇",
+            text: replyText,
             reply_markup: {
               inline_keyboard: [
                 [
                   {
                     text: "🎮 Play",
                     web_app: {
-                      url: "https://tg-farm-web.onrender.com",
+                      url: webAppUrl,
                     },
                   },
                 ],
