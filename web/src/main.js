@@ -1155,13 +1155,6 @@ function bindHandlers() {
       const value = input?.value ?? "";
       if (!value) return;
 
-      if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink(
-          `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
-        );
-        return;
-      }
-
       if (navigator.share) {
         try {
           await navigator.share({
@@ -1175,7 +1168,7 @@ function bindHandlers() {
 
       try {
         await navigator.clipboard.writeText(value);
-        showToast("Посилання скопійовано");
+        showToast("Посилання скопійовано. Встав його в Telegram вручну.");
       } catch {
         showToast("Не вдалося поділитися");
       }
