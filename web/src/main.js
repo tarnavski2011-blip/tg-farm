@@ -800,116 +800,15 @@ async function applyReferralFromUrl() {
   const sessionKey = `farm_ref_applied_${ref}`;
   if (sessionStorage.getItem(sessionKey) === "1") return;
 
+  sessionStorage.setItem(sessionKey, "1");
+
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
     code: ref,
   });
 
   if (ok) {
-    sessionStorage.setItem(sessionKey, "1");
     showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
-    await loadStateSilently();
   }
-}
-
-async function loadStateSilently() {
-  const stateRes = await apiGet(`${API}/state`);
-  if (!stateRes.ok) return;
-
-  let levelData = {
-    level: stateRes.json?.level ?? 1,
-    xp: stateRes.json?.xp ?? 0,
-  };
-
-  let leaderboard = [];
-  const lbRes = await apiGet(`${API}/leaderboard`);
-  if (lbRes.ok && Array.isArray(lbRes.json)) leaderboard = lbRes.json;
-
-  let achievements = [];
-  const achRes = await apiGet(`${API}/achievements`);
-  if (achRes.ok && Array.isArray(achRes.json?.items)) {
-    achievements = achRes.json.items;
-  }
-
-  let questsData = { items: [] };
-  const questRes = await apiGet(`${API}/quests`);
-  if (questRes.ok) questsData = questRes.json;
-
-  let referralsData = { myCode: "", totalRefs: 0, refs: [] };
-  const refRes = await apiGet(`${API}/referrals`);
-  if (refRes.ok) referralsData = refRes.json;
-
-  let wheelState = { costDiamonds: 0, cooldownSec: 0, rewards: [] };
-  const wheelRes = await apiGet(`${API}/wheel/state`);
-  if (wheelRes.ok) wheelState = normalizeWheelState(wheelRes.json);
-
-  let shopData = { items: [] };
-  const shopRes = await apiGet(`${API}/shop`);
-  if (shopRes.ok) shopData = shopRes.json;
-
-  let premiumProductsData = { items: [] };
-  const premiumProductsRes = await apiGet(`${API}/payments/products`);
-  if (premiumProductsRes.ok) premiumProductsData = premiumProductsRes.json;
-
-  let dailyLoginData = {
-    streak: 0,
-    claimedToday: false,
-    nextDay: 1,
-    reward: null,
-    rewards: [],
-    canClaim: true,
-  };
-
-  const dailyRes = await apiGet(`${API}/daily/status`);
-  if (dailyRes.ok) {
-    dailyLoginData = { ...dailyLoginData, ...dailyRes.json };
-  }
-
-  let boostersData = {
-    boost: { active: false, leftSec: 0 },
-    autoCollect: { active: false, leftSec: 0 },
-    vip: { active: false, leftSec: 0 },
-    feed: { active: false, leftSec: 0 },
-  };
-
-  const boostersRes = await apiGet(`${API}/boosters/status`);
-  if (boostersRes.ok) {
-    boostersData = boostersRes.json;
-  } else {
-    boostersData = {
-      boost: {
-        active: !!stateRes.json?.boost?.active,
-        leftSec: stateRes.json?.boost?.leftSec ?? 0,
-      },
-      autoCollect: {
-        active: !!stateRes.json?.autoCollect?.active,
-        leftSec: stateRes.json?.autoCollect?.leftSec ?? 0,
-      },
-      vip: {
-        active: !!stateRes.json?.vip?.active,
-        leftSec: stateRes.json?.vip?.leftSec ?? 0,
-      },
-      feed: {
-        active: !!stateRes.json?.feed?.active,
-        leftSec: stateRes.json?.feed?.leftSec ?? 0,
-      },
-    };
-  }
-
-  render(
-    stateRes.json,
-    levelData,
-    leaderboard,
-    achievements,
-    referralsData,
-    wheelState,
-    questsData,
-    shopData,
-    premiumProductsData,
-    dailyLoginData,
-    boostersData,
-  );
-
-  bindHandlers();
 }
 
 async function loadState() {
