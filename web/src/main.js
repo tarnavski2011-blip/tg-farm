@@ -166,7 +166,7 @@ function questCard(q) {
     `${q.rewardCoins ? `💰 ${q.rewardCoins}` : q.reward ? `💰 ${q.reward}` : ""}` +
     `${(q.rewardCoins || q.reward) && q.rewardDiamonds ? " · " : ""}` +
     `${q.rewardDiamonds ? `💎 ${q.rewardDiamonds}` : ""}` +
-    `${((q.rewardCoins || q.reward) || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
+    `${(q.rewardCoins || q.reward || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
     `${q.rewardXp ? `⭐ ${q.rewardXp} XP` : ""}`;
 
   return `
@@ -234,13 +234,18 @@ function wheelCard(wheelState) {
   );
   const cooldown = wheelState?.cooldownSec ?? wheelState?.cooldown ?? 0;
   const disabled = cooldown > 0;
-  const buttonText = disabled
-    ? `Cooldown ${fmtSeconds(cooldown)}`
-    : `Spin`;
+  const buttonText = disabled ? `Cooldown ${fmtSeconds(cooldown)}` : `Spin`;
 
   const shownRewards = rewards.length
     ? rewards
-    : ["50 coins", "100 coins", "200 coins", "5 diamonds", "10 diamonds", "Nothing"];
+    : [
+        "50 coins",
+        "100 coins",
+        "200 coins",
+        "5 diamonds",
+        "10 diamonds",
+        "Nothing",
+      ];
 
   return `
     <div class="wheel-box">
@@ -389,8 +394,7 @@ function dailyDaysRow(dailyLoginData) {
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">
       ${rewards
         .map((r) => {
-          const claimed =
-            r.day < nextDay || (!canClaim && r.day === streak);
+          const claimed = r.day < nextDay || (!canClaim && r.day === streak);
           const current = canClaim && r.day === nextDay;
 
           return `
@@ -1144,56 +1148,60 @@ function bindHandlers() {
     }
   });
 
-  document.getElementById("shareRefBtn")?.addEventListener("click", async () => {
-    const input = document.getElementById("refLinkInput");
-    const value = input?.value ?? "";
-    if (!value) return;
+  document
+    .getElementById("shareRefBtn")
+    ?.addEventListener("click", async () => {
+      const input = document.getElementById("refLinkInput");
+      const value = input?.value ?? "";
+      if (!value) return;
 
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      window.Telegram.WebApp.openTelegramLink(
-        `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
-      );
-      return;
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "My Farm Clicker",
-          text: "🚜 Заходь у мою гру My Farm Clicker",
-          url: value,
-        });
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(
+          `https://t.me/share/url?url=${encodeURIComponent(value)}&text=${encodeURIComponent("🚜 Заходь у мою гру My Farm Clicker")}`,
+        );
         return;
-      } catch {}
-    }
+      }
 
-    try {
-      await navigator.clipboard.writeText(value);
-      showToast("Посилання скопійовано");
-    } catch {
-      showToast("Не вдалося поділитися");
-    }
-  });
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "My Farm Clicker",
+            text: "🚜 Заходь у мою гру My Farm Clicker",
+            url: value,
+          });
+          return;
+        } catch {}
+      }
 
-  document.getElementById("applyRefBtn")?.addEventListener("click", async () => {
-    const input = document.getElementById("refCodeInput");
-    const code = String(input?.value ?? "").trim();
+      try {
+        await navigator.clipboard.writeText(value);
+        showToast("Посилання скопійовано");
+      } catch {
+        showToast("Не вдалося поділитися");
+      }
+    });
 
-    if (!code) {
-      showToast("Введи код");
-      return;
-    }
+  document
+    .getElementById("applyRefBtn")
+    ?.addEventListener("click", async () => {
+      const input = document.getElementById("refCodeInput");
+      const code = String(input?.value ?? "").trim();
 
-    const { ok, json } = await apiPost(`${API}/referrals/apply`, { code });
+      if (!code) {
+        showToast("Введи код");
+        return;
+      }
 
-    if (!ok) {
-      showToast(json?.error || "Помилка реферала");
-      return;
-    }
+      const { ok, json } = await apiPost(`${API}/referrals/apply`, { code });
 
-    showToast(`🎁 +${json.rewardYou ?? 0} coins`);
-    loadState();
-  });
+      if (!ok) {
+        showToast(json?.error || "Помилка реферала");
+        return;
+      }
+
+      showToast(`🎁 +${json.rewardYou ?? 0} coins`);
+      loadState();
+    });
 
   document
     .getElementById("spinWheelBtn")
@@ -1233,10 +1241,7 @@ function bindHandlers() {
 }
 
 async function tap() {
-  const variants = [
-    `${API}/tap`,
-    `${API}/collect`,
-  ];
+  const variants = [`${API}/tap`, `${API}/collect`];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, { telegramId: TELEGRAM_ID });
@@ -1251,10 +1256,7 @@ async function tap() {
 }
 
 async function buy(type) {
-  const variants = [
-    `${API}/animals/buy`,
-    `${API}/buy-animal`,
-  ];
+  const variants = [`${API}/animals/buy`, `${API}/buy-animal`];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1277,9 +1279,7 @@ async function buy(type) {
 }
 
 async function upgrade(type) {
-  const variants = [
-    `${API}/animal-upgrade`,
-  ];
+  const variants = [`${API}/animal-upgrade`];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1297,10 +1297,7 @@ async function upgrade(type) {
 }
 
 async function collect() {
-  const variants = [
-    `${API}/collect/claim`,
-    `${API}/collect`,
-  ];
+  const variants = [`${API}/collect/claim`, `${API}/collect`];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
@@ -1322,10 +1319,7 @@ async function collect() {
 }
 
 async function sellAll() {
-  const variants = [
-    `${API}/sell/all`,
-    `${API}/sell`,
-  ];
+  const variants = [`${API}/sell/all`, `${API}/sell`];
 
   for (const url of variants) {
     const { ok, json } = await apiPost(url, {
