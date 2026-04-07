@@ -1,86 +1,111 @@
 import { Router } from "express";
+import { prisma } from "../prisma";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
   try {
-    process.stdout.write("TELEGRAM UPDATE:\n");
-    process.stdout.write(JSON.stringify(req.body) + "\n");
-
     const message = req.body?.message;
     const text = String(message?.text ?? "");
     const chatId = message?.chat?.id;
+    const fromId = message?.from?.id;
 
-    if (!chatId) {
-      return res.sendStatus(200);
-    }
+    if (!chatId) return res.sendStatus(200);
 
     if (text.startsWith("/start")) {
       const token = process.env.TELEGRAM_BOT_TOKEN;
+      if (!token) return res.sendStatus(200);
 
-      if (!token) {
-        process.stdout.write("ERROR: TELEGRAM_BOT_TOKEN missing\n");
-        return res.sendStatus(200);
-      }
-
-      const startPayload = text.replace("/start", "").trim();
+      const payload = text.replace("/start", "").trim();
 
       let refCode = "";
-
-      if (startPayload.startsWith("ref_")) {
-        refCode = startPayload.replace("ref_", "").trim();
-      } else if (startPayload.length > 0) {
-        refCode = startPayload;
+      if (payload.startsWith("ref_")) {
+        refCode = payload.replace("ref_", "").trim();
+      } else if (payload.length > 0) {
+        refCode = payload;
       }
 
-      const webAppUrl = refCode
-        ? `https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}&tgWebAppStartParam=${encodeURIComponent(refCode)}`
-        : "https://tg-farm-web.onrender.com";
+      // 1) створити/знайти юзера, який відкрив бота
+      let newUser = null as null | { id: number; telegramId: bigint };
 
-      process.stdout.write("REF CODE:\n");
-      process.stdout.write(refCode + "\n");
-      process.stdout.write("WEB APP URL:\n");
-      process.stdout.write(webAppUrl + "\n");
+      if (fromId) {
+        const telegramId = BigInt(fromId);
 
-      const replyText = refCode
-        ? "🚜 Ласкаво просимо в My Farm Clicker!\n\nТебе запросив друг. Натисни кнопку нижче, щоб відкрити гру 👇"
-        : "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇";
+        newUser = await prisma.user.upsert({
+          where: { telegramId },
+          update: {},
+          create: { telegramId },
+          select: { id: true, telegramId: true },
+        });
 
-      const tgRes = await fetch(
-        `https://api.telegram.org/bot${token}/sendMessage`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: replyText,
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "🎮 Play",
-                    web_app: {
-                      url: webAppUrl,
-                    },
+        // 2) якщо є ref-код — застосувати його прямо тут
+        if (refCode && refCode !== String(fromId)) {
+          const refUser = await prisma.user.findUnique({
+            where: { telegramId: BigInt(refCode) },
+            select: { id: true, telegramId: true },
+          });
+
+          if (refUser) {
+            const already = await prisma.referral.findFirst({
+              where: { referredId: newUser.id },
+              select: { id: true },
+            });
+
+            if (!already) {
+              await prisma.$transaction([
+                prisma.referral.create({
+                  data: {
+                    referrerId: refUser.id,
+                    referredId: newUser.id,
+                  } as any,
+                }),
+                prisma.user.update({
+                  where: { id: refUser.id },
+                  data: {
+                    coins: { increment: 200 },
                   },
-                ],
-              ],
-            },
-          }),
-        },
-      );
+                }),
+                prisma.user.update({
+                  where: { id: newUser.id },
+                  data: {
+                    coins: { increment: 100 },
+                  },
+                }),
+              ]);
+            }
+          }
+        }
+      }
 
-      const tgJson = await tgRes.text();
-      process.stdout.write("SEND MESSAGE RESULT:\n");
-      process.stdout.write(tgJson + "\n");
+      const webAppUrl = "https://tg-farm-web.onrender.com";
+
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "🚜 Відкрий гру:",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🎮 Play",
+                  web_app: {
+                    url: webAppUrl,
+                  },
+                },
+              ],
+            ],
+          },
+        }),
+      });
     }
 
     return res.sendStatus(200);
-  } catch (error) {
-    process.stdout.write("TELEGRAM ERROR:\n");
-    process.stdout.write(String(error) + "\n");
+  } catch (e) {
+    console.error("TELEGRAM ERROR:", e);
     return res.sendStatus(200);
   }
 });
