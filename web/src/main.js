@@ -800,14 +800,14 @@ async function applyReferralFromUrl() {
   const sessionKey = `farm_ref_applied_${ref}`;
   if (sessionStorage.getItem(sessionKey) === "1") return;
 
-  sessionStorage.setItem(sessionKey, "1");
-
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
     code: ref,
   });
 
   if (ok) {
+    sessionStorage.setItem(sessionKey, "1");
     showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
+    await loadState();
   }
 }
 
