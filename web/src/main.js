@@ -799,13 +799,13 @@ async function applyReferralFromUrl() {
   console.log("SEARCH:", search);
   console.log("REF PARAM:", ref);
 
-  showToast(ref ? REF: ${ref} : "REF НЕ ПРИЙШОВ");
+  showToast(ref ? `REF: ${ref}` : "REF НЕ ПРИЙШОВ");
 
   if (!ref) return;
   if (!TELEGRAM_ID) return;
   if (ref === TELEGRAM_ID) return;
 
-  const sessionKey = farm_ref_applied_${ref};
+  const sessionKey = `farm_ref_applied_${ref}`;
   if (sessionStorage.getItem(sessionKey) === "1") return;
 
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
