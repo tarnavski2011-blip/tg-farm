@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
       }
 
       const webAppUrl = refCode
-        ? `https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}`
+        ? `https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}&tgWebAppStartParam=${encodeURIComponent(refCode)}`
         : "https://tg-farm-web.onrender.com";
 
       process.stdout.write("REF CODE:\n");

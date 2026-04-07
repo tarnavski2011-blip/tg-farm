@@ -790,14 +790,20 @@ function normalizeWheelState(json) {
 }
 
 async function applyReferralFromUrl() {
-  const href = window.location.href;
-  const search = window.location.search;
-  const params = new URLSearchParams(search);
-  const ref = String(params.get("ref") ?? "").trim();
+  const params = new URLSearchParams(window.location.search);
 
-  console.log("FULL HREF:", href);
-  console.log("SEARCH:", search);
-  console.log("REF PARAM:", ref);
+  const refFromQuery = String(params.get("ref") ?? "").trim();
+  const refFromTgParam = String(params.get("tgWebAppStartParam") ?? "").trim();
+  const refFromInitData = String(
+    window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "",
+  ).trim();
+
+  const ref = refFromQuery  refFromTgParam  refFromInitData;
+
+  console.log("REF from query:", refFromQuery);
+  console.log("REF from tgWebAppStartParam:", refFromTgParam);
+  console.log("REF from initDataUnsafe.start_param:", refFromInitData);
+  console.log("FINAL REF:", ref);
 
   showToast(ref ? `REF: ${ref}` : "REF НЕ ПРИЙШОВ");
 
@@ -811,8 +817,6 @@ async function applyReferralFromUrl() {
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
     code: ref,
   });
-
-  console.log("REF APPLY RESULT:", ok, json);
 
   if (ok) {
     sessionStorage.setItem(sessionKey, "1");
