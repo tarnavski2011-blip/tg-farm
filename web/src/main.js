@@ -793,6 +793,8 @@ async function applyReferralFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const ref = String(params.get("ref") ?? "").trim();
 
+  showToast(ref ? `REF: ${ref}` : "REF НЕ ПРИЙШОВ");
+
   if (!ref) return;
   if (!TELEGRAM_ID) return;
   if (ref === TELEGRAM_ID) return;
@@ -808,6 +810,8 @@ async function applyReferralFromUrl() {
     sessionStorage.setItem(sessionKey, "1");
     showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
     await loadState();
+  } else {
+    showToast(json?.error || "REF APPLY ERROR");
   }
 }
 
