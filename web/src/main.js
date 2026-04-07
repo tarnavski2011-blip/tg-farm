@@ -790,21 +790,29 @@ function normalizeWheelState(json) {
 }
 
 async function applyReferralFromUrl() {
-  const params = new URLSearchParams(window.location.search);
+  const href = window.location.href;
+  const search = window.location.search;
+  const params = new URLSearchParams(search);
   const ref = String(params.get("ref") ?? "").trim();
 
-  showToast(ref ? `REF: ${ref}` : "REF НЕ ПРИЙШОВ");
+  console.log("FULL HREF:", href);
+  console.log("SEARCH:", search);
+  console.log("REF PARAM:", ref);
+
+  showToast(ref ? REF: ${ref} : "REF НЕ ПРИЙШОВ");
 
   if (!ref) return;
   if (!TELEGRAM_ID) return;
   if (ref === TELEGRAM_ID) return;
 
-  const sessionKey = `farm_ref_applied_${ref}`;
+  const sessionKey = farm_ref_applied_${ref};
   if (sessionStorage.getItem(sessionKey) === "1") return;
 
   const { ok, json } = await apiPost(`${API}/referrals/apply`, {
     code: ref,
   });
+
+  console.log("REF APPLY RESULT:", ok, json);
 
   if (ok) {
     sessionStorage.setItem(sessionKey, "1");
