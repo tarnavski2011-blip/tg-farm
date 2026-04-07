@@ -71,7 +71,6 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "Ref user not found" });
     }
 
-    // перевірка: цього користувача вже хтось запросив?
     const already = await prisma.referral.findFirst({
       where: {
         referredId: user.id,
