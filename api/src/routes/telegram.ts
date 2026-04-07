@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
       }
 
       const webAppUrl = refCode
-        ? https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}
+        ? `https://tg-farm-web.onrender.com/?ref=${encodeURIComponent(refCode)}`
         : "https://tg-farm-web.onrender.com";
 
       process.stdout.write("REF CODE:\n");
@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
         : "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇";
 
       const tgRes = await fetch(
-        https://api.telegram.org/bot${token}/sendMessage,
+        `https://api.telegram.org/bot${token}/sendMessage`,
         {
           method: "POST",
           headers: {
