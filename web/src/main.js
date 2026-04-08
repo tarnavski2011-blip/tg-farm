@@ -495,6 +495,8 @@ function renderModal(
     body = `
       <div class="panel">
         <div class="panel-title">Мій код</div>
+        <div class="panel-sub">💰 Зароблено з рефералів: ${referralsData?.stats?.earnedCoins ?? 0}</div>
+<div class="panel-sub">⭐ Points з рефералів: ${referralsData?.stats?.earnedPoints ?? 0}</div>
         <div class="panel-sub" style="font-size:26px;font-weight:900;color:white;">${myCode}</div>
         <div class="panel-sub">Запрошено друзів: ${total}</div>
       </div>
