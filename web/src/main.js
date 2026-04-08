@@ -490,15 +490,17 @@ function renderModal(
     const myLink = `https://t.me/${BOT_NAME}?start=ref_${myCode}`;
     const list = referralsData?.refs ?? [];
     const total = referralsData?.totalRefs ?? 0;
+    const earnedCoins = referralsData?.stats?.earnedCoins ?? 0;
+    const earnedPoints = referralsData?.stats?.earnedPoints ?? 0;
 
     title = "👥 Referrals";
     body = `
       <div class="panel">
         <div class="panel-title">Мій код</div>
-        <div class="panel-sub">💰 Зароблено з рефералів: ${referralsData?.stats?.earnedCoins ?? 0}</div>
-<div class="panel-sub">⭐ Points з рефералів: ${referralsData?.stats?.earnedPoints ?? 0}</div>
         <div class="panel-sub" style="font-size:26px;font-weight:900;color:white;">${myCode}</div>
         <div class="panel-sub">Запрошено друзів: ${total}</div>
+        <div class="panel-sub">💰 Зароблено з рефералів: ${earnedCoins}</div>
+        <div class="panel-sub">⭐ Points з рефералів: ${earnedPoints}</div>
       </div>
 
       <div class="panel">
@@ -520,24 +522,29 @@ function renderModal(
         </div>
       </div>
 
-      <div class="ach-grid">
-        ${
-          list.length
-            ? list
+      <div class="panel">
+        <div class="panel-title">Мої реферали</div>
+        <div class="ach-grid">
+          ${
+            list.length ? (
+              list
                 .map(
                   (r) => `
-              <div class="lb-row">
-                <div class="lb-rank">👤</div>
-                <div class="lb-user">
-                  <div class="lb-name">Referral #${r.id}</div>
-                  <div class="lb-level">${new Date(r.createdAt).toLocaleDateString()}</div>
+                <div class="lb-row">
+                  <div class="lb-rank">👤</div>
+                  <div class="lb-user">
+                    <div class="lb-name">ID: ${r.telegramId ?? "-"}</div>
+                    <div class="lb-level">${new Date(r.createdAt).toLocaleDateString()}</div>
+                  </div>
                 </div>
-              </div>
-            `,
+              `,
                 )
                 .join("")
-            : `<div class="lb-empty">Ще немає рефералів</div>`
-        }
+            ) : (
+              <div class="lb-empty">Ще немає рефералів</div>
+            )
+          }
+        </div>
       </div>
     `;
   }
