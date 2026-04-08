@@ -25,8 +25,7 @@ router.post("/", async (req, res) => {
         refCode = payload;
       }
 
-      // 1) створити/знайти юзера, який відкрив бота
-      let newUser = null as null | { id: number; telegramId: bigint };
+      let newUser = null;
 
       if (fromId) {
         const telegramId = BigInt(fromId);
@@ -38,20 +37,23 @@ router.post("/", async (req, res) => {
           select: { id: true, telegramId: true },
         });
 
-        // 2) якщо є ref-код — застосувати його прямо тут
         if (refCode && refCode !== String(fromId)) {
           const refUser = await prisma.user.findUnique({
             where: { telegramId: BigInt(refCode) },
-            select: { id: true, telegramId: true },
+            include: { referrals: true },
           });
 
           if (refUser) {
             const already = await prisma.referral.findFirst({
               where: { referredId: newUser.id },
-              select: { id: true },
             });
 
             if (!already) {
+              const rewardYou = 100;
+              const rewardRefCoins = 200;
+              const rewardRefDiamonds = 10;
+              const rewardRefPoints = 5;
+
               await prisma.$transaction([
                 prisma.referral.create({
                   data: {
@@ -59,19 +61,46 @@ router.post("/", async (req, res) => {
                     referredId: newUser.id,
                   } as any,
                 }),
-                prisma.user.update({
-                  where: { id: refUser.id },
-                  data: {
-                    coins: { increment: 200 },
-                  },
-                }),
+
                 prisma.user.update({
                   where: { id: newUser.id },
                   data: {
-                    coins: { increment: 100 },
+                    coins: { increment: rewardYou },
+                  },
+                }),
+
+                prisma.user.update({
+                  where: { id: refUser.id },
+                  data: {
+                    coins: { increment: rewardRefCoins },
+                    diamonds: { increment: rewardRefDiamonds },
+                    points: { increment: rewardRefPoints },
                   },
                 }),
               ]);
+
+              const totalRefs = refUser.referrals.length + 1;
+
+              let bonus = 0;
+              let bonusDiamonds = 0;
+
+              if (totalRefs === 1) bonus = 50;
+              if (totalRefs === 3) bonus = 200;
+              if (totalRefs === 5) bonus = 500;
+              if (totalRefs === 10) {
+                bonus = 1000;
+                bonusDiamonds = 50;
+              }
+
+              if (bonus > 0 || bonusDiamonds > 0) {
+                await prisma.user.update({
+                  where: { id: refUser.id },
+                  data: {
+                    coins: { increment: bonus },
+                    diamonds: { increment: bonusDiamonds },
+                  },
+                });
+              }
             }
           }
         }

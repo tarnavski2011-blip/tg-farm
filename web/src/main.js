@@ -798,7 +798,7 @@ async function applyReferralFromUrl() {
     window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "",
   ).trim();
 
-  const ref = refFromQuery  refFromTgParam  refFromInitData;
+  const ref = refFromQuery || refFromTgParam || refFromInitData;
 
   console.log("REF from query:", refFromQuery);
   console.log("REF from tgWebAppStartParam:", refFromTgParam);
@@ -925,7 +925,7 @@ async function loadState() {
     boostersData,
   );
 
-  await applyReferralFromUrl();
+  // await applyReferralFromUrl();
 
   const off = stateRes.json?.offline;
   if (off && off.minutes > 0) {

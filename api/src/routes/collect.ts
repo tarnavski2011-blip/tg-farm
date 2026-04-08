@@ -1,50 +1,66 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
+import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-router.post("/", async (req: any, res) => {
+router.post("/", async (req: TgAuthedRequest, res) => {
   try {
-    const user = req.telegramUser;
+    const telegramId = BigInt(req.telegramUser!.id);
 
-    if (!user) {
-      return res.status(401).json({ error: "No user" });
-    }
-
-    const telegramId = BigInt(user.id);
-
-    let dbUser = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { telegramId },
     });
 
-    if (!dbUser) {
-      dbUser = await prisma.user.create({
-        data: { telegramId },
-      });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const addCoins = 1;
+    // 🎯 ОСНОВНИЙ ДОХІД (можеш замінити на свою логіку)
+    const coinsAdded = 100;
 
-    const updated = await prisma.user.update({
-      where: { telegramId },
+    await prisma.user.update({
+      where: { id: user.id },
       data: {
-        coins: { increment: addCoins },
-        lastTapAt: new Date(),
+        coins: { increment: coinsAdded },
       },
     });
 
+    // 🔥 ПАСИВНИЙ ДОХІД РЕФЕРЕРУ
+    const referral = await prisma.referral.findFirst({
+      where: { referredId: user.id },
+    });
+
+    if (referral) {
+      const percent = 0.05; // 5%
+      const bonus = Math.floor(coinsAdded * percent);
+
+      // ⭐ POINTS (мінімально)
+      let pointsBonus = 0;
+
+      if (coinsAdded >= 100) pointsBonus = 1;
+      if (coinsAdded >= 1000) pointsBonus = 2;
+      if (coinsAdded >= 5000) pointsBonus = 3;
+      if (coinsAdded >= 10000) pointsBonus = 5;
+
+      if (bonus > 0 || pointsBonus > 0) {
+        await prisma.user.update({
+          where: { id: referral.referrerId },
+          data: {
+            coins: { increment: bonus },
+            points: { increment: pointsBonus },
+          },
+        });
+      }
+    }
+
     return res.json({
       ok: true,
-      added: addCoins,
-      total: updated.coins,
+      coinsAdded,
     });
   } catch (e) {
     console.error("COLLECT ERROR:", e);
-
-    return res.status(500).json({
-      error: "Server error",
-      details: String(e),
-    });
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
