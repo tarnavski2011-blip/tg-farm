@@ -491,7 +491,7 @@ function renderModal(
     const list = referralsData?.refs ?? [];
     const total = referralsData?.totalRefs ?? 0;
 
-    title = "👥 Referrals v2";
+    title = "👥 Referrals v999";
     body = `
       <div class="panel">
         <div class="panel-title">Мій код</div>
