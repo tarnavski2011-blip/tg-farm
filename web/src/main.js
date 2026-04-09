@@ -491,7 +491,7 @@ function renderModal(
     const list = referralsData?.refs ?? [];
     const total = referralsData?.totalRefs ?? 0;
 
-    title = "👥 Referrals";
+    title = "👥 Referrals v2";
     body = `
       <div class="panel">
         <div class="panel-title">Мій код</div>
@@ -807,7 +807,7 @@ async function applyReferralFromUrl() {
 
     const code = ref.replace("ref_", "");
 
-    await api("/api/referrals/apply", {
+    await apiPost("/api/referrals/apply", {
       method: "POST",
       body: JSON.stringify({ code }),
     });
