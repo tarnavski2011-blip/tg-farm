@@ -57,10 +57,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     for (const ru of referredUsers) {
       const coins = Number(ru.coins ?? 0);
 
-      // приблизна статистика пасивного доходу 5%
       totalEarnedCoins += Math.floor(coins * 0.05);
 
-      // мінімальна статистика points
       if (coins >= 100) totalEarnedPoints += 1;
       if (coins >= 1000) totalEarnedPoints += 2;
       if (coins >= 5000) totalEarnedPoints += 3;
@@ -89,7 +87,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
   }
 });
 
-// APPLY REFERRAL (ручний ввод)
+// APPLY REFERRAL (manual code input)
 router.post("/apply", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -99,7 +97,10 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
     const telegramId = BigInt(req.telegramUser.id);
     const code = String(req.body?.code ?? "").trim();
 
-    if (!code) return res.status(400).json({ error: "No code" });
+    if (!code) {
+      return res.status(400).json({ error: "No code" });
+    }
+
     if (code === String(telegramId)) {
       return res.status(400).json({ error: "Self ref" });
     }
