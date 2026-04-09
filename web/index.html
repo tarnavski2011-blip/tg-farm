@@ -883,31 +883,46 @@
         });
       }
       async function openRefsModal() {
-        modalTitle.textContent = "👥 Referrals";
+        modalTitle.textContent = "👥 Referrals v2";
         modalTabs.style.display = "none";
-        const res = await apiGet("/referrals"),
-          data = res.data || {},
-          shareLink = `${shareBase}${data.myCode ?? ""}`;
-        modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
+
+        const res = await apiGet("/referrals");
+        const data = res.data || {};
+
+        const myCode = data.myCode ?? "-";
+        const totalRefs = data.totalRefs ?? 0;
+        const earnedCoins = data.stats?.earnedCoins ?? 0;
+        const earnedPoints = data.stats?.earnedPoints ?? 0;
+        const refs = Array.isArray(data.refs) ? data.refs : [];
+        const shareLink = `${shareBase}${myCode}`;
+
+        modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${myCode}</div><div class="tile-row"><span>Запрошено</span><span>${totalRefs}</span></div><div class="tile-row"><span>💰 Зароблено з рефералів</span><span>${earnedCoins}</span></div><div class="tile-row"><span>⭐ Points з рефералів</span><span>${earnedPoints}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Мої реферали</div>${refs.length ? refs.map((r) => `<div class="tile-row" style="margin-top:10px;"><span>ID: ${r.telegramId ?? "-"}</span><span>${new Date(r.createdAt).toLocaleDateString()}</span></div>`).join("") : `<div class="note">Ще немає рефералів</div>`}</div>`;
         showModal();
+
         document.getElementById("copyRefBtn").onclick = async () => {
           await navigator.clipboard.writeText(shareLink);
           showToast("Скопійовано");
         };
+
         document.getElementById("shareRefBtn").onclick = async () => {
-          if (tg?.openTelegramLink)
-            tg.openTelegramLink(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
-            );
-          else
-            window.open(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
-              "_blank",
-            );
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: "My Farm Clicker",
+                text: "Заходь у гру 🚜",
+                url: shareLink,
+              });
+              return;
+            } catch {}
+          }
+
+          await navigator.clipboard.writeText(shareLink);
+          showToast("Посилання скопійовано");
         };
+
         document.getElementById("applyRefBtn").onclick = async () => {
-          const code = document.getElementById("refCodeInput").value,
-            resp = await apiPost("/referrals/apply", { code });
+          const code = document.getElementById("refCodeInput").value.trim();
+          const resp = await apiPost("/referrals/apply", { code });
           setResult(resp.data);
           if (resp.ok) {
             showToast(`+${resp.data?.rewardYou ?? 0}`);
@@ -918,6 +933,7 @@
           }
         };
       }
+
       document.getElementById("tapBtn").addEventListener("click", collect);
       document
         .getElementById("loadStateBtn")
