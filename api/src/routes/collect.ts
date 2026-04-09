@@ -20,66 +20,62 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 🎯 ДОХІД
-    const coinsAdded = 100;
+    // 1 TAP = 1 COIN
+    const coinsAdded = 1;
 
-    // 🔥 XP ЗА COLLECT
-    const xpFromCollect = Math.floor(coinsAdded / 10); // 100 coins → 10 XP
+    // 1 TAP = 1 XP
+    const xpAdded = 1;
 
-    let xp = user.xp + xpFromCollect;
-    let level = user.level;
+    let xp = (user.xp ?? 0) + xpAdded;
+    let level = user.level ?? 1;
 
-    let coinsBonus = 0;
-    let diamondsBonus = 0;
+    let levelRewardCoins = 0;
+    let levelRewardDiamonds = 0;
 
-    // 🔥 LEVEL UP
+    // LEVEL UP
     while (xp >= getXpNeeded(level)) {
       xp -= getXpNeeded(level);
-      level++;
+      level += 1;
 
-      coinsBonus += 25;
+      // за кожен рівень маленький бонус
+      levelRewardCoins += 25;
 
-      if (level % 5 === 0) {
-        diamondsBonus += 5;
-      }
-
+      // за кожен 5 рівень — діаманти
       if (level % 10 === 0) {
-        diamondsBonus += 15;
+        levelRewardDiamonds += 15;
+      } else if (level % 5 === 0) {
+        levelRewardDiamonds += 5;
       }
     }
 
-    // 💰 ОНОВЛЕННЯ КОРИСТУВАЧА
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        coins: { increment: coinsAdded + coinsBonus },
-        diamonds: { increment: diamondsBonus },
+        coins: { increment: coinsAdded + levelRewardCoins },
+        diamonds: { increment: levelRewardDiamonds },
         xp,
         level,
       },
     });
 
-    // 🔥 РЕФЕРАЛЬНИЙ ДОХІД (залишаємо як у тебе)
+    // ПАСИВНИЙ ДОХІД РЕФЕРЕРУ
     const referral = await prisma.referral.findFirst({
       where: { referredId: user.id },
     });
 
     if (referral) {
-      const percent = 0.05;
-      const bonus = Math.floor(coinsAdded * percent);
+      const percent = 0.05; // 5%
+      const bonusCoins = Math.floor(coinsAdded * percent);
 
+      // мінімальні points
       let pointsBonus = 0;
+      if (coinsAdded >= 1) pointsBonus = 1;
 
-      if (coinsAdded >= 100) pointsBonus = 1;
-      if (coinsAdded >= 1000) pointsBonus = 2;
-      if (coinsAdded >= 5000) pointsBonus = 3;
-      if (coinsAdded >= 10000) pointsBonus = 5;
-
-      if (bonus > 0 || pointsBonus > 0) {
+      if (bonusCoins > 0 || pointsBonus > 0) {
         await prisma.user.update({
           where: { id: referral.referrerId },
           data: {
-            coins: { increment: bonus },
+            coins: { increment: bonusCoins },
             points: { increment: pointsBonus },
           },
         });
@@ -89,12 +85,12 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     return res.json({
       ok: true,
       coinsAdded,
-      xpAdded: xpFromCollect,
+      xpAdded,
       level,
-      levelUp: coinsBonus > 0 || diamondsBonus > 0,
+      levelUp: levelRewardCoins > 0 || levelRewardDiamonds > 0,
       reward: {
-        coins: coinsBonus,
-        diamonds: diamondsBonus,
+        coins: levelRewardCoins,
+        diamonds: levelRewardDiamonds,
       },
     });
   } catch (e) {
