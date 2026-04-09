@@ -7,10 +7,14 @@ const router = Router();
 
 const TAP_COOLDOWN_MS = 1000;
 
+function getXpNeeded(level: number) {
+  return 100 + level * 50;
+}
+
 router.post(
   "/",
-  antiSpamPerUser(1000, 8), // максимум 8 тапів за секунду
-  requestLockByUser(120), // блокує подвійний клік
+  antiSpamPerUser(1000, 8),
+  requestLockByUser(120),
   async (req, res) => {
     const telegramIdStr = String(req.body?.telegramId ?? "");
 
@@ -43,18 +47,47 @@ router.post(
       return res.status(400).json({ error: "Tap cooldown" });
     }
 
+    let xp = user.xp + 1;
+    let level = user.level;
+    let coinsBonus = 0;
+    let diamondsBonus = 0;
+
+    // 🔥 LEVEL UP
+    while (xp >= getXpNeeded(level)) {
+      xp -= getXpNeeded(level);
+      level++;
+
+      coinsBonus += 25;
+
+      if (level % 5 === 0) {
+        diamondsBonus += 5;
+      }
+
+      if (level % 10 === 0) {
+        diamondsBonus += 15;
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { telegramId },
       data: {
-        coins: { increment: 1 },
+        coins: { increment: 1 + coinsBonus },
+        diamonds: { increment: diamondsBonus },
+        xp,
+        level,
         lastTapAt: new Date(),
-        xp: { increment: 1 },
       },
     });
 
     return res.json({
       coins: updated.coins,
       xp: updated.xp,
+      level: updated.level,
+      levelUp: coinsBonus > 0 || diamondsBonus > 0,
+      reward: {
+        coins: coinsBonus,
+        diamonds: diamondsBonus,
+      },
     });
   },
 );
