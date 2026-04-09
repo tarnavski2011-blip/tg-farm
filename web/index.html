@@ -387,6 +387,34 @@
       .full {
         grid-column: 1 / -1;
       }
+      .xp-wrap {
+        margin-top: 14px;
+      }
+      .xp-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        color: #cbd5e1;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .xp-track {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(30, 41, 59, 0.9);
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+      }
+      .xp-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+        transition: width 0.25s ease;
+      }
       #resultBox {
         display: none;
       }
@@ -421,6 +449,15 @@
           </div>
         </div>
         <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
+        <div class="xp-wrap">
+          <div class="xp-head">
+            <span>XP Progress</span>
+            <span id="xpProgressText">0 / 150</span>
+          </div>
+          <div class="xp-track">
+            <div class="xp-fill" id="xpFill"></div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="section-title">💰 Тапай і заробляй</div>
@@ -501,9 +538,14 @@
         pointsEl = document.getElementById("points"),
         xpEl = document.getElementById("xp"),
         levelBadgeEl = document.getElementById("levelBadge"),
-        boostStatusEl = document.getElementById("boostStatus");
+        boostStatusEl = document.getElementById("boostStatus"),
+        xpProgressTextEl = document.getElementById("xpProgressText"),
+        xpFillEl = document.getElementById("xpFill");
       let currentState = null;
       let wheelRotation = 0;
+      function getXpNeeded(level) {
+        return 100 + level * 50;
+      }
       function setStatus(t) {
         statusEl.textContent = t;
       }
@@ -555,15 +597,33 @@
       }
       function applyState(data) {
         currentState = data;
+
+        const level = data?.level ?? 1;
+        const xp = data?.xp ?? 0;
+        const xpNeed = getXpNeeded(level);
+        const xpPercent = Math.max(
+          0,
+          Math.min(100, Math.round((xp / xpNeed) * 100)),
+        );
+
         coinsEl.textContent = data?.coins ?? 0;
         diamondsEl.textContent = data?.diamonds ?? 0;
         pointsEl.textContent = data?.points ?? 0;
         xpEl.textContent = data?.xp ?? 0;
-        levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
+        levelBadgeEl.textContent = `LVL ${level}`;
+
         const boost = data?.boost?.active ? "ON" : "OFF";
         const auto = data?.autoCollect?.active ? "ON" : "OFF";
         const vip = data?.vip?.active ? "ON" : "OFF";
         boostStatusEl.innerText = `⚡ ${boost} | 🤖 ${auto} | 👑 ${vip}`;
+
+        if (xpProgressTextEl) {
+          xpProgressTextEl.textContent = `${xp} / ${xpNeed}`;
+        }
+
+        if (xpFillEl) {
+          xpFillEl.style.width = `${xpPercent}%`;
+        }
       }
       async function loadState() {
         try {
@@ -885,16 +945,14 @@
       async function openRefsModal() {
         modalTitle.textContent = "👥 Referrals v2";
         modalTabs.style.display = "none";
-
-        const res = await apiGet("/referrals");
-        const data = res.data || {};
-
-        const myCode = data.myCode ?? "-";
-        const totalRefs = data.totalRefs ?? 0;
-        const earnedCoins = data.stats?.earnedCoins ?? 0;
-        const earnedPoints = data.stats?.earnedPoints ?? 0;
-        const refs = Array.isArray(data.refs) ? data.refs : [];
-        const shareLink = `${shareBase}${myCode}`;
+        const res = await apiGet("/referrals"),
+          data = res.data || {},
+          myCode = data.myCode ?? "-",
+          totalRefs = data.totalRefs ?? 0,
+          earnedCoins = data.stats?.earnedCoins ?? 0,
+          earnedPoints = data.stats?.earnedPoints ?? 0,
+          refs = Array.isArray(data.refs) ? data.refs : [],
+          shareLink = `${shareBase}${myCode}`;
 
         modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${myCode}</div><div class="tile-row"><span>Запрошено</span><span>${totalRefs}</span></div><div class="tile-row"><span>💰 Зароблено з рефералів</span><span>${earnedCoins}</span></div><div class="tile-row"><span>⭐ Points з рефералів</span><span>${earnedPoints}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Мої реферали</div>${refs.length ? refs.map((r) => `<div class="tile-row" style="margin-top:10px;"><span>ID: ${r.telegramId ?? "-"}</span><span>${new Date(r.createdAt).toLocaleDateString()}</span></div>`).join("") : `<div class="note">Ще немає рефералів</div>`}</div>`;
         showModal();
@@ -903,7 +961,6 @@
           await navigator.clipboard.writeText(shareLink);
           showToast("Скопійовано");
         };
-
         document.getElementById("shareRefBtn").onclick = async () => {
           if (navigator.share) {
             try {
@@ -915,14 +972,12 @@
               return;
             } catch {}
           }
-
           await navigator.clipboard.writeText(shareLink);
           showToast("Посилання скопійовано");
         };
-
         document.getElementById("applyRefBtn").onclick = async () => {
-          const code = document.getElementById("refCodeInput").value.trim();
-          const resp = await apiPost("/referrals/apply", { code });
+          const code = document.getElementById("refCodeInput").value.trim(),
+            resp = await apiPost("/referrals/apply", { code });
           setResult(resp.data);
           if (resp.ok) {
             showToast(`+${resp.data?.rewardYou ?? 0}`);
