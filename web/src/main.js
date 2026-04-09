@@ -634,7 +634,7 @@ function render(
         <div class="hero-left">
           <div class="hero-logo">🚜</div>
           <div>
-            <div class="hero-title">Farm Game</div>
+            <div class="hero-title">Farm Game TEST 999</div>
             <div class="hero-sub">Ферма в Telegram Mini App</div>
           </div>
         </div>
