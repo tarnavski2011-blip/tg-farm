@@ -25,6 +25,10 @@ function secondsLeft(futureDate?: Date | null) {
   return diff > 0 ? diff : 0;
 }
 
+function getXpNeeded(level: number) {
+  return 100 + level * 50;
+}
+
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -45,6 +49,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       user = await prisma.user.create({
         data: {
           telegramId,
+          level: 1,
+          xp: 0,
           storage: {
             create: {
               eggs: 0,
@@ -110,7 +116,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       if (animal.type === "SHEEP") feedAvailable = sheepFeedLeft;
       if (animal.type === "COW") feedAvailable = cowFeedLeft;
 
-      // БЕЗ КОРМУ — НІЧОГО НЕ ВИРОБЛЯЄТЬСЯ І БОРГ НЕ НАКОПИЧУЄТЬСЯ
       if (feedAvailable <= 0) {
         animalUpdates.push(
           prisma.animal.update({
@@ -121,7 +126,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
-      // 1 корм = 1 одиниця базового ресурсу
       const maxCyclesByFeed = Math.floor(feedAvailable / animal.level);
       const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
 
@@ -270,14 +274,24 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       (user.storage.wool ?? 0) +
       (user.storage.milk ?? 0);
 
+    const level = user.level ?? 1;
+    const xp = user.xp ?? 0;
+    const xpNeeded = getXpNeeded(level);
+    const xpPercent = Math.max(
+      0,
+      Math.min(100, Math.round((xp / xpNeeded) * 100)),
+    );
+
     return res.json({
       ok: true,
 
       coins: user.coins,
       diamonds: user.diamonds,
       points: user.points,
-      level: user.level,
-      xp: user.xp,
+      level,
+      xp,
+      xpNeeded,
+      xpPercent,
 
       animals: {
         chicken: chickenAnimals.length,
