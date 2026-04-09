@@ -490,8 +490,6 @@ function renderModal(
     const myLink = `https://t.me/${BOT_NAME}?start=ref_${myCode}`;
     const list = referralsData?.refs ?? [];
     const total = referralsData?.totalRefs ?? 0;
-    const earnedCoins = referralsData?.stats?.earnedCoins ?? 0;
-    const earnedPoints = referralsData?.stats?.earnedPoints ?? 0;
 
     title = "👥 Referrals";
     body = `
@@ -499,8 +497,8 @@ function renderModal(
         <div class="panel-title">Мій код</div>
         <div class="panel-sub" style="font-size:26px;font-weight:900;color:white;">${myCode}</div>
         <div class="panel-sub">Запрошено друзів: ${total}</div>
-        <div class="panel-sub">💰 Зароблено з рефералів: ${earnedCoins}</div>
-        <div class="panel-sub">⭐ Points з рефералів: ${earnedPoints}</div>
+        <div class="panel-sub">💰 Зароблено з рефералів: ${referralsData?.stats?.earnedCoins ?? 0}</div>
+        <div class="panel-sub">⭐ Points з рефералів: ${referralsData?.stats?.earnedPoints ?? 0}</div>
       </div>
 
       <div class="panel">
@@ -522,29 +520,24 @@ function renderModal(
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Мої реферали</div>
-        <div class="ach-grid">
-          ${
-            list.length ? (
-              list
+      <div class="ach-grid">
+        ${
+          list.length
+            ? list
                 .map(
                   (r) => `
-                <div class="lb-row">
-                  <div class="lb-rank">👤</div>
-                  <div class="lb-user">
-                    <div class="lb-name">ID: ${r.telegramId ?? "-"}</div>
-                    <div class="lb-level">${new Date(r.createdAt).toLocaleDateString()}</div>
-                  </div>
+              <div class="lb-row">
+                <div class="lb-rank">👤</div>
+                <div class="lb-user">
+                  <div class="lb-name">Referral #${r.id}</div>
+                  <div class="lb-level">${new Date(r.createdAt).toLocaleDateString()}</div>
                 </div>
-              `,
+              </div>
+            `,
                 )
                 .join("")
-            ) : (
-              <div class="lb-empty">Ще немає рефералів</div>
-            )
-          }
-        </div>
+            : `<div class="lb-empty">Ще немає рефералів</div>`
+        }
       </div>
     `;
   }
@@ -799,40 +792,29 @@ function normalizeWheelState(json) {
 }
 
 async function applyReferralFromUrl() {
-  const params = new URLSearchParams(window.location.search);
+  try {
+    const params = new URLSearchParams(window.location.search);
 
-  const refFromQuery = String(params.get("ref") ?? "").trim();
-  const refFromTgParam = String(params.get("tgWebAppStartParam") ?? "").trim();
-  const refFromInitData = String(
-    window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "",
-  ).trim();
+    const refFromQuery = String(params.get("ref") ?? "").trim();
 
-  const ref = refFromQuery || refFromTgParam || refFromInitData;
+    // беремо тільки ОДИН раз
+    const tgParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "";
+    const refFromTgParam = String(tgParam).trim();
 
-  console.log("REF from query:", refFromQuery);
-  console.log("REF from tgWebAppStartParam:", refFromTgParam);
-  console.log("REF from initDataUnsafe.start_param:", refFromInitData);
-  console.log("FINAL REF:", ref);
+    const ref = refFromQuery || refFromTgParam;
 
-  showToast(ref ? `REF: ${ref}` : "REF НЕ ПРИЙШОВ");
+    if (!ref || !ref.startsWith("ref_")) return;
 
-  if (!ref) return;
-  if (!TELEGRAM_ID) return;
-  if (ref === TELEGRAM_ID) return;
+    const code = ref.replace("ref_", "");
 
-  const sessionKey = `farm_ref_applied_${ref}`;
-  if (sessionStorage.getItem(sessionKey) === "1") return;
+    await api("/api/referrals/apply", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
 
-  const { ok, json } = await apiPost(`${API}/referrals/apply`, {
-    code: ref,
-  });
-
-  if (ok) {
-    sessionStorage.setItem(sessionKey, "1");
-    showToast(`🎁 Реф активовано: +${json.rewardYou ?? 0} coins`);
-    await loadState();
-  } else {
-    showToast(json?.error || "REF APPLY ERROR");
+    console.log("REF APPLIED:", code);
+  } catch (e) {
+    console.error("REF ERROR:", e);
   }
 }
 
@@ -934,7 +916,7 @@ async function loadState() {
     boostersData,
   );
 
-  // await applyReferralFromUrl();
+  await applyReferralFromUrl();
 
   const off = stateRes.json?.offline;
   if (off && off.minutes > 0) {
