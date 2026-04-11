@@ -129,8 +129,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      reward: reward.label,
-      rewardData: reward,
+      reward: reward, // 🔥 головне
       coins: updated.coins,
       diamonds: updated.diamonds,
     });

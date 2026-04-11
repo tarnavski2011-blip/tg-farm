@@ -923,9 +923,14 @@
         modalTitle.textContent = "🎰 Wheel";
         modalTabs.style.display = "none";
 
+        const wheelState = await apiGet("/wheel/state");
+        const cooldownSec = wheelState?.data?.cooldownSec ?? 0;
+        const canSpin = cooldownSec <= 0;
+
         modalBody.innerHTML = `
           <div class="wheel-wrap">
             <div class="wheel-pointer"></div>
+
             <div class="wheel-svg-wrap">
               <svg class="wheel-svg" viewBox="0 0 260 260" aria-label="Wheel">
                 <g id="wheelRotor" class="wheel-rotor">
@@ -938,14 +943,14 @@
                   <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"></path>
                   <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"></path>
 
-                  <text x="172.9" y="36.8" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💰 50</text>
-                  <text x="223.2" y="87.1" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💰 100</text>
-                  <text x="223.2" y="172.9" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💰 200</text>
-                  <text x="172.9" y="223.2" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💎 1</text>
-                  <text x="87.1" y="223.2" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💎 3</text>
-                  <text x="36.8" y="172.9" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">💎 5</text>
-                  <text x="36.8" y="87.1" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">🎰 free</text>
-                  <text x="87.1" y="36.8" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">😅 0</text>
+                  <text x="172.9" y="36.8" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💰50</text>
+                  <text x="223.2" y="87.1" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💰100</text>
+                  <text x="223.2" y="172.9" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💰200</text>
+                  <text x="172.9" y="223.2" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💎1</text>
+                  <text x="87.1" y="223.2" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💎3</text>
+                  <text x="36.8" y="172.9" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">💎5</text>
+                  <text x="36.8" y="87.1" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">🎰free</text>
+                  <text x="87.1" y="36.8" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">😅0</text>
                 </g>
 
                 <circle cx="130" cy="130" r="112" fill="none" stroke="#1d4ed8" stroke-width="8"></circle>
@@ -954,13 +959,18 @@
               </svg>
             </div>
 
-            <button class="buy-btn" id="spinWheelBtn">Крутити</button>
+            <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>${canSpin ? "Крутити" : "Вже крутив сьогодні"}</button>
           </div>
         `;
 
         showModal();
 
         document.getElementById("spinWheelBtn").onclick = async () => {
+          if (!canSpin) {
+            showToast("Сьогодні вже крутив");
+            return;
+          }
+
           const rotor = document.getElementById("wheelRotor");
           wheelRotation += 1800 + Math.floor(Math.random() * 720);
           rotor.style.transform = `rotate(${wheelRotation}deg)`;
@@ -971,16 +981,26 @@
           setTimeout(async () => {
             if (res.ok) {
               const reward = res.data?.reward;
-              let txt = "Нагорода";
-              if (reward?.type === "nothing") txt = "😅 Нічого";
-              else if (reward?.type === "coins")
-                txt = `💰 +${reward?.amount ?? 0} coins`;
-              else if (reward?.type === "diamonds")
-                txt = `💎 +${reward?.amount ?? 0} diamonds`;
-              else if (reward?.type === "freeSpin") txt = "🎰 Free spin";
 
-              showWheelRewardPopup(txt);
+              let txt = "Нагорода";
+              if (reward?.type === "nothing") {
+                txt = "😅 Нічого";
+              } else if (reward?.type === "coins") {
+                txt = `💰 +${reward?.amount ?? 0} coins`;
+              } else if (reward?.type === "diamonds") {
+                txt = `💎 +${reward?.amount ?? 0} diamonds`;
+              } else if (reward?.type === "freeSpin") {
+                txt = "🎰 Free spin";
+              }
+
+              if (typeof showWheelRewardPopup === "function") {
+                showWheelRewardPopup(txt);
+              } else {
+                showToast(txt);
+              }
+
               await loadState();
+              await openWheelModal();
             } else {
               showToast(res.data?.error || "Помилка");
             }
