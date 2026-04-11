@@ -387,74 +387,6 @@
       .full {
         grid-column: 1 / -1;
       }
-      .levelup-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 23, 0.78);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-      }
-      .levelup-box {
-        width: calc(100% - 32px);
-        max-width: 360px;
-        background: #0f172a;
-        border: 1px solid rgba(59, 130, 246, 0.18);
-        border-radius: 24px;
-        padding: 20px 18px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-        text-align: center;
-      }
-      .levelup-title {
-        font-size: 28px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        color: #f8fafc;
-      }
-      .levelup-level {
-        font-size: 20px;
-        font-weight: 800;
-        color: #60a5fa;
-        margin-bottom: 12px;
-      }
-      .levelup-reward {
-        color: #cbd5e1;
-        font-size: 16px;
-        line-height: 1.5;
-        margin-bottom: 16px;
-      }
-      .levelup-btn {
-        width: 100%;
-        border: none;
-        border-radius: 16px;
-        padding: 14px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 800;
-        color: white;
-        background: linear-gradient(135deg, #2563eb, #60a5fa);
-      }
-      .wheel-rewards-box {
-        width: 100%;
-        max-width: 320px;
-        background: rgba(30, 41, 59, 0.92);
-        border: 1px solid rgba(148, 163, 184, 0.14);
-        border-radius: 18px;
-        padding: 12px;
-        text-align: center;
-      }
-      .wheel-rewards-title {
-        font-size: 14px;
-        font-weight: 800;
-        color: #f8fafc;
-        margin-bottom: 8px;
-      }
-      .wheel-rewards-list {
-        color: #cbd5e1;
-        font-size: 13px;
-        line-height: 1.6;
-      }
       #resultBox {
         display: none;
       }
@@ -621,37 +553,28 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
-      function showLevelUpPopup(level, reward) {
-        const old = document.getElementById("levelUpPopup");
+      function showWheelRewardPopup(text) {
+        const old = document.getElementById("wheelRewardPopup");
         if (old) old.remove();
 
-        const coins = reward?.coins ?? 0;
-        const diamonds = reward?.diamonds ?? 0;
-
-        let rewardText = "";
-        if (coins) rewardText += `💰 +${coins} coins`;
-        if (diamonds)
-          rewardText += `${rewardText ? "<br>" : ""}💎 +${diamonds} diamonds`;
-        if (!rewardText) rewardText = "Новий рівень!";
-
         const html = `
-          <div class="levelup-backdrop" id="levelUpPopup">
-            <div class="levelup-box">
-              <div class="levelup-title">🎉 LEVEL UP</div>
-              <div class="levelup-level">Тепер ти LVL ${level}</div>
-              <div class="levelup-reward">${rewardText}</div>
-              <button class="levelup-btn" id="levelUpOkBtn">Круто</button>
+          <div class="wheel-win-backdrop" id="wheelRewardPopup">
+            <div class="wheel-win-box">
+              <div class="wheel-win-title">🎉 Виграш</div>
+              <div class="wheel-win-reward">${text}</div>
+              <button class="wheel-win-btn" id="wheelRewardOkBtn">Забрати</button>
             </div>
           </div>
         `;
 
         document.body.insertAdjacentHTML("beforeend", html);
         document
-          .getElementById("levelUpOkBtn")
+          .getElementById("wheelRewardOkBtn")
           ?.addEventListener("click", () => {
-            document.getElementById("levelUpPopup")?.remove();
+            document.getElementById("wheelRewardPopup")?.remove();
           });
       }
+
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -685,17 +608,8 @@
           setStatus("collect...");
           const res = await apiPost("/collect");
           setResult(res.data);
-
           if (res.ok) {
-            showToast(`+${res.data?.coinsAdded ?? 1}`);
-
-            if (res.data?.levelUp) {
-              showLevelUpPopup(
-                res.data?.level ?? currentState?.level ?? 1,
-                res.data?.reward ?? {},
-              );
-            }
-
+            showToast(`+${res.data?.added ?? 1}`);
             await loadState();
             setStatus("ok");
           } else {
@@ -904,96 +818,20 @@
       async function openDailyModal() {
         modalTitle.textContent = "🎁 Daily";
         modalTabs.style.display = "none";
-
-        const res = await apiGet("/daily/status");
-        const data = res.data || {};
-
-        const streak = data.streak ?? 0;
-        const canClaim = !!data.canClaim;
-        const nextDay = data.nextDay ?? 1;
-        const rewards = Array.isArray(data.rewards) ? data.rewards : [];
-
-        let daysHtml = "";
-        if (rewards.length) {
-          const items = rewards
-            .map((r) => {
-              const claimed =
-                r.day < nextDay || (!canClaim && r.day === streak);
-              const current = canClaim && r.day === nextDay;
-
-              let rewardText = "";
-              if (r.coins) rewardText += `💰${r.coins}`;
-              if (r.diamonds)
-                rewardText += `${rewardText ? "<br>" : ""}💎${r.diamonds}`;
-              if (r.freeWheelSpin)
-                rewardText += `${rewardText ? "<br>" : ""}🎰`;
-
-              const bg = claimed
-                ? "rgba(55,201,93,0.18)"
-                : current
-                  ? "rgba(93,156,255,0.22)"
-                  : "rgba(255,255,255,0.05)";
-
-              const mark = claimed ? "✓" : current ? "зараз" : "";
-
-              return `<div style="padding:10px 6px;border-radius:14px;text-align:center;border:1px solid rgba(255,255,255,0.08);background:${bg};">
-              <div style="font-size:12px;color:#aebedd;">${r.day}</div>
-              <div style="margin-top:6px;font-size:12px;font-weight:800;">${rewardText || "-"}</div>
-              <div style="margin-top:6px;font-size:11px;color:#cbd5e1;">${mark}</div>
-            </div>`;
-            })
-            .join("");
-
-          daysHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">${items}</div>`;
-        }
-
-        const reward = data.reward || {};
-        let todayRewardText = "";
-        if (reward.coins) todayRewardText += `💰 ${reward.coins}`;
-        if (reward.diamonds)
-          todayRewardText += `${todayRewardText ? " " : ""}💎 ${reward.diamonds}`;
-        if (reward.freeWheelSpin)
-          todayRewardText += `${todayRewardText ? " " : ""}🎰 free spin`;
-
-        modalBody.innerHTML = `
-          <div class="tile">
-            <div class="tile-title">Поточний streak</div>
-            <div class="tile-value">${streak}</div>
-            <div class="tile-row"><span>Наступний день</span><span>${nextDay}</span></div>
-            <div class="tile-row"><span>Нагорода</span><span>${todayRewardText || "-"}</span></div>
-            <button class="buy-btn ${canClaim ? "" : "green"}" id="claimDailyBtn">${canClaim ? "Забрати" : "Вже забрано"}</button>
-          </div>
-          ${daysHtml}
-        `;
-
+        modalBody.innerHTML = `<div class="tile"><div class="note">Щоденна нагорода</div><button class="buy-btn" id="claimDailyBtn">Забрати</button></div>`;
         showModal();
-
         document.getElementById("claimDailyBtn").onclick = async () => {
-          if (!canClaim) {
-            showToast("Вже забрано сьогодні");
-            return;
-          }
-
-          const claimRes = await apiPost("/daily/claim");
-          const finalRes = claimRes.ok ? claimRes : await apiPost("/daily");
-          setResult(finalRes.data);
-
-          if (finalRes.ok) {
-            const rw = finalRes.data?.reward || finalRes.data?.rewardData || {};
-            let txt = "";
-            if (rw.coins) txt += `💰 ${rw.coins}`;
-            if (rw.diamonds) txt += `${txt ? " " : ""}💎 ${rw.diamonds}`;
-            if (rw.freeWheelSpin) txt += `${txt ? " " : ""}🎰`;
-
-            showToast(txt || "Daily забрано");
+          const res = await apiPost("/daily");
+          setResult(res.data);
+          if (res.ok) {
+            showToast(`+${res.data?.reward ?? 0}`);
             await loadState();
-            await openDailyModal();
+            closeModal();
           } else {
-            showToast(finalRes.data?.error || "Помилка");
+            showToast(res.data?.error || "Вже забрано");
           }
         };
       }
-
       async function openQuestsModal() {
         modalTitle.textContent = "📜 Квести";
         modalTabs.style.display = "none";
@@ -1029,20 +867,32 @@
           <div class="wheel-wrap">
             <div class="wheel-pointer"></div>
 
-            <div class="wheel-disc-shell">
-              <div class="wheel-disc">
-                <div class="wheel-bg" id="wheelBg"></div>
-                <div class="wheel-center">SPIN</div>
-              </div>
+            <div class="wheel-svg-wrap">
+              <svg class="wheel-svg" viewBox="0 0 260 260" aria-label="Wheel">
+                <g class="wheel-rotor" id="wheelRotor">
+                  <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"></path>
+                  <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"></path>
+                  <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"></path>
+                  <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"></path>
+                  <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"></path>
+                  <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"></path>
+                  <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"></path>
+                  <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"></path>
 
-              <div class="wheel-label" style="left: 164px; top: 14px;"><span>💰 50</span></div>
-              <div class="wheel-label" style="left: 203px; top: 68px;"><span>💰 100</span></div>
-              <div class="wheel-label" style="left: 194px; top: 142px;"><span>💰 200</span></div>
-              <div class="wheel-label" style="left: 139px; top: 196px;"><span>💎 1</span></div>
-              <div class="wheel-label" style="left: 56px; top: 196px;"><span>💎 3</span></div>
-              <div class="wheel-label" style="left: 2px; top: 142px;"><span>💎 5</span></div>
-              <div class="wheel-label" style="left: -8px; top: 68px;"><span>🎰 free</span></div>
-              <div class="wheel-label" style="left: 48px; top: 14px;"><span>😅 0</span></div>
+                  <text x="172.9" y="36.8" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(22.5 172.9 36.8)">💰 50</text>
+                  <text x="223.2" y="87.1" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(67.5 223.2 87.1)">💰 100</text>
+                  <text x="223.2" y="172.9" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(112.5 223.2 172.9)">💰 200</text>
+                  <text x="172.9" y="223.2" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(157.5 172.9 223.2)">💎 1</text>
+                  <text x="87.1" y="223.2" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(202.5 87.1 223.2)">💎 3</text>
+                  <text x="36.8" y="172.9" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(247.5 36.8 172.9)">💎 5</text>
+                  <text x="36.8" y="87.1" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(292.5 36.8 87.1)">🎰 free</text>
+                  <text x="87.1" y="36.8" fill="#fff" font-size="12" font-weight="900" text-anchor="middle" transform="rotate(337.5 87.1 36.8)">😅 0</text>
+                </g>
+
+                <circle cx="130" cy="130" r="112" fill="none" stroke="#1d4ed8" stroke-width="8"></circle>
+                <circle cx="130" cy="130" r="41" fill="#0f172a" stroke="#60a5fa" stroke-width="4"></circle>
+                <text x="130" y="138" fill="#fff" font-size="16" font-weight="900" text-anchor="middle">SPIN</text>
+              </svg>
             </div>
 
             <button class="buy-btn" id="spinWheelBtn">Крутити</button>
@@ -1052,10 +902,10 @@
         showModal();
 
         document.getElementById("spinWheelBtn").onclick = async () => {
-          const bg = document.getElementById("wheelBg");
+          const rotor = document.getElementById("wheelRotor");
 
           wheelRotation += 1800 + Math.floor(Math.random() * 720);
-          bg.style.transform = `rotate(${wheelRotation}deg)`;
+          rotor.style.transform = `rotate(${wheelRotation}deg)`;
 
           const res = await apiPost("/wheel/spin");
           setResult(res.data);
@@ -1066,18 +916,17 @@
 
               let txt = "Нагорода";
               if (reward?.type === "nothing") {
-                txt = "Нічого 😅";
+                txt = "😅 Нічого";
               } else if (reward?.type === "coins") {
-                txt = `💰 +${reward?.amount ?? 0}`;
+                txt = `💰 +${reward?.amount ?? 0} coins`;
               } else if (reward?.type === "diamonds") {
-                txt = `💎 +${reward?.amount ?? 0}`;
+                txt = `💎 +${reward?.amount ?? 0} diamonds`;
               } else if (reward?.type === "freeSpin") {
                 txt = "🎰 Free spin";
               }
 
-              showToast(txt);
+              showWheelRewardPopup(txt);
               await loadState();
-              closeModal();
             } else {
               showToast(res.data?.error || "Помилка");
             }
