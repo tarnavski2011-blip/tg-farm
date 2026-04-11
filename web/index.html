@@ -396,7 +396,7 @@
         color: #ffffff;
         text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
         line-height: 1.12;
-        transform: rotate(90deg);
+        transform: rotate(-90deg);
       }
       .share-row {
         display: grid;
@@ -783,30 +783,30 @@
         }
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile">
-              <div class="tile-title">Рівень</div>
-              <div class="tile-value">${data.level ?? 1}</div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile">
+                    <div class="tile-title">Рівень</div>
+                    <div class="tile-value">${data.level ?? 1}</div>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">Множник</div>
-              <div class="tile-value">x${data.multiplier ?? 1}</div>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">Множник</div>
+                    <div class="tile-value">x${data.multiplier ?? 1}</div>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">Наступна ціна</div>
-              <div class="tile-value">${priceText}</div>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">Наступна ціна</div>
+                    <div class="tile-value">${priceText}</div>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">Наступний множник</div>
-              <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
-            </div>
-          </div>
+                  <div class="tile">
+                    <div class="tile-title">Наступний множник</div>
+                    <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
+                  </div>
+                </div>
 
-          <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
-        `;
+                <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
+              `;
 
         showModal();
 
@@ -872,41 +872,41 @@
         modalTabs.style.display = "none";
 
         modalBody.innerHTML = `
-          <div class="wheel-wrap">
-            <div class="wheel-pointer"></div>
+                <div class="wheel-wrap">
+                  <div class="wheel-pointer"></div>
 
-            <div class="wheel-disc" id="wheelDisc">
-              <div class="wheel-label" style="transform: rotate(0deg);">
-                <span>💰 50</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(45deg);">
-                <span>💰 100</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(90deg);">
-                <span>💰 200</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(135deg);">
-                <span>💎 1</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(180deg);">
-                <span>💎 3</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(225deg);">
-                <span>💎 5</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(270deg);">
-                <span>🎰 free</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(315deg);">
-                <span>😅 0</span>
-              </div>
+                  <div class="wheel-disc" id="wheelDisc">
+                    <div class="wheel-label" style="transform: rotate(0deg);">
+                      <span>💰 50</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(45deg);">
+                      <span>💰 100</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(90deg);">
+                      <span>💰 200</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(135deg);">
+                      <span>💎 1</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(180deg);">
+                      <span>💎 3</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(225deg);">
+                      <span>💎 5</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(270deg);">
+                      <span>🎰 free</span>
+                    </div>
+                    <div class="wheel-label" style="transform: rotate(315deg);">
+                      <span>😅 0</span>
+                    </div>
 
-              <div class="wheel-center">SPIN</div>
-            </div>
+                    <div class="wheel-center">SPIN</div>
+                  </div>
 
-            <button class="buy-btn" id="spinWheelBtn">Крутити</button>
-          </div>
-        `;
+                  <button class="buy-btn" id="spinWheelBtn">Крутити</button>
+                </div>
+              `;
 
         showModal();
 
@@ -915,6 +915,13 @@
 
           wheelRotation += 1800 + Math.floor(Math.random() * 720);
           disc.style.transform = `rotate(${wheelRotation}deg)`;
+
+          document.querySelectorAll(".wheel-label").forEach((el) => {
+            el.style.transform = el.style.transform.replace(
+              /rotate\((.*?)deg\)/,
+              (_, deg) => `rotate(${deg}) rotate(${-wheelRotation}deg)`,
+            );
+          });
 
           const res = await apiPost("/wheel/spin");
           setResult(res.data);
