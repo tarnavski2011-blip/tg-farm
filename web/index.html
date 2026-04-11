@@ -343,7 +343,9 @@
           #93c5fd 270deg 315deg,
           #2563eb 315deg 360deg
         );
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+        box-shadow:
+          0 18px 45px rgba(0, 0, 0, 0.35),
+          inset 0 6px 18px rgba(255, 255, 255, 0.08);
         position: relative;
         overflow: hidden;
         transition: transform 3.2s cubic-bezier(0.18, 0.89, 0.32, 1.08);
@@ -353,42 +355,48 @@
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: 78px;
-        height: 78px;
+        width: 82px;
+        height: 82px;
         border-radius: 50%;
         background: #0f172a;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
+        font-weight: 900;
         font-size: 16px;
+        color: #fff;
         border: 4px solid #60a5fa;
         z-index: 5;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
       }
       .wheel-pointer {
         width: 0;
         height: 0;
-        border-left: 16px solid transparent;
-        border-right: 16px solid transparent;
-        border-top: 24px solid #f8fafc;
+        border-left: 18px solid transparent;
+        border-right: 18px solid transparent;
+        border-top: 28px solid #f8fafc;
         margin-bottom: -8px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
       }
       .wheel-label {
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 80px;
-        margin-left: -40px;
+        width: 76px;
+        margin-left: -38px;
         text-align: center;
-
-        transform-origin: center -90px; /* 🔥 ГОЛОВНЕ ВИПРАВЛЕННЯ */
+        transform-origin: center -86px;
+        z-index: 2;
+        pointer-events: none;
       }
       .wheel-label span {
         display: block;
         font-size: 13px;
-        font-weight: 800;
-        color: #fff;
-        transform: rotate(90deg); /* щоб текст читався прямо */
+        font-weight: 900;
+        color: #ffffff;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+        line-height: 1.12;
+        transform: rotate(90deg);
       }
       .share-row {
         display: grid;
@@ -408,93 +416,6 @@
       }
       .full {
         grid-column: 1 / -1;
-      }
-      .levelup-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 23, 0.78);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-      }
-      .levelup-box {
-        width: calc(100% - 32px);
-        max-width: 360px;
-        background: #0f172a;
-        border: 1px solid rgba(59, 130, 246, 0.18);
-        border-radius: 24px;
-        padding: 20px 18px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-        text-align: center;
-      }
-      .levelup-title {
-        font-size: 28px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        color: #f8fafc;
-      }
-      .levelup-level {
-        font-size: 20px;
-        font-weight: 800;
-        color: #60a5fa;
-        margin-bottom: 12px;
-      }
-      .levelup-reward {
-        color: #cbd5e1;
-        font-size: 16px;
-        line-height: 1.5;
-        margin-bottom: 16px;
-      }
-      .levelup-btn {
-        width: 100%;
-        border: none;
-        border-radius: 16px;
-        padding: 14px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 800;
-        color: white;
-        background: linear-gradient(135deg, #2563eb, #60a5fa);
-      }
-      .wheel-rewards-box {
-        width: 100%;
-        max-width: 320px;
-        background: rgba(30, 41, 59, 0.92);
-        border: 1px solid rgba(148, 163, 184, 0.14);
-        border-radius: 18px;
-        padding: 12px;
-        text-align: center;
-      }
-      .wheel-rewards-title {
-        font-size: 14px;
-        font-weight: 800;
-        color: #f8fafc;
-        margin-bottom: 8px;
-      }
-      .wheel-rewards-list {
-        color: #cbd5e1;
-        font-size: 13px;
-        line-height: 1.6;
-      }
-      .wheel-disc {
-        overflow: hidden;
-      }
-      .wheel-label {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform-origin: 0 0;
-        font-size: 12px;
-        font-weight: 800;
-        color: #ffffff;
-        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
-        pointer-events: none;
-        white-space: nowrap;
-      }
-      .wheel-label span {
-        display: inline-block;
-        transform: translate(-50%, -50%);
       }
       #resultBox {
         display: none;
@@ -662,37 +583,6 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
-      function showLevelUpPopup(level, reward) {
-        const old = document.getElementById("levelUpPopup");
-        if (old) old.remove();
-
-        const coins = reward?.coins ?? 0;
-        const diamonds = reward?.diamonds ?? 0;
-
-        let rewardText = "";
-        if (coins) rewardText += `💰 +${coins} coins`;
-        if (diamonds)
-          rewardText += `${rewardText ? "<br>" : ""}💎 +${diamonds} diamonds`;
-        if (!rewardText) rewardText = "Новий рівень!";
-
-        const html = `
-          <div class="levelup-backdrop" id="levelUpPopup">
-            <div class="levelup-box">
-              <div class="levelup-title">🎉 LEVEL UP</div>
-              <div class="levelup-level">Тепер ти LVL ${level}</div>
-              <div class="levelup-reward">${rewardText}</div>
-              <button class="levelup-btn" id="levelUpOkBtn">Круто</button>
-            </div>
-          </div>
-        `;
-
-        document.body.insertAdjacentHTML("beforeend", html);
-        document
-          .getElementById("levelUpOkBtn")
-          ?.addEventListener("click", () => {
-            document.getElementById("levelUpPopup")?.remove();
-          });
-      }
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -726,17 +616,8 @@
           setStatus("collect...");
           const res = await apiPost("/collect");
           setResult(res.data);
-
           if (res.ok) {
-            showToast(`+${res.data?.coinsAdded ?? 1}`);
-
-            if (res.data?.levelUp) {
-              showLevelUpPopup(
-                res.data?.level ?? currentState?.level ?? 1,
-                res.data?.reward ?? {},
-              );
-            }
-
+            showToast(`+${res.data?.added ?? 1}`);
             await loadState();
             setStatus("ok");
           } else {
@@ -945,96 +826,20 @@
       async function openDailyModal() {
         modalTitle.textContent = "🎁 Daily";
         modalTabs.style.display = "none";
-
-        const res = await apiGet("/daily/status");
-        const data = res.data || {};
-
-        const streak = data.streak ?? 0;
-        const canClaim = !!data.canClaim;
-        const nextDay = data.nextDay ?? 1;
-        const rewards = Array.isArray(data.rewards) ? data.rewards : [];
-
-        let daysHtml = "";
-        if (rewards.length) {
-          const items = rewards
-            .map((r) => {
-              const claimed =
-                r.day < nextDay || (!canClaim && r.day === streak);
-              const current = canClaim && r.day === nextDay;
-
-              let rewardText = "";
-              if (r.coins) rewardText += `💰${r.coins}`;
-              if (r.diamonds)
-                rewardText += `${rewardText ? "<br>" : ""}💎${r.diamonds}`;
-              if (r.freeWheelSpin)
-                rewardText += `${rewardText ? "<br>" : ""}🎰`;
-
-              const bg = claimed
-                ? "rgba(55,201,93,0.18)"
-                : current
-                  ? "rgba(93,156,255,0.22)"
-                  : "rgba(255,255,255,0.05)";
-
-              const mark = claimed ? "✓" : current ? "зараз" : "";
-
-              return `<div style="padding:10px 6px;border-radius:14px;text-align:center;border:1px solid rgba(255,255,255,0.08);background:${bg};">
-              <div style="font-size:12px;color:#aebedd;">${r.day}</div>
-              <div style="margin-top:6px;font-size:12px;font-weight:800;">${rewardText || "-"}</div>
-              <div style="margin-top:6px;font-size:11px;color:#cbd5e1;">${mark}</div>
-            </div>`;
-            })
-            .join("");
-
-          daysHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">${items}</div>`;
-        }
-
-        const reward = data.reward || {};
-        let todayRewardText = "";
-        if (reward.coins) todayRewardText += `💰 ${reward.coins}`;
-        if (reward.diamonds)
-          todayRewardText += `${todayRewardText ? " " : ""}💎 ${reward.diamonds}`;
-        if (reward.freeWheelSpin)
-          todayRewardText += `${todayRewardText ? " " : ""}🎰 free spin`;
-
-        modalBody.innerHTML = `
-          <div class="tile">
-            <div class="tile-title">Поточний streak</div>
-            <div class="tile-value">${streak}</div>
-            <div class="tile-row"><span>Наступний день</span><span>${nextDay}</span></div>
-            <div class="tile-row"><span>Нагорода</span><span>${todayRewardText || "-"}</span></div>
-            <button class="buy-btn ${canClaim ? "" : "green"}" id="claimDailyBtn">${canClaim ? "Забрати" : "Вже забрано"}</button>
-          </div>
-          ${daysHtml}
-        `;
-
+        modalBody.innerHTML = `<div class="tile"><div class="note">Щоденна нагорода</div><button class="buy-btn" id="claimDailyBtn">Забрати</button></div>`;
         showModal();
-
         document.getElementById("claimDailyBtn").onclick = async () => {
-          if (!canClaim) {
-            showToast("Вже забрано сьогодні");
-            return;
-          }
-
-          const claimRes = await apiPost("/daily/claim");
-          const finalRes = claimRes.ok ? claimRes : await apiPost("/daily");
-          setResult(finalRes.data);
-
-          if (finalRes.ok) {
-            const rw = finalRes.data?.reward || finalRes.data?.rewardData || {};
-            let txt = "";
-            if (rw.coins) txt += `💰 ${rw.coins}`;
-            if (rw.diamonds) txt += `${txt ? " " : ""}💎 ${rw.diamonds}`;
-            if (rw.freeWheelSpin) txt += `${txt ? " " : ""}🎰`;
-
-            showToast(txt || "Daily забрано");
+          const res = await apiPost("/daily");
+          setResult(res.data);
+          if (res.ok) {
+            showToast(`+${res.data?.reward ?? 0}`);
             await loadState();
-            await openDailyModal();
+            closeModal();
           } else {
-            showToast(finalRes.data?.error || "Помилка");
+            showToast(res.data?.error || "Вже забрано");
           }
         };
       }
-
       async function openQuestsModal() {
         modalTitle.textContent = "📜 Квести";
         modalTabs.style.display = "none";
@@ -1071,30 +876,30 @@
             <div class="wheel-pointer"></div>
 
             <div class="wheel-disc" id="wheelDisc">
-              <div class="wheel-label" style="transform: rotate(0deg)">
-  <span>💰 50</span>
-</div>
-<div class="wheel-label" style="transform: rotate(45deg)">
-  <span>💰 100</span>
-</div>
-<div class="wheel-label" style="transform: rotate(90deg)">
-  <span>💰 200</span>
-</div>
-<div class="wheel-label" style="transform: rotate(135deg)">
-  <span>💎 1</span>
-</div>
-<div class="wheel-label" style="transform: rotate(180deg)">
-  <span>💎 3</span>
-</div>
-<div class="wheel-label" style="transform: rotate(225deg)">
-  <span>💎 5</span>
-</div>
-<div class="wheel-label" style="transform: rotate(270deg)">
-  <span>🎰 free</span>
-</div>
-<div class="wheel-label" style="transform: rotate(315deg)">
-  <span>😅 0</span>
-</div>
+              <div class="wheel-label" style="transform: rotate(0deg);">
+                <span>💰 50</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(45deg);">
+                <span>💰 100</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(90deg);">
+                <span>💰 200</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(135deg);">
+                <span>💎 1</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(180deg);">
+                <span>💎 3</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(225deg);">
+                <span>💎 5</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(270deg);">
+                <span>🎰 free</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(315deg);">
+                <span>😅 0</span>
+              </div>
 
               <div class="wheel-center">SPIN</div>
             </div>
