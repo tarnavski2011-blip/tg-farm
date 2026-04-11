@@ -387,6 +387,74 @@
       .full {
         grid-column: 1 / -1;
       }
+      .levelup-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.78);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .levelup-box {
+        width: calc(100% - 32px);
+        max-width: 360px;
+        background: #0f172a;
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: 24px;
+        padding: 20px 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        text-align: center;
+      }
+      .levelup-title {
+        font-size: 28px;
+        font-weight: 900;
+        margin-bottom: 10px;
+        color: #f8fafc;
+      }
+      .levelup-level {
+        font-size: 20px;
+        font-weight: 800;
+        color: #60a5fa;
+        margin-bottom: 12px;
+      }
+      .levelup-reward {
+        color: #cbd5e1;
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+      }
+      .levelup-btn {
+        width: 100%;
+        border: none;
+        border-radius: 16px;
+        padding: 14px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+      }
+      .wheel-rewards-box {
+        width: 100%;
+        max-width: 320px;
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 18px;
+        padding: 12px;
+        text-align: center;
+      }
+      .wheel-rewards-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #f8fafc;
+        margin-bottom: 8px;
+      }
+      .wheel-rewards-list {
+        color: #cbd5e1;
+        font-size: 13px;
+        line-height: 1.6;
+      }
       #resultBox {
         display: none;
       }
@@ -553,6 +621,37 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
+      function showLevelUpPopup(level, reward) {
+        const old = document.getElementById("levelUpPopup");
+        if (old) old.remove();
+
+        const coins = reward?.coins ?? 0;
+        const diamonds = reward?.diamonds ?? 0;
+
+        let rewardText = "";
+        if (coins) rewardText += `💰 +${coins} coins`;
+        if (diamonds)
+          rewardText += `${rewardText ? "<br>" : ""}💎 +${diamonds} diamonds`;
+        if (!rewardText) rewardText = "Новий рівень!";
+
+        const html = `
+          <div class="levelup-backdrop" id="levelUpPopup">
+            <div class="levelup-box">
+              <div class="levelup-title">🎉 LEVEL UP</div>
+              <div class="levelup-level">Тепер ти LVL ${level}</div>
+              <div class="levelup-reward">${rewardText}</div>
+              <button class="levelup-btn" id="levelUpOkBtn">Круто</button>
+            </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML("beforeend", html);
+        document
+          .getElementById("levelUpOkBtn")
+          ?.addEventListener("click", () => {
+            document.getElementById("levelUpPopup")?.remove();
+          });
+      }
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -586,8 +685,17 @@
           setStatus("collect...");
           const res = await apiPost("/collect");
           setResult(res.data);
+
           if (res.ok) {
-            showToast(`+${res.data?.added ?? 1}`);
+            showToast(`+${res.data?.coinsAdded ?? 1}`);
+
+            if (res.data?.levelUp) {
+              showLevelUpPopup(
+                res.data?.level ?? currentState?.level ?? 1,
+                res.data?.reward ?? {},
+              );
+            }
+
             await loadState();
             setStatus("ok");
           } else {
@@ -916,21 +1024,58 @@
       async function openWheelModal() {
         modalTitle.textContent = "🎰 Wheel";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="wheel-wrap"><div class="wheel-pointer"></div><div class="wheel-disc" id="wheelDisc"><div class="wheel-center">SPIN</div></div><button class="buy-btn" id="spinWheelBtn">Крутити</button></div>`;
+
+        modalBody.innerHTML = `
+          <div class="wheel-wrap">
+            <div class="wheel-rewards-box">
+              <div class="wheel-rewards-title">🎁 Можна виграти</div>
+              <div class="wheel-rewards-list">
+                💰 50 coins<br>
+                💰 100 coins<br>
+                💰 200 coins<br>
+                💎 1 diamond<br>
+                💎 3 diamonds<br>
+                💎 5 diamonds<br>
+                🎰 free spin<br>
+                😅 nothing
+              </div>
+            </div>
+
+            <div class="wheel-pointer"></div>
+            <div class="wheel-disc" id="wheelDisc">
+              <div class="wheel-center">SPIN</div>
+            </div>
+
+            <button class="buy-btn" id="spinWheelBtn">Крутити</button>
+          </div>
+        `;
+
         showModal();
+
         document.getElementById("spinWheelBtn").onclick = async () => {
           const disc = document.getElementById("wheelDisc");
+
           wheelRotation += 1800 + Math.floor(Math.random() * 720);
           disc.style.transform = `rotate(${wheelRotation}deg)`;
+
           const res = await apiPost("/wheel/spin");
           setResult(res.data);
+
           setTimeout(async () => {
             if (res.ok) {
               const reward = res.data?.reward;
-              const txt =
-                reward?.type === "nothing"
-                  ? "Нічого 😅"
-                  : `+${reward?.amount ?? 0} ${reward?.type ?? ""}`;
+
+              let txt = "Нагорода";
+              if (reward?.type === "nothing") {
+                txt = "Нічого 😅";
+              } else if (reward?.type === "coins") {
+                txt = `💰 +${reward?.amount ?? 0}`;
+              } else if (reward?.type === "diamonds") {
+                txt = `💎 +${reward?.amount ?? 0}`;
+              } else if (reward?.type === "freeSpin") {
+                txt = "🎰 Free spin";
+              }
+
               showToast(txt);
               await loadState();
               closeModal();
