@@ -455,6 +455,25 @@
         font-size: 13px;
         line-height: 1.6;
       }
+      .wheel-disc {
+        overflow: hidden;
+      }
+      .wheel-label {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform-origin: 0 0;
+        font-size: 12px;
+        font-weight: 800;
+        color: #ffffff;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .wheel-label span {
+        display: inline-block;
+        transform: translate(-50%, -50%);
+      }
       #resultBox {
         display: none;
       }
@@ -1028,7 +1047,33 @@
         modalBody.innerHTML = `
           <div class="wheel-wrap">
             <div class="wheel-pointer"></div>
+
             <div class="wheel-disc" id="wheelDisc">
+              <div class="wheel-label" style="transform: rotate(22deg) translate(78px) rotate(-22deg);">
+                <span>💰 50</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(67deg) translate(78px) rotate(-67deg);">
+                <span>💰 100</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(112deg) translate(78px) rotate(-112deg);">
+                <span>💰 200</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(157deg) translate(78px) rotate(-157deg);">
+                <span>💎 1</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(202deg) translate(78px) rotate(-202deg);">
+                <span>💎 3</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(247deg) translate(78px) rotate(-247deg);">
+                <span>💎 5</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(292deg) translate(78px) rotate(-292deg);">
+                <span>🎰 free</span>
+              </div>
+              <div class="wheel-label" style="transform: rotate(337deg) translate(78px) rotate(-337deg);">
+                <span>😅 0</span>
+              </div>
+
               <div class="wheel-center">SPIN</div>
             </div>
 
