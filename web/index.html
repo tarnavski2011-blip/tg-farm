@@ -1027,20 +1027,6 @@
 
         modalBody.innerHTML = `
           <div class="wheel-wrap">
-            <div class="wheel-rewards-box">
-              <div class="wheel-rewards-title">🎁 Можна виграти</div>
-              <div class="wheel-rewards-list">
-                💰 50 coins<br>
-                💰 100 coins<br>
-                💰 200 coins<br>
-                💎 1 diamond<br>
-                💎 3 diamonds<br>
-                💎 5 diamonds<br>
-                🎰 free spin<br>
-                😅 nothing
-              </div>
-            </div>
-
             <div class="wheel-pointer"></div>
             <div class="wheel-disc" id="wheelDisc">
               <div class="wheel-center">SPIN</div>
@@ -1085,6 +1071,7 @@
           }, 3200);
         };
       }
+
       async function openShopModal() {
         modalTitle.textContent = "💎 Diamonds за Stars";
         modalTabs.style.display = "none";
