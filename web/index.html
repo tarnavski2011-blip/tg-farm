@@ -377,20 +377,18 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 74px;
-        margin-left: -37px;
+        width: 80px;
+        margin-left: -40px;
         text-align: center;
-        transform-origin: center -72px;
-        z-index: 2;
-        pointer-events: none;
+
+        transform-origin: center -90px; /* 🔥 ГОЛОВНЕ ВИПРАВЛЕННЯ */
       }
       .wheel-label span {
         display: block;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 800;
-        color: #ffffff;
-        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
-        line-height: 1.15;
+        color: #fff;
+        transform: rotate(90deg); /* щоб текст читався прямо */
       }
       .share-row {
         display: grid;
@@ -1073,30 +1071,30 @@
             <div class="wheel-pointer"></div>
 
             <div class="wheel-disc" id="wheelDisc">
-              <div class="wheel-label" style="transform: rotate(22.5deg);">
-                <span>💰 50</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(67.5deg);">
-                <span>💰 100</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(112.5deg);">
-                <span>💰 200</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(157.5deg);">
-                <span>💎 1</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(202.5deg);">
-                <span>💎 3</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(247.5deg);">
-                <span>💎 5</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(292.5deg);">
-                <span>🎰 free</span>
-              </div>
-              <div class="wheel-label" style="transform: rotate(337.5deg);">
-                <span>😅 0</span>
-              </div>
+              <div class="wheel-label" style="transform: rotate(0deg)">
+  <span>💰 50</span>
+</div>
+<div class="wheel-label" style="transform: rotate(45deg)">
+  <span>💰 100</span>
+</div>
+<div class="wheel-label" style="transform: rotate(90deg)">
+  <span>💰 200</span>
+</div>
+<div class="wheel-label" style="transform: rotate(135deg)">
+  <span>💎 1</span>
+</div>
+<div class="wheel-label" style="transform: rotate(180deg)">
+  <span>💎 3</span>
+</div>
+<div class="wheel-label" style="transform: rotate(225deg)">
+  <span>💎 5</span>
+</div>
+<div class="wheel-label" style="transform: rotate(270deg)">
+  <span>🎰 free</span>
+</div>
+<div class="wheel-label" style="transform: rotate(315deg)">
+  <span>😅 0</span>
+</div>
 
               <div class="wheel-center">SPIN</div>
             </div>
