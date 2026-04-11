@@ -329,74 +329,44 @@
         gap: 14px;
       }
       .wheel-disc {
-        width: 240px;
-        height: 240px;
+        width: 220px;
+        height: 220px;
         border-radius: 50%;
         border: 8px solid #1d4ed8;
         background: conic-gradient(
-          #60a5fa 0deg 45deg,
-          #1e40af 45deg 90deg,
-          #93c5fd 90deg 135deg,
-          #2563eb 135deg 180deg,
-          #60a5fa 180deg 225deg,
-          #1e40af 225deg 270deg,
-          #93c5fd 270deg 315deg,
-          #2563eb 315deg 360deg
+          #60a5fa 0 60deg,
+          #1e40af 60deg 120deg,
+          #93c5fd 120deg 180deg,
+          #2563eb 180deg 240deg,
+          #60a5fa 240deg 300deg,
+          #1e40af 300deg 360deg
         );
-        box-shadow:
-          0 18px 45px rgba(0, 0, 0, 0.35),
-          inset 0 6px 18px rgba(255, 255, 255, 0.08);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
         position: relative;
-        overflow: hidden;
-        transition: transform 3.2s cubic-bezier(0.18, 0.89, 0.32, 1.08);
+        transition: transform 3s cubic-bezier(0.18, 0.89, 0.32, 1.08);
       }
       .wheel-center {
         position: absolute;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: 82px;
-        height: 82px;
+        width: 72px;
+        height: 72px;
         border-radius: 50%;
         background: #0f172a;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 900;
-        font-size: 16px;
-        color: #fff;
+        font-weight: 800;
         border: 4px solid #60a5fa;
-        z-index: 5;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
       }
       .wheel-pointer {
         width: 0;
         height: 0;
-        border-left: 18px solid transparent;
-        border-right: 18px solid transparent;
-        border-top: 28px solid #f8fafc;
+        border-left: 14px solid transparent;
+        border-right: 14px solid transparent;
+        border-top: 22px solid #f8fafc;
         margin-bottom: -8px;
-        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
-      }
-      .wheel-label {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        width: 76px;
-        margin-left: -38px;
-        text-align: center;
-        transform-origin: center -86px;
-        z-index: 2;
-        pointer-events: none;
-      }
-      .wheel-label span {
-        display: block;
-        font-size: 13px;
-        font-weight: 900;
-        color: #ffffff;
-        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
-        line-height: 1.12;
-        transform: rotate(-90deg);
       }
       .share-row {
         display: grid;
@@ -416,6 +386,74 @@
       }
       .full {
         grid-column: 1 / -1;
+      }
+      .levelup-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.78);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .levelup-box {
+        width: calc(100% - 32px);
+        max-width: 360px;
+        background: #0f172a;
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: 24px;
+        padding: 20px 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        text-align: center;
+      }
+      .levelup-title {
+        font-size: 28px;
+        font-weight: 900;
+        margin-bottom: 10px;
+        color: #f8fafc;
+      }
+      .levelup-level {
+        font-size: 20px;
+        font-weight: 800;
+        color: #60a5fa;
+        margin-bottom: 12px;
+      }
+      .levelup-reward {
+        color: #cbd5e1;
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+      }
+      .levelup-btn {
+        width: 100%;
+        border: none;
+        border-radius: 16px;
+        padding: 14px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 800;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+      }
+      .wheel-rewards-box {
+        width: 100%;
+        max-width: 320px;
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 18px;
+        padding: 12px;
+        text-align: center;
+      }
+      .wheel-rewards-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #f8fafc;
+        margin-bottom: 8px;
+      }
+      .wheel-rewards-list {
+        color: #cbd5e1;
+        font-size: 13px;
+        line-height: 1.6;
       }
       #resultBox {
         display: none;
@@ -583,6 +621,37 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
+      function showLevelUpPopup(level, reward) {
+        const old = document.getElementById("levelUpPopup");
+        if (old) old.remove();
+
+        const coins = reward?.coins ?? 0;
+        const diamonds = reward?.diamonds ?? 0;
+
+        let rewardText = "";
+        if (coins) rewardText += `💰 +${coins} coins`;
+        if (diamonds)
+          rewardText += `${rewardText ? "<br>" : ""}💎 +${diamonds} diamonds`;
+        if (!rewardText) rewardText = "Новий рівень!";
+
+        const html = `
+          <div class="levelup-backdrop" id="levelUpPopup">
+            <div class="levelup-box">
+              <div class="levelup-title">🎉 LEVEL UP</div>
+              <div class="levelup-level">Тепер ти LVL ${level}</div>
+              <div class="levelup-reward">${rewardText}</div>
+              <button class="levelup-btn" id="levelUpOkBtn">Круто</button>
+            </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML("beforeend", html);
+        document
+          .getElementById("levelUpOkBtn")
+          ?.addEventListener("click", () => {
+            document.getElementById("levelUpPopup")?.remove();
+          });
+      }
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -616,8 +685,17 @@
           setStatus("collect...");
           const res = await apiPost("/collect");
           setResult(res.data);
+
           if (res.ok) {
-            showToast(`+${res.data?.added ?? 1}`);
+            showToast(`+${res.data?.coinsAdded ?? 1}`);
+
+            if (res.data?.levelUp) {
+              showLevelUpPopup(
+                res.data?.level ?? currentState?.level ?? 1,
+                res.data?.reward ?? {},
+              );
+            }
+
             await loadState();
             setStatus("ok");
           } else {
@@ -783,30 +861,30 @@
         }
 
         modalBody.innerHTML = `
-                <div class="modal-grid">
-                  <div class="tile">
-                    <div class="tile-title">Рівень</div>
-                    <div class="tile-value">${data.level ?? 1}</div>
-                  </div>
+          <div class="modal-grid">
+            <div class="tile">
+              <div class="tile-title">Рівень</div>
+              <div class="tile-value">${data.level ?? 1}</div>
+            </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Множник</div>
-                    <div class="tile-value">x${data.multiplier ?? 1}</div>
-                  </div>
+            <div class="tile">
+              <div class="tile-title">Множник</div>
+              <div class="tile-value">x${data.multiplier ?? 1}</div>
+            </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Наступна ціна</div>
-                    <div class="tile-value">${priceText}</div>
-                  </div>
+            <div class="tile">
+              <div class="tile-title">Наступна ціна</div>
+              <div class="tile-value">${priceText}</div>
+            </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Наступний множник</div>
-                    <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
-                  </div>
-                </div>
+            <div class="tile">
+              <div class="tile-title">Наступний множник</div>
+              <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
+            </div>
+          </div>
 
-                <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
-              `;
+          <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
+        `;
 
         showModal();
 
@@ -826,20 +904,96 @@
       async function openDailyModal() {
         modalTitle.textContent = "🎁 Daily";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="tile"><div class="note">Щоденна нагорода</div><button class="buy-btn" id="claimDailyBtn">Забрати</button></div>`;
+
+        const res = await apiGet("/daily/status");
+        const data = res.data || {};
+
+        const streak = data.streak ?? 0;
+        const canClaim = !!data.canClaim;
+        const nextDay = data.nextDay ?? 1;
+        const rewards = Array.isArray(data.rewards) ? data.rewards : [];
+
+        let daysHtml = "";
+        if (rewards.length) {
+          const items = rewards
+            .map((r) => {
+              const claimed =
+                r.day < nextDay || (!canClaim && r.day === streak);
+              const current = canClaim && r.day === nextDay;
+
+              let rewardText = "";
+              if (r.coins) rewardText += `💰${r.coins}`;
+              if (r.diamonds)
+                rewardText += `${rewardText ? "<br>" : ""}💎${r.diamonds}`;
+              if (r.freeWheelSpin)
+                rewardText += `${rewardText ? "<br>" : ""}🎰`;
+
+              const bg = claimed
+                ? "rgba(55,201,93,0.18)"
+                : current
+                  ? "rgba(93,156,255,0.22)"
+                  : "rgba(255,255,255,0.05)";
+
+              const mark = claimed ? "✓" : current ? "зараз" : "";
+
+              return `<div style="padding:10px 6px;border-radius:14px;text-align:center;border:1px solid rgba(255,255,255,0.08);background:${bg};">
+              <div style="font-size:12px;color:#aebedd;">${r.day}</div>
+              <div style="margin-top:6px;font-size:12px;font-weight:800;">${rewardText || "-"}</div>
+              <div style="margin-top:6px;font-size:11px;color:#cbd5e1;">${mark}</div>
+            </div>`;
+            })
+            .join("");
+
+          daysHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;">${items}</div>`;
+        }
+
+        const reward = data.reward || {};
+        let todayRewardText = "";
+        if (reward.coins) todayRewardText += `💰 ${reward.coins}`;
+        if (reward.diamonds)
+          todayRewardText += `${todayRewardText ? " " : ""}💎 ${reward.diamonds}`;
+        if (reward.freeWheelSpin)
+          todayRewardText += `${todayRewardText ? " " : ""}🎰 free spin`;
+
+        modalBody.innerHTML = `
+          <div class="tile">
+            <div class="tile-title">Поточний streak</div>
+            <div class="tile-value">${streak}</div>
+            <div class="tile-row"><span>Наступний день</span><span>${nextDay}</span></div>
+            <div class="tile-row"><span>Нагорода</span><span>${todayRewardText || "-"}</span></div>
+            <button class="buy-btn ${canClaim ? "" : "green"}" id="claimDailyBtn">${canClaim ? "Забрати" : "Вже забрано"}</button>
+          </div>
+          ${daysHtml}
+        `;
+
         showModal();
+
         document.getElementById("claimDailyBtn").onclick = async () => {
-          const res = await apiPost("/daily");
-          setResult(res.data);
-          if (res.ok) {
-            showToast(`+${res.data?.reward ?? 0}`);
+          if (!canClaim) {
+            showToast("Вже забрано сьогодні");
+            return;
+          }
+
+          const claimRes = await apiPost("/daily/claim");
+          const finalRes = claimRes.ok ? claimRes : await apiPost("/daily");
+          setResult(finalRes.data);
+
+          if (finalRes.ok) {
+            const rw = finalRes.data?.reward || finalRes.data?.rewardData || {};
+            let txt = "";
+            if (rw.coins) txt += `💰 ${rw.coins}`;
+            if (rw.diamonds) txt += `${txt ? " " : ""}💎 ${rw.diamonds}`;
+            if (rw.freeWheelSpin) txt += `${txt ? " " : ""}🎰`;
+
+            showToast(txt || "Daily забрано");
             await loadState();
-            closeModal();
+            await openDailyModal();
           } else {
-            showToast(res.data?.error || "Вже забрано");
+            showToast(finalRes.data?.error || "Помилка");
           }
         };
       }
+
       async function openQuestsModal() {
         modalTitle.textContent = "📜 Квести";
         modalTabs.style.display = "none";
@@ -872,56 +1026,36 @@
         modalTabs.style.display = "none";
 
         modalBody.innerHTML = `
-                <div class="wheel-wrap">
-                  <div class="wheel-pointer"></div>
+          <div class="wheel-wrap">
+            <div class="wheel-pointer"></div>
 
-                  <div class="wheel-disc" id="wheelDisc">
-                    <div class="wheel-label" style="transform: rotate(0deg);">
-                      <span>💰 50</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(45deg);">
-                      <span>💰 100</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(90deg);">
-                      <span>💰 200</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(135deg);">
-                      <span>💎 1</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(180deg);">
-                      <span>💎 3</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(225deg);">
-                      <span>💎 5</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(270deg);">
-                      <span>🎰 free</span>
-                    </div>
-                    <div class="wheel-label" style="transform: rotate(315deg);">
-                      <span>😅 0</span>
-                    </div>
+            <div class="wheel-disc-shell">
+              <div class="wheel-disc">
+                <div class="wheel-bg" id="wheelBg"></div>
+                <div class="wheel-center">SPIN</div>
+              </div>
 
-                    <div class="wheel-center">SPIN</div>
-                  </div>
+              <div class="wheel-label" style="left: 164px; top: 14px;"><span>💰 50</span></div>
+              <div class="wheel-label" style="left: 203px; top: 68px;"><span>💰 100</span></div>
+              <div class="wheel-label" style="left: 194px; top: 142px;"><span>💰 200</span></div>
+              <div class="wheel-label" style="left: 139px; top: 196px;"><span>💎 1</span></div>
+              <div class="wheel-label" style="left: 56px; top: 196px;"><span>💎 3</span></div>
+              <div class="wheel-label" style="left: 2px; top: 142px;"><span>💎 5</span></div>
+              <div class="wheel-label" style="left: -8px; top: 68px;"><span>🎰 free</span></div>
+              <div class="wheel-label" style="left: 48px; top: 14px;"><span>😅 0</span></div>
+            </div>
 
-                  <button class="buy-btn" id="spinWheelBtn">Крутити</button>
-                </div>
-              `;
+            <button class="buy-btn" id="spinWheelBtn">Крутити</button>
+          </div>
+        `;
 
         showModal();
 
         document.getElementById("spinWheelBtn").onclick = async () => {
-          const disc = document.getElementById("wheelDisc");
+          const bg = document.getElementById("wheelBg");
 
           wheelRotation += 1800 + Math.floor(Math.random() * 720);
-          disc.style.transform = `rotate(${wheelRotation}deg)`;
-
-          document.querySelectorAll(".wheel-label").forEach((el) => {
-            el.style.transform = el.style.transform.replace(
-              /rotate\((.*?)deg\)/,
-              (_, deg) => `rotate(${deg}) rotate(${-wheelRotation}deg)`,
-            );
-          });
+          bg.style.transform = `rotate(${wheelRotation}deg)`;
 
           const res = await apiPost("/wheel/spin");
           setResult(res.data);
