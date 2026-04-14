@@ -13,12 +13,16 @@ const REWARDS = [
   { type: "coins", amount: 50, label: "50 coins" },
   { type: "coins", amount: 100, label: "100 coins" },
   { type: "coins", amount: 200, label: "200 coins" },
+  { type: "diamonds", amount: 1, label: "1 diamond" },
+  { type: "diamonds", amount: 3, label: "3 diamonds" },
   { type: "diamonds", amount: 5, label: "5 diamonds" },
-  { type: "diamonds", amount: 10, label: "10 diamonds" },
+  { type: "freeSpin", amount: 1, label: "Free spin" },
   { type: "nothing", amount: 0, label: "Nothing" },
 ] as const;
 
-function getRandomReward() {
+type Reward = (typeof REWARDS)[number];
+
+function getRandomReward(): Reward {
   const index = Math.floor(Math.random() * REWARDS.length);
   return REWARDS[index];
 }
@@ -57,13 +61,9 @@ router.get("/state", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      rewards: REWARDS.map((r) => ({
-        type: r.type,
-        amount: r.amount,
-        label: r.label,
-      })),
+      rewards: REWARDS,
       cooldownSec,
-      costDiamonds: 0,
+      canSpin: cooldownSec <= 0,
     });
   } catch (e) {
     console.error("WHEEL STATE ERROR:", e);
@@ -78,6 +78,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
     }
 
     const telegramId = BigInt(req.telegramUser.id);
+    const now = new Date();
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
@@ -93,7 +94,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (isSameDay(user.lastWheelSpinAt, new Date())) {
+    if (isSameDay(user.lastWheelSpinAt, now)) {
       return res.status(400).json({
         error: "Already spun today",
       });
@@ -106,7 +107,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
       coins?: { increment: number };
       diamonds?: { increment: number };
     } = {
-      lastWheelSpinAt: new Date(),
+      lastWheelSpinAt: now,
     };
 
     if (reward.type === "coins") {
@@ -129,9 +130,21 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      reward: reward, // 🔥 головне
+      reward, // важливо: весь об'єкт, не label
       coins: updated.coins,
       diamonds: updated.diamonds,
+      cooldownSec: Math.max(
+        0,
+        Math.floor(
+          (new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 1,
+          ).getTime() -
+            now.getTime()) /
+            1000,
+        ),
+      ),
     });
   } catch (e) {
     console.error("WHEEL SPIN ERROR:", e);
