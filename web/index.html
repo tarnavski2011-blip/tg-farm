@@ -387,72 +387,6 @@
       .full {
         grid-column: 1 / -1;
       }
-
-      .wheel-svg-wrap {
-        width: 260px;
-        height: 260px;
-        position: relative;
-      }
-      .wheel-svg {
-        width: 260px;
-        height: 260px;
-        display: block;
-        filter: drop-shadow(0 18px 45px rgba(0, 0, 0, 0.35));
-      }
-      .wheel-svg text {
-        dominant-baseline: middle;
-        text-anchor: middle;
-        font-size: 14px;
-        font-weight: 900;
-        fill: #fff;
-      }
-      .wheel-rotor {
-        transform-origin: 130px 130px;
-        transition: transform 3.2s cubic-bezier(0.18, 0.89, 0.32, 1.08);
-      }
-      .wheel-win-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 23, 0.78);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2100;
-      }
-      .wheel-win-box {
-        width: calc(100% - 32px);
-        max-width: 340px;
-        background: #0f172a;
-        border: 1px solid rgba(59, 130, 246, 0.18);
-        border-radius: 24px;
-        padding: 20px 18px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-        text-align: center;
-      }
-      .wheel-win-title {
-        font-size: 28px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        color: #f8fafc;
-      }
-      .wheel-win-reward {
-        color: #cbd5e1;
-        font-size: 22px;
-        font-weight: 800;
-        line-height: 1.4;
-        margin-bottom: 16px;
-      }
-      .wheel-win-btn {
-        width: 100%;
-        border: none;
-        border-radius: 16px;
-        padding: 14px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 800;
-        color: white;
-        background: linear-gradient(135deg, #2563eb, #60a5fa);
-      }
       #resultBox {
         display: none;
       }
@@ -619,29 +553,6 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
-
-      function showWheelRewardPopup(text) {
-        const old = document.getElementById("wheelRewardPopup");
-        if (old) old.remove();
-
-        const html = `
-          <div class="wheel-win-backdrop" id="wheelRewardPopup">
-            <div class="wheel-win-box">
-              <div class="wheel-win-title">🎉 Виграш</div>
-              <div class="wheel-win-reward">${text}</div>
-              <button class="wheel-win-btn" id="wheelRewardOkBtn">OK</button>
-            </div>
-          </div>
-        `;
-
-        document.body.insertAdjacentHTML("beforeend", html);
-        document
-          .getElementById("wheelRewardOkBtn")
-          ?.addEventListener("click", () => {
-            document.getElementById("wheelRewardPopup")?.remove();
-          });
-      }
-
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -950,37 +861,31 @@
                   <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"></path>
                   <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"></path>
 
-                  <g transform="rotate(0 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">🪙 50</text>
-</g>
-
-<g transform="rotate(45 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">🪙 100</text>
-</g>
-
-<g transform="rotate(90 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">🪙 200</text>
-</g>
-
-<g transform="rotate(135 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">💎 1</text>
-</g>
-
-<g transform="rotate(180 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">💎 3</text>
-</g>
-
-<g transform="rotate(225 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">💎 5</text>
-</g>
-
-<g transform="rotate(270 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">🎰 FREE</text>
-</g>
-
-<g transform="rotate(315 130 130)">
-  <text x="130" y="40" fill="#fff" font-size="14" text-anchor="middle">😅 0</text>
-</g>
+                  <g transform="rotate(22.5 130 130)">
+                    <text x="130" y="44">🪙 50</text>
+                  </g>
+                  <g transform="rotate(67.5 130 130)">
+                    <text x="130" y="44">🪙 100</text>
+                  </g>
+                  <g transform="rotate(112.5 130 130)">
+                    <text x="130" y="44">🪙 200</text>
+                  </g>
+                  <g transform="rotate(157.5 130 130)">
+                    <text x="130" y="44">💎 1</text>
+                  </g>
+                  <g transform="rotate(202.5 130 130)">
+                    <text x="130" y="44">💎 3</text>
+                  </g>
+                  <g transform="rotate(247.5 130 130)">
+                    <text x="130" y="44">💎 5</text>
+                  </g>
+                  <g transform="rotate(292.5 130 130)">
+                    <text x="130" y="44">🎰 FREE</text>
+                  </g>
+                  <g transform="rotate(337.5 130 130)">
+                    <text x="130" y="44">😅 0</text>
+                  </g>
+                </g>
 
                 <circle cx="130" cy="130" r="112" fill="none" stroke="#1d4ed8" stroke-width="8"></circle>
                 <circle cx="130" cy="130" r="41" fill="#0f172a" stroke="#60a5fa" stroke-width="4"></circle>
@@ -988,7 +893,9 @@
               </svg>
             </div>
 
-            <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>${canSpin ? "Крутити" : "Вже крутив сьогодні"}</button>
+            <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
+              ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
+            </button>
           </div>
         `;
 
