@@ -646,11 +646,92 @@
           feed = currentState?.feedStock || {};
         modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки</div><div class="tile-value">${animals.chicken ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>${animalFeedWarning(feed.chicken ?? 0)}</div><div class="tile"><div class="tile-title">🐑 Вівці</div><div class="tile-value">${animals.sheep ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>${animalFeedWarning(feed.sheep ?? 0)}</div><div class="tile"><div class="tile-title">🐄 Корови</div><div class="tile-value">${animals.cow ?? 0}</div><div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>${animalFeedWarning(feed.cow ?? 0)}</div><div class="tile"><div class="tile-title">⚙ Статус</div><div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div><div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div></div></div>`;
       }
-      function renderAnimalsUpgrade() {
+      async function renderAnimalsUpgrade() {
         tabBuyBtn.classList.remove("active");
         tabOwnedBtn.classList.remove("active");
         tabUpgradeBtn.classList.add("active");
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Курки upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐑 Вівці upgrade</div><div class="tile-value">Скоро</div></div><div class="tile"><div class="tile-title">🐄 Корови upgrade</div><div class="tile-value">Скоро</div></div></div>`;
+
+        modalBody.innerHTML = <div class="note">loading...</div>;
+
+        const res = await apiGet("/upgrade/state");
+        setResult(res.data);
+
+        if (!res.ok) {
+          modalBody.innerHTML = (
+            <div class="warn">
+              ${res.data?.error || "Помилка завантаження upgrade"}
+            </div>
+          );
+          return;
+        }
+
+        const u = res.data?.upgrades || {};
+
+        function card(title, emoji, item, type) {
+          if (!item || item.owned <= 0) {
+            return `
+        <div class="tile">
+          <div class="tile-title">${emoji} ${title}</div>
+          <div class="tile-value">0 шт</div>
+          <div class="warn">Спочатку купи тварин</div>
+        </div>
+      `;
+          }
+
+          if (item.maxed) {
+            return `
+        <div class="tile">
+          <div class="tile-title">${emoji} ${title}</div>
+          <div class="tile-value">LVL ${item.currentLevel}</div>
+          <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+          <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+          <button class="buy-btn green" disabled>Максимум</button>
+        </div>
+      `;
+          }
+
+          return `
+      <div class="tile">
+        <div class="tile-title">${emoji} ${title}</div>
+        <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+        <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+        <div class="tile-row"><span>Ціна</span><span>${item.upgradeCost?.coins ?? 0} coins</span></div>
+        <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+        <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-upgrade="${type}" ${item.canUpgrade ? "" : "disabled"}>
+          ${item.canUpgrade ? "Upgrade" : "Не вистачає ресурсів"}
+        </button>
+      </div>
+    `;
+        }
+
+        modalBody.innerHTML = `
+    <div class="modal-grid">
+      ${card("Курки", "🐔", u.chicken, "CHICKEN")}
+      ${card("Вівці", "🐑", u.sheep, "SHEEP")}
+      ${card("Корови", "🐄", u.cow, "COW")}
+    </div>
+  `;
+
+        modalBody.querySelectorAll("[data-upgrade]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const type = btn.dataset.upgrade;
+            const resp = await apiPost("/upgrade", { type });
+            setResult(resp.data);
+
+            if (resp.ok) {
+              if (resp.data?.luckyUpgrade) {
+                showToast(`🔥 Lucky upgrade! LVL ${resp.data?.level}`);
+              } else {
+                showToast(`⬆️ LVL ${resp.data?.level}`);
+              }
+
+              await loadState();
+              await renderAnimalsUpgrade();
+            } else {
+              showToast(resp.data?.error || "Помилка");
+            }
+          });
+        });
       }
       function openAnimalsModal() {
         modalTitle.textContent = "🐾 Тварини";
