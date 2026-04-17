@@ -841,126 +841,101 @@
         modalTitle.textContent = "🎰 Wheel";
         modalTabs.style.display = "none";
 
-        const wheelState = await apiGet("/wheel/state");
+        // 👉 перевірка чи можна крутити
+        const state = await apiGet("/wheel/state");
 
-        const cooldownSec =
-          wheelState.ok && wheelState.data
-            ? Number(wheelState.data.cooldownSec ?? 0)
-            : 999999;
+        let canSpin = false;
 
-        const canSpin = wheelState.ok && cooldownSec <= 0;
+        if (state.ok && state.data) {
+          canSpin = (state.data.cooldownSec ?? 0) <= 0;
+        }
 
         modalBody.innerHTML = `
-          <div class="wheel-wrap">
-            <div class="wheel-pointer"></div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
 
-            <div style="display:flex; justify-content:center;">
-              <svg class="wheel-svg" viewBox="0 0 260 260" aria-label="Wheel">
-                <g id="wheelRotor" class="wheel-rotor">
-                  <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"></path>
-                  <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"></path>
-                  <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"></path>
-                  <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"></path>
-                  <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"></path>
-                  <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"></path>
-                  <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"></path>
-                  <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"></path>
+      <div style="display:flex; justify-content:center;">
+        <svg width="260" height="260" viewBox="0 0 260 260">
 
-                  <g transform="rotate(22.5 130 130)">
-                    <text x="130" y="44">🪙 50</text>
-                  </g>
-                  <g transform="rotate(67.5 130 130)">
-                    <text x="130" y="44">🪙 100</text>
-                  </g>
-                  <g transform="rotate(112.5 130 130)">
-                    <text x="130" y="44">🪙 200</text>
-                  </g>
-                  <g transform="rotate(157.5 130 130)">
-                    <text x="130" y="44">💎 1</text>
-                  </g>
-                  <g transform="rotate(202.5 130 130)">
-                    <text x="130" y="44">💎 3</text>
-                  </g>
-                  <g transform="rotate(247.5 130 130)">
-                    <text x="130" y="44">💎 5</text>
-                  </g>
-                  <g transform="rotate(292.5 130 130)">
-                    <text x="130" y="44">🎰 FREE</text>
-                  </g>
-                  <g transform="rotate(337.5 130 130)">
-                    <text x="130" y="44">😅 0</text>
-                  </g>
-                </g>
+          <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
 
-                <circle cx="130" cy="130" r="112" fill="none" stroke="#1d4ed8" stroke-width="8"></circle>
-                <circle cx="130" cy="130" r="41" fill="#0f172a" stroke="#60a5fa" stroke-width="4"></circle>
-                <text x="130" y="138" fill="#fff" font-size="16" font-weight="900" text-anchor="middle">SPIN</text>
-              </svg>
-            </div>
+            <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
+            <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
+            <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
+            <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
+            <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
+            <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
+            <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
+            <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
 
-            <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
-              ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
-            </button>
-          </div>
-        `;
+            <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
+            <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
+            <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
+            <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
+            <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
+            <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
+            <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
+            <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
+
+          </g>
+
+          <circle cx="130" cy="130" r="40" fill="#0f172a"/>
+          <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
+
+        </svg>
+      </div>
+
+      <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
+        ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
+      </button>
+    </div>
+  `;
 
         showModal();
 
-        const spinBtn = document.getElementById("spinWheelBtn");
+        const btn = document.getElementById("spinWheelBtn");
         const rotor = document.getElementById("wheelRotor");
 
-        spinBtn.onclick = async () => {
+        btn.onclick = async () => {
           if (!canSpin) {
             showToast("Сьогодні вже крутив");
             return;
           }
 
-          spinBtn.disabled = true;
-          spinBtn.textContent = "Крутимо...";
+          // 👉 блокуємо кнопку одразу
+          btn.disabled = true;
+          btn.textContent = "Крутимо...";
 
-          wheelRotation += 1800 + Math.floor(Math.random() * 720);
-          rotor.style.transform = `rotate(${wheelRotation}deg)`;
+          let deg = 1800 + Math.random() * 720;
+          rotor.style.transform = "rotate(" + deg + "deg)";
 
+          // 👉 запит на сервер
           const res = await apiPost("/wheel/spin");
-          setResult(res.data);
 
           setTimeout(async () => {
             if (res.ok) {
               const reward = res.data?.reward;
 
-              let txt = "Нагорода";
-              if (reward?.type === "nothing") {
-                txt = "😅 Нічого";
-              } else if (reward?.type === "coins") {
-                txt = `💰 +${reward?.amount ?? 0} coins`;
+              if (reward?.type === "coins") {
+                showToast("💰 +" + reward.amount + " coins");
               } else if (reward?.type === "diamonds") {
-                txt = `💎 +${reward?.amount ?? 0} diamonds`;
+                showToast("💎 +" + reward.amount);
               } else if (reward?.type === "freeSpin") {
-                txt = "🎰 Free spin";
-              }
-
-              if (typeof showWheelRewardPopup === "function") {
-                showWheelRewardPopup(txt);
+                showToast("🎰 Free spin");
               } else {
-                showToast(txt);
+                showToast("😅 Нічого");
               }
 
               await loadState();
-              await openWheelModal();
-            } else {
-              const err = String(res.data?.error || "Помилка");
 
-              if (err.includes("Already spun today")) {
-                spinBtn.disabled = true;
-                spinBtn.textContent = "Вже крутив сьогодні";
-                showToast("Сьогодні вже крутив");
-              } else {
-                spinBtn.disabled = false;
-                spinBtn.textContent = "Крутити";
-                showToast(err);
-              }
+              // 👉 перезавантажуємо модалку (щоб кнопка стала disabled)
+              openWheelModal();
+            } else {
+              showToast(res.data?.error || "Помилка");
+              btn.disabled = false;
+              btn.textContent = "Крутити";
             }
-          }, 3200);
+          }, 3000);
         };
       }
 
