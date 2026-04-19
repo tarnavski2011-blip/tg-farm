@@ -4,87 +4,31 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const DAILY_REWARDS = [
-  { day: 1, coins: 50, diamonds: 0, freeWheelSpin: false },
-  { day: 2, coins: 100, diamonds: 0, freeWheelSpin: false },
-  { day: 3, coins: 150, diamonds: 0, freeWheelSpin: false },
-  { day: 4, coins: 0, diamonds: 1, freeWheelSpin: false },
-  { day: 5, coins: 200, diamonds: 0, freeWheelSpin: false },
-  { day: 6, coins: 0, diamonds: 2, freeWheelSpin: false },
-  { day: 7, coins: 300, diamonds: 3, freeWheelSpin: true },
+  { day: 1, coins: 50, diamonds: 0 },
+  { day: 2, coins: 100, diamonds: 0 },
+  { day: 3, coins: 200, diamonds: 0 },
+  { day: 4, coins: 0, diamonds: 1 },
+  { day: 5, coins: 0, diamonds: 3 },
+  { day: 6, coins: 0, diamonds: 5 },
+  { day: 7, coins: 500, diamonds: 5 },
 ];
 
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+function getDayDiff(a: Date, b: Date) {
+  const aStart = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+  const bStart = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+  return Math.floor((aStart - bStart) / DAY_MS);
 }
 
-function dayDiff(a: Date, b: Date) {
-  const ms = startOfDay(a).getTime() - startOfDay(b).getTime();
-  return Math.floor(ms / (24 * 60 * 60 * 1000));
+function getRewardForDay(day: number) {
+  return DAILY_REWARDS[day - 1] ?? DAILY_REWARDS[0];
 }
 
-function getDailyStatus(user: {
-  dailyStreak: number | null;
-  lastDailyAt: Date | null;
-}) {
-  const now = new Date();
-  const streak = Number(user.dailyStreak ?? 0);
-  const lastDailyAt = user.lastDailyAt;
-
-  if (!lastDailyAt) {
-    return {
-      streak: 0,
-      claimedToday: false,
-      canClaim: true,
-      nextDay: 1,
-      reward: DAILY_REWARDS[0],
-    };
-  }
-
-  const diff = dayDiff(now, lastDailyAt);
-
-  if (diff <= 0) {
-    const safeStreak = Math.max(1, Math.min(streak || 1, 7));
-    const nextDay = safeStreak >= 7 ? 1 : safeStreak + 1;
-
-    return {
-      streak: safeStreak,
-      claimedToday: true,
-      canClaim: false,
-      nextDay,
-      reward: DAILY_REWARDS[nextDay - 1],
-    };
-  }
-
-  if (diff === 1) {
-    const nextDay = streak >= 7 ? 1 : Math.max(1, streak + 1);
-
-    return {
-      streak: Math.max(0, streak),
-      claimedToday: false,
-      canClaim: true,
-      nextDay,
-      reward: DAILY_REWARDS[nextDay - 1],
-    };
-  }
-
-  return {
-    streak: 0,
-    claimedToday: false,
-    canClaim: true,
-    nextDay: 1,
-    reward: DAILY_REWARDS[0],
-  };
-}
-
-// STATUS
-router.get("/status", async (req: TgAuthedRequest, res) => {
+router.get("/", async (req: TgAuthedRequest, res) => {
   try {
-    if (!req.telegramUser?.id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const telegramId = BigInt(req.telegramUser.id);
+    const telegramId = BigInt(req.telegramUser!.id);
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
@@ -99,92 +43,48 @@ router.get("/status", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const status = getDailyStatus(user);
-
-    return res.json({
-      ok: true,
-      streak: status.streak,
-      claimedToday: status.claimedToday,
-      canClaim: status.canClaim,
-      nextDay: status.nextDay,
-      reward: status.reward,
-      rewards: DAILY_REWARDS,
-    });
-  } catch (e) {
-    console.error("DAILY STATUS ERROR:", e);
-    return res.status(500).json({ error: "Server error" });
-  }
-});
-
-// CLAIM
-router.post("/claim", async (req: TgAuthedRequest, res) => {
-  try {
-    if (!req.telegramUser?.id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const telegramId = BigInt(req.telegramUser.id);
-
-    const user = await prisma.user.findUnique({
-      where: { telegramId },
-      select: {
-        id: true,
-        dailyStreak: true,
-        lastDailyAt: true,
-      },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const status = getDailyStatus(user);
-
-    if (!status.canClaim) {
-      return res.status(400).json({ error: "Daily already claimed today" });
-    }
-
-    const reward = status.reward;
-    const newStreak = status.nextDay;
     const now = new Date();
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        coins: { increment: reward.coins },
-        diamonds: { increment: reward.diamonds },
-        dailyStreak: newStreak,
-        lastDailyAt: now,
-      },
-    });
+    let streak = user.dailyStreak ?? 0;
+    let claimed = false;
+
+    if (user.lastDailyAt) {
+      const diff = getDayDiff(now, new Date(user.lastDailyAt));
+
+      if (diff === 0) {
+        claimed = true;
+      } else if (diff > 1) {
+        streak = 0;
+      }
+    }
+
+    const nextDay = Math.min(7, streak + 1);
+    const reward = getRewardForDay(nextDay);
 
     return res.json({
       ok: true,
-      day: newStreak,
-      streak: newStreak,
-      reward,
-      claimedToday: true,
-      nextDay: newStreak >= 7 ? 1 : newStreak + 1,
+      day: nextDay,
+      claimed,
+      streak,
+      rewards: DAILY_REWARDS,
+      todayReward: reward,
     });
   } catch (e) {
-    console.error("DAILY CLAIM ERROR:", e);
+    console.error("DAILY GET ERROR:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
 
-// LEGACY ENDPOINT
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
-    if (!req.telegramUser?.id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const telegramId = BigInt(req.telegramUser.id);
+    const telegramId = BigInt(req.telegramUser!.id);
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
       select: {
         id: true,
+        coins: true,
+        diamonds: true,
         dailyStreak: true,
         lastDailyAt: true,
       },
@@ -194,35 +94,47 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const status = getDailyStatus(user);
+    const now = new Date();
 
-    if (!status.canClaim) {
-      return res.status(400).json({ error: "Daily already claimed today" });
+    let streak = user.dailyStreak ?? 0;
+
+    if (user.lastDailyAt) {
+      const diff = getDayDiff(now, new Date(user.lastDailyAt));
+
+      if (diff === 0) {
+        return res.status(400).json({
+          error: "Вже забрано сьогодні",
+        });
+      }
+
+      if (diff > 1) {
+        streak = 0;
+      }
     }
 
-    const reward = status.reward;
-    const newStreak = status.nextDay;
-    const now = new Date();
+    const nextDay = Math.min(7, streak + 1);
+    const reward = getRewardForDay(nextDay);
+
+    const nextStreak = nextDay >= 7 ? 0 : nextDay;
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
         coins: { increment: reward.coins },
         diamonds: { increment: reward.diamonds },
-        dailyStreak: newStreak,
+        dailyStreak: nextStreak,
         lastDailyAt: now,
       },
     });
 
     return res.json({
       ok: true,
-      reward: reward.coins + reward.diamonds,
-      rewardData: reward,
-      day: newStreak,
-      streak: newStreak,
+      day: nextDay,
+      reward,
+      nextStreak,
     });
   } catch (e) {
-    console.error("DAILY LEGACY ERROR:", e);
+    console.error("DAILY POST ERROR:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
