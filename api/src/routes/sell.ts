@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
+import { addSellToday } from "../lib/questProgress";
 
 const router = Router();
 
@@ -66,6 +67,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         coins: true,
       },
     });
+
+    await addSellToday(user.id, 1);
 
     return res.json({
       ok: true,

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
+import { addTapToday } from "../lib/questProgress";
 
 const router = Router();
 
@@ -51,6 +52,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         level,
       },
     });
+
+    await addTapToday(user.id, 1);
 
     const referral = await prisma.referral.findFirst({
       where: { referredId: user.id },

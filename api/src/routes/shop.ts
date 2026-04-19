@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
+import { addFeedBuyToday } from "../lib/questProgress";
 
 const router = Router();
 
@@ -117,7 +118,6 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       data.diamonds = { decrement: item.price };
     }
 
-    // КУПІВЛЯ КОРМУ — ТІЛЬКИ КОРМ, БЕЗ РЕСУРСІВ
     if (item.effect === "chicken_feed_10") {
       data.chickenFeed = { increment: 10 };
     }
@@ -168,6 +168,14 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
         vipUntil: true,
       },
     });
+
+    if (
+      code === "chicken_feed_10" ||
+      code === "sheep_feed_10" ||
+      code === "cow_feed_10"
+    ) {
+      await addFeedBuyToday(user.id, 1);
+    }
 
     return res.json({
       ok: true,
