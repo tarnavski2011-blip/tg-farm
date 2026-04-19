@@ -29,14 +29,23 @@ function getXpNeeded(level: number) {
   return 100 + level * 50;
 }
 
-// Новий баланс доходу:
-// lvl 1 = x1
-// lvl 2 = x1.5
-// lvl 3 = x2
-// lvl 4 = x2.5
-// lvl 5 = x3
-function getAnimalProducedPerCycle(level: number) {
-  return Math.floor(1 + Math.max(0, level - 1) * 0.5);
+function getAnimalProducedPerCycle(
+  type: "CHICKEN" | "SHEEP" | "COW",
+  level: number,
+) {
+  if (type === "CHICKEN") {
+    return 1 + (level - 1);
+  }
+
+  if (type === "SHEEP") {
+    return 3 + (level - 1);
+  }
+
+  if (type === "COW") {
+    return 7 + (level - 1) * 2;
+  }
+
+  return 1;
 }
 
 router.get("/", async (req: TgAuthedRequest, res) => {
@@ -150,8 +159,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
-      // Рівень дає реальний буст до доходу
-      let produced = usedCycles * getAnimalProducedPerCycle(animal.level);
+      let produced =
+        usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
       produced = Math.floor(produced * (user.labMultiplier || 1));
 
@@ -256,10 +265,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds,
       );
       const feedCycles = Math.floor((user.chickenFeed ?? 0) / 1);
+
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle(animal.level)
+          getAnimalProducedPerCycle("CHICKEN", animal.level)
       );
     }, 0);
 
@@ -271,10 +281,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds,
       );
       const feedCycles = Math.floor((user.sheepFeed ?? 0) / 1);
+
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle(animal.level)
+          getAnimalProducedPerCycle("SHEEP", animal.level)
       );
     }, 0);
 
@@ -286,10 +297,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds,
       );
       const feedCycles = Math.floor((user.cowFeed ?? 0) / 1);
+
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle(animal.level)
+          getAnimalProducedPerCycle("COW", animal.level)
       );
     }, 0);
 
