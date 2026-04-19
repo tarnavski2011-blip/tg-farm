@@ -856,11 +856,9 @@
 
         let warning = "";
         if (percent >= 95) {
-          warning = (
-            <div class="warn">🚨 Склад заповнений! Виробництво зупинено</div>
-          );
+          warning = `<div class="warn">🚨 Склад заповнений! Виробництво зупинено</div>`;
         } else if (percent >= 80) {
-          warning = <div class="warn">⚠️ Склад майже повний</div>;
+          warning = `<div class="warn">⚠️ Склад майже повний</div>`;
         }
 
         modalBody.innerHTML = `
