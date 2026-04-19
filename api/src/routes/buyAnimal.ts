@@ -43,7 +43,6 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       return res.status(400).json({ error: "Не вистачає coins" });
     }
 
-    // 🔥 беремо поточний максимальний рівень цього типу
     const ownedOfType = await prisma.animal.findMany({
       where: { userId: user.id, type },
       select: { level: true },
