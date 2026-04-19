@@ -646,14 +646,34 @@
         const ready = currentState?.ready || {};
         const feed = currentState?.feedStock || {};
 
+        function productionPerCycle(type, level) {
+          if (!level) return 0;
+
+          if (type === "CHICKEN") return 1 + (level - 1);
+          if (type === "SHEEP") return 3 + (level - 1);
+          if (type === "COW") return 7 + (level - 1) * 2;
+
+          return 0;
+        }
+
+        function cycleSeconds(type) {
+          if (type === "CHICKEN") return 20;
+          if (type === "SHEEP") return 45;
+          if (type === "COW") return 90;
+          return 1;
+        }
+
         function productionText(type, level) {
-          if (!level) return "-";
+          const perCycle = productionPerCycle(type, level);
+          return perCycle > 0 ? `${perCycle} / цикл` : "-";
+        }
 
-          if (type === "CHICKEN") return `${1 + (level - 1)} / цикл`;
-          if (type === "SHEEP") return `${3 + (level - 1)} / цикл`;
-          if (type === "COW") return `${7 + (level - 1) * 2} / цикл`;
+        function productionPerHour(type, level, count) {
+          if (!level || !count) return 0;
 
-          return "-";
+          const perCycle = productionPerCycle(type, level);
+          const perHourOne = (3600 / cycleSeconds(type)) * perCycle;
+          return Math.floor(perHourOne * count);
         }
 
         modalBody.innerHTML = `
@@ -663,6 +683,7 @@
               <div class="tile-value">${animals.chicken ?? 0}</div>
               <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
               <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+              <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
               <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
               ${animalFeedWarning(feed.chicken ?? 0)}
             </div>
@@ -672,6 +693,7 @@
               <div class="tile-value">${animals.sheep ?? 0}</div>
               <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
               <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+              <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
               <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
               ${animalFeedWarning(feed.sheep ?? 0)}
             </div>
@@ -681,6 +703,7 @@
               <div class="tile-value">${animals.cow ?? 0}</div>
               <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
               <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
+              <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
               <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
               ${animalFeedWarning(feed.cow ?? 0)}
             </div>
@@ -707,13 +730,13 @@
 
           if (!res.ok) {
             modalBody.innerHTML = `
-                    <div class="modal-grid">
-                      <div class="tile full">
-                        <div class="tile-title">Upgrade</div>
-                        <div class="warn">${res.data?.error || "Upgrade ще не готовий на API"}</div>
-                      </div>
-                    </div>
-                  `;
+                          <div class="modal-grid">
+                            <div class="tile full">
+                              <div class="tile-title">Upgrade</div>
+                              <div class="warn">${res.data?.error || "Upgrade ще не готовий на API"}</div>
+                            </div>
+                          </div>
+                        `;
             return;
           }
 
@@ -722,51 +745,51 @@
           function card(title, emoji, item, type) {
             if (!item || item.owned <= 0) {
               return `
-                      <div class="tile">
-                        <div class="tile-title">${emoji} ${title}</div>
-                        <div class="tile-value">0 шт</div>
-                        <div class="warn">Спочатку купи тварин</div>
-                      </div>
-                    `;
+                            <div class="tile">
+                              <div class="tile-title">${emoji} ${title}</div>
+                              <div class="tile-value">0 шт</div>
+                              <div class="warn">Спочатку купи тварин</div>
+                            </div>
+                          `;
             }
 
             if (item.maxed) {
               return `
-                      <div class="tile">
-                        <div class="tile-title">${emoji} ${title}</div>
-                        <div class="tile-value">LVL ${item.currentLevel}</div>
-                        <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                        <button class="buy-btn green" disabled>MAX</button>
-                      </div>
-                    `;
+                            <div class="tile">
+                              <div class="tile-title">${emoji} ${title}</div>
+                              <div class="tile-value">LVL ${item.currentLevel}</div>
+                              <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                              <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                              <button class="buy-btn green" disabled>MAX</button>
+                            </div>
+                          `;
             }
 
             return `
-                    <div class="tile">
-                      <div class="tile-title">${emoji} ${title}</div>
-                      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                      <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                      <button
-                        class="buy-btn ${item.canUpgrade ? "" : "gold"}"
-                        data-upgrade="${type}"
-                        ${item.canUpgrade ? "" : "disabled"}
-                      >
-                        ${item.canUpgrade ? "Upgrade" : "Не вистачає ресурсів"}
-                      </button>
-                    </div>
-                  `;
+                          <div class="tile">
+                            <div class="tile-title">${emoji} ${title}</div>
+                            <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                            <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                            <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                            <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                            <button
+                              class="buy-btn ${item.canUpgrade ? "" : "gold"}"
+                              data-upgrade="${type}"
+                              ${item.canUpgrade ? "" : "disabled"}
+                            >
+                              ${item.canUpgrade ? "Upgrade" : "Не вистачає ресурсів"}
+                            </button>
+                          </div>
+                        `;
           }
 
           modalBody.innerHTML = `
-                  <div class="modal-grid">
-                    ${card("Курки", "🐔", u.chicken, "CHICKEN")}
-                    ${card("Вівці", "🐑", u.sheep, "SHEEP")}
-                    ${card("Корови", "🐄", u.cow, "COW")}
-                  </div>
-                `;
+                        <div class="modal-grid">
+                          ${card("Курки", "🐔", u.chicken, "CHICKEN")}
+                          ${card("Вівці", "🐑", u.sheep, "SHEEP")}
+                          ${card("Корови", "🐄", u.cow, "COW")}
+                        </div>
+                      `;
 
           modalBody.querySelectorAll("[data-upgrade]").forEach((btn) => {
             btn.onclick = async () => {
@@ -794,13 +817,13 @@
         } catch (e) {
           setResult(String(e));
           modalBody.innerHTML = `
-                  <div class="modal-grid">
-                    <div class="tile full">
-                      <div class="tile-title">Upgrade</div>
-                      <div class="warn">Помилка в Upgrade. Але гра працює. ${String(e)}</div>
-                    </div>
-                  </div>
-                `;
+                        <div class="modal-grid">
+                          <div class="tile full">
+                            <div class="tile-title">Upgrade</div>
+                            <div class="warn">Помилка в Upgrade. Але гра працює. ${String(e)}</div>
+                          </div>
+                        </div>
+                      `;
         }
       }
 
@@ -905,30 +928,30 @@
         }
 
         modalBody.innerHTML = `
-                <div class="modal-grid">
-                  <div class="tile">
-                    <div class="tile-title">Рівень</div>
-                    <div class="tile-value">${data.level ?? 1}</div>
-                  </div>
+                      <div class="modal-grid">
+                        <div class="tile">
+                          <div class="tile-title">Рівень</div>
+                          <div class="tile-value">${data.level ?? 1}</div>
+                        </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Множник</div>
-                    <div class="tile-value">x${data.multiplier ?? 1}</div>
-                  </div>
+                        <div class="tile">
+                          <div class="tile-title">Множник</div>
+                          <div class="tile-value">x${data.multiplier ?? 1}</div>
+                        </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Наступна ціна</div>
-                    <div class="tile-value">${priceText}</div>
-                  </div>
+                        <div class="tile">
+                          <div class="tile-title">Наступна ціна</div>
+                          <div class="tile-value">${priceText}</div>
+                        </div>
 
-                  <div class="tile">
-                    <div class="tile-title">Наступний множник</div>
-                    <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
-                  </div>
-                </div>
+                        <div class="tile">
+                          <div class="tile-title">Наступний множник</div>
+                          <div class="tile-value">x${data.nextMultiplier ?? 1}</div>
+                        </div>
+                      </div>
 
-                <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
-              `;
+                      <button class="buy-btn" id="labUpgradeBtn">Покращити</button>
+                    `;
 
         showModal();
 
@@ -1003,45 +1026,45 @@
         }
 
         modalBody.innerHTML = `
-          <div class="wheel-wrap">
-            <div class="wheel-pointer"></div>
+                <div class="wheel-wrap">
+                  <div class="wheel-pointer"></div>
 
-            <div style="display:flex; justify-content:center;">
-              <svg width="260" height="260" viewBox="0 0 260 260">
+                  <div style="display:flex; justify-content:center;">
+                    <svg width="260" height="260" viewBox="0 0 260 260">
 
-                <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
+                      <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
 
-                  <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
-                  <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
-                  <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
-                  <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
-                  <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
-                  <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
-                  <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
-                  <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
+                        <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
+                        <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
+                        <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
+                        <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
+                        <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
+                        <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
+                        <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
+                        <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
 
-                  <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
-                  <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
-                  <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
-                  <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
-                  <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
-                  <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
-                  <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
-                  <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
+                        <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
+                        <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
+                        <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
+                        <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
+                        <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
+                        <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
+                        <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
+                        <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
 
-                </g>
+                      </g>
 
-                <circle cx="130" cy="130" r="40" fill="#0f172a"/>
-                <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
+                      <circle cx="130" cy="130" r="40" fill="#0f172a"/>
+                      <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
 
-              </svg>
-            </div>
+                    </svg>
+                  </div>
 
-            <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
-              ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
-            </button>
-          </div>
-        `;
+                  <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
+                    ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
+                  </button>
+                </div>
+              `;
 
         showModal();
 
