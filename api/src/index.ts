@@ -45,7 +45,7 @@ app.use("/api/wheel", wheelRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/referrals", referralsRouter);
 app.use("/tap", tapRouter);
-app.use("/upgrade", upgradeRouter);
+app.use("/api/upgrade", upgradeRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
