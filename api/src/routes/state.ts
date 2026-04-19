@@ -33,18 +33,9 @@ function getAnimalProducedPerCycle(
   type: "CHICKEN" | "SHEEP" | "COW",
   level: number,
 ) {
-  if (type === "CHICKEN") {
-    return 1 + (level - 1);
-  }
-
-  if (type === "SHEEP") {
-    return 3 + (level - 1);
-  }
-
-  if (type === "COW") {
-    return 7 + (level - 1) * 2;
-  }
-
+  if (type === "CHICKEN") return 1 + (level - 1);
+  if (type === "SHEEP") return 3 + (level - 1);
+  if (type === "COW") return 7 + (level - 1) * 2;
   return 1;
 }
 
@@ -70,6 +61,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           telegramId,
           level: 1,
           xp: 0,
+          warehouseLevel: 1,
           storage: {
             create: {
               eggs: 0,
@@ -145,7 +137,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
-      // 1 цикл = 1 корм, незалежно від рівня
       const maxCyclesByFeed = Math.floor(feedAvailable / 1);
       const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
 
@@ -162,30 +153,19 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
-      produced = Math.floor(produced * (user.labMultiplier || 1));
-
       if (user.boostUntil && user.boostUntil > now) {
         produced *= 2;
       }
 
-      if (animal.type === "CHICKEN") {
-        chickenFeedLeft -= usedCycles;
-      }
-
-      if (animal.type === "SHEEP") {
-        sheepFeedLeft -= usedCycles;
-      }
-
-      if (animal.type === "COW") {
-        cowFeedLeft -= usedCycles;
-      }
+      if (animal.type === "CHICKEN") chickenFeedLeft -= usedCycles;
+      if (animal.type === "SHEEP") sheepFeedLeft -= usedCycles;
+      if (animal.type === "COW") cowFeedLeft -= usedCycles;
 
       if (cfg.storageField === "eggs") eggsAdd += produced;
       if (cfg.storageField === "wool") woolAdd += produced;
       if (cfg.storageField === "milk") milkAdd += produced;
 
       const consumedSec = usedCycles * cfg.seconds;
-
       const newLastClaim = new Date(
         animal.lastClaim.getTime() + consumedSec * 1000,
       );
@@ -264,7 +244,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       const fullCycles = Math.floor(
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds,
       );
-      const feedCycles = Math.floor((user.chickenFeed ?? 0) / 1);
+      const feedCycles = Math.floor((user!.chickenFeed ?? 0) / 1);
 
       return (
         sum +
@@ -280,7 +260,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       const fullCycles = Math.floor(
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds,
       );
-      const feedCycles = Math.floor((user.sheepFeed ?? 0) / 1);
+      const feedCycles = Math.floor((user!.sheepFeed ?? 0) / 1);
 
       return (
         sum +
@@ -296,7 +276,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       const fullCycles = Math.floor(
         Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds,
       );
-      const feedCycles = Math.floor((user.cowFeed ?? 0) / 1);
+      const feedCycles = Math.floor((user!.cowFeed ?? 0) / 1);
 
       return (
         sum +
@@ -333,7 +313,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chicken: chickenAnimals.length,
         sheep: sheepAnimals.length,
         cow: cowAnimals.length,
-
         chickenLevel: chickenAnimals.length
           ? Math.max(...chickenAnimals.map((a) => a.level))
           : 0,
@@ -366,10 +345,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       },
 
       levels: {
-        warehouseLevel: user.warehouseLevel,
+        warehouseLevel: user.warehouseLevel ?? 1,
         warehouseCapacity: user.storage.capacity ?? 1000,
-        labLevel: user.labLevel,
-        labMultiplier: user.labMultiplier,
       },
 
       feed: {
