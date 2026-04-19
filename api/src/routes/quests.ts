@@ -1,18 +1,31 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
+import { AnimalType } from "@prisma/client";
 
 const router = Router();
 
-function isToday(date: Date) {
+type QuestGroup = "daily" | "progress" | "achievement";
+
+type Quest = {
+  code: string;
+  title: string;
+  group: QuestGroup;
+  reward: number;
+  done: boolean;
+  claimed: boolean;
+  progress?: number;
+  target?: number;
+};
+
+function getTodayKey() {
   const now = new Date();
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
+  return now.toISOString().slice(0, 10);
 }
 
+// =======================
+// GET QUESTS
+// =======================
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     const telegramId = BigInt(req.telegramUser!.id);
@@ -21,252 +34,239 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       where: { telegramId },
       include: {
         animals: true,
+        achievementClaims: true,
+        dailyQuestClaims: true,
       },
     });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    const claimedCodes: string[] = ((user as any).claimedQuests ??
-      []) as string[];
-    const animals = (user.animals ?? []) as Array<{
-      type: string;
-      level: number;
-    }>;
+    const today = getTodayKey();
 
-    const chickenCount = animals.filter((a) => a.type === "CHICKEN").length;
-    const sheepCount = animals.filter((a) => a.type === "SHEEP").length;
-    const cowCount = animals.filter((a) => a.type === "COW").length;
+    // ===== counts =====
+    const chickenCount = user.animals.filter(
+      (a) => a.type === AnimalType.CHICKEN,
+    ).length;
+    const sheepCount = user.animals.filter(
+      (a) => a.type === AnimalType.SHEEP,
+    ).length;
+    const cowCount = user.animals.filter(
+      (a) => a.type === AnimalType.COW,
+    ).length;
 
-    const maxLevel = animals.length
-      ? Math.max(...animals.map((a) => a.level))
+    const maxLevel = user.animals.length
+      ? Math.max(...user.animals.map((a) => a.level))
       : 1;
 
-    const referralCount = await prisma.referral.count({
-      where: { referrerId: user.id },
-    });
+    // ===== claimed =====
+    const dailyClaimed = user.dailyQuestClaims
+      .filter((q) => q.claimDate === today)
+      .map((q) => q.code);
 
-    const quests = [
-      // ================= DAILY =================
+    const achievementClaimed = user.achievementClaims
+      .filter((a) => a.claimed)
+      .map((a) => a.code);
+
+    // ================= QUESTS =================
+    const quests: Quest[] = [
+      // ===== DAILY =====
       {
-        code: "daily_claim",
-        title: "Забери daily reward",
-        group: "daily",
-        reward: 100,
-        done: !!user.lastDailyAt && isToday(user.lastDailyAt),
-        claimed: claimedCodes.includes("daily_claim"),
-      },
-      {
-        code: "daily_have_1_animal",
-        title: "Май хоча б 1 тварину",
+        code: "tap_20",
+        title: "Зроби 20 тапів",
         group: "daily",
         reward: 50,
-        done: chickenCount + sheepCount + cowCount >= 1,
-        claimed: claimedCodes.includes("daily_have_1_animal"),
+        progress: user.tapsToday,
+        target: 20,
+        done: user.tapsToday >= 20,
+        claimed: dailyClaimed.includes("tap_20"),
       },
       {
-        code: "daily_earn_200",
-        title: "Май 200 монет",
+        code: "sell_once",
+        title: "Продай ресурси",
         group: "daily",
         reward: 75,
-        done: (user.coins ?? 0) >= 200,
-        claimed: claimedCodes.includes("daily_earn_200"),
+        progress: user.sellsToday,
+        target: 1,
+        done: user.sellsToday >= 1,
+        claimed: dailyClaimed.includes("sell_once"),
+      },
+      {
+        code: "buy_feed",
+        title: "Купи корм",
+        group: "daily",
+        reward: 50,
+        progress: user.feedBuysToday,
+        target: 1,
+        done: user.feedBuysToday >= 1,
+        claimed: dailyClaimed.includes("buy_feed"),
       },
 
-      // ================= PROGRESS =================
-      {
-        code: "earn_100",
-        title: "Зароби 100 монет",
-        group: "progress",
-        reward: 50,
-        done: (user.coins ?? 0) >= 100,
-        claimed: claimedCodes.includes("earn_100"),
-      },
+      // ===== PROGRESS =====
       {
         code: "buy_chicken",
-        title: "Купи 1 курку",
+        title: "Купи курку",
         group: "progress",
-        reward: 75,
+        reward: 100,
         done: chickenCount >= 1,
-        claimed: claimedCodes.includes("buy_chicken"),
+        claimed: achievementClaimed.includes("buy_chicken"),
       },
       {
         code: "buy_sheep",
-        title: "Купи 1 вівцю",
+        title: "Купи вівцю",
         group: "progress",
-        reward: 120,
+        reward: 150,
         done: sheepCount >= 1,
-        claimed: claimedCodes.includes("buy_sheep"),
+        claimed: achievementClaimed.includes("buy_sheep"),
       },
       {
         code: "buy_cow",
-        title: "Купи 1 корову",
+        title: "Купи корову",
         group: "progress",
-        reward: 200,
+        reward: 250,
         done: cowCount >= 1,
-        claimed: claimedCodes.includes("buy_cow"),
+        claimed: achievementClaimed.includes("buy_cow"),
       },
 
-      // ================= ACHIEVEMENTS =================
+      // ===== ACHIEVEMENTS =====
       {
-        code: "upgrade_animal",
-        title: "Зроби upgrade тварини",
+        code: "upgrade",
+        title: "Прокачай тварину",
         group: "achievement",
-        reward: 150,
+        reward: 200,
         done: maxLevel > 1,
-        claimed: claimedCodes.includes("upgrade_animal"),
+        claimed: achievementClaimed.includes("upgrade"),
       },
       {
-        code: "reach_1000",
+        code: "rich_1000",
         title: "Накопич 1000 монет",
         group: "achievement",
         reward: 300,
-        done: (user.coins ?? 0) >= 1000,
-        claimed: claimedCodes.includes("reach_1000"),
+        done: user.coins >= 1000,
+        claimed: achievementClaimed.includes("rich_1000"),
       },
       {
-        code: "invite_friend",
-        title: "Запроси друга",
-        group: "achievement",
-        reward: 200,
-        done: referralCount >= 1,
-        claimed: claimedCodes.includes("invite_friend"),
-      },
-      {
-        code: "warehouse_lvl_2",
+        code: "warehouse_lvl2",
         title: "Покращ склад до LVL 2",
         group: "achievement",
         reward: 250,
         done: (user.warehouseLevel ?? 1) >= 2,
-        claimed: claimedCodes.includes("warehouse_lvl_2"),
+        claimed: achievementClaimed.includes("warehouse_lvl2"),
       },
     ];
 
     return res.json({ ok: true, quests });
   } catch (e) {
-    console.error("QUESTS GET ERROR:", e);
+    console.error("QUESTS ERROR:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
 
+// =======================
+// CLAIM QUEST
+// =======================
 router.post("/claim", async (req: TgAuthedRequest, res) => {
   try {
     const telegramId = BigInt(req.telegramUser!.id);
-    const { code } = req.body as { code?: string };
-
-    if (!code) {
-      return res.status(400).json({ error: "Quest code required" });
-    }
+    const { code } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      include: {
-        animals: true,
-      },
     });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    let claimedCodes: string[] = ((user as any).claimedQuests ??
-      []) as string[];
+    const today = getTodayKey();
 
-    if (claimedCodes.includes(code)) {
-      return res.status(400).json({ error: "Already claimed" });
-    }
-
-    const animals = (user.animals ?? []) as Array<{
-      type: string;
-      level: number;
-    }>;
-
-    const chickenCount = animals.filter((a) => a.type === "CHICKEN").length;
-    const sheepCount = animals.filter((a) => a.type === "SHEEP").length;
-    const cowCount = animals.filter((a) => a.type === "COW").length;
-
-    const maxLevel = animals.length
-      ? Math.max(...animals.map((a) => a.level))
-      : 1;
-
-    const referralCount = await prisma.referral.count({
-      where: { referrerId: user.id },
-    });
-
-    const rewardMap: Record<string, { reward: number; done: boolean }> = {
-      daily_claim: {
-        reward: 100,
-        done: !!user.lastDailyAt && isToday(user.lastDailyAt),
-      },
-      daily_have_1_animal: {
-        reward: 50,
-        done: chickenCount + sheepCount + cowCount >= 1,
-      },
-      daily_earn_200: {
-        reward: 75,
-        done: (user.coins ?? 0) >= 200,
-      },
-
-      earn_100: {
-        reward: 50,
-        done: (user.coins ?? 0) >= 100,
-      },
-      buy_chicken: {
-        reward: 75,
-        done: chickenCount >= 1,
-      },
-      buy_sheep: {
-        reward: 120,
-        done: sheepCount >= 1,
-      },
-      buy_cow: {
-        reward: 200,
-        done: cowCount >= 1,
-      },
-
-      upgrade_animal: {
-        reward: 150,
-        done: maxLevel > 1,
-      },
-      reach_1000: {
-        reward: 300,
-        done: (user.coins ?? 0) >= 1000,
-      },
-      invite_friend: {
-        reward: 200,
-        done: referralCount >= 1,
-      },
-      warehouse_lvl_2: {
-        reward: 250,
-        done: (user.warehouseLevel ?? 1) >= 2,
-      },
+    const rewards: Record<string, number> = {
+      tap_20: 50,
+      sell_once: 75,
+      buy_feed: 50,
+      buy_chicken: 100,
+      buy_sheep: 150,
+      buy_cow: 250,
+      upgrade: 200,
+      rich_1000: 300,
+      warehouse_lvl2: 250,
     };
 
-    const quest = rewardMap[code];
-
-    if (!quest) {
-      return res.status(404).json({ error: "Quest not found" });
+    const reward = rewards[code];
+    if (!reward) {
+      return res.status(400).json({ error: "Invalid quest" });
     }
 
-    if (!quest.done) {
-      return res.status(400).json({ error: "Quest not completed" });
+    // DAILY
+    const isDaily = ["tap_20", "sell_once", "buy_feed"].includes(code);
+
+    if (isDaily) {
+      const existing = await prisma.dailyQuestClaim.findFirst({
+        where: {
+          userId: user.id,
+          code,
+          claimDate: today,
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({ error: "Already claimed today" });
+      }
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            coins: { increment: reward },
+          },
+        }),
+        prisma.dailyQuestClaim.create({
+          data: {
+            userId: user.id,
+            code,
+            claimDate: today,
+          },
+        }),
+      ]);
+    } else {
+      // ACHIEVEMENT / PROGRESS
+      const existing = await prisma.achievementClaim.findFirst({
+        where: {
+          userId: user.id,
+          code,
+        },
+      });
+
+      if (existing?.claimed) {
+        return res.status(400).json({ error: "Already claimed" });
+      }
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            coins: { increment: reward },
+          },
+        }),
+        prisma.achievementClaim.upsert({
+          where: {
+            userId_code: {
+              userId: user.id,
+              code,
+            },
+          },
+          update: {
+            claimed: true,
+            claimedAt: new Date(),
+          },
+          create: {
+            userId: user.id,
+            code,
+            claimed: true,
+            claimedAt: new Date(),
+          },
+        }),
+      ]);
     }
 
-    claimedCodes = [...claimedCodes, code];
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        coins: { increment: quest.reward },
-        claimedQuests: claimedCodes as any,
-      },
-    });
-
-    return res.json({
-      ok: true,
-      reward: quest.reward,
-    });
+    return res.json({ ok: true, reward });
   } catch (e) {
     console.error("QUEST CLAIM ERROR:", e);
     return res.status(500).json({ error: "Server error" });
