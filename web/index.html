@@ -833,19 +833,86 @@
         renderAnimalsBuy();
         showModal();
       }
-      function openStorageModal() {
-        const storage = currentState?.storage || {};
+      async function openStorageModal() {
         modalTitle.textContent = "📦 Склад";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Яйця</div><div class="tile-value">${storage.eggs ?? 0}</div></div><div class="tile"><div class="tile-title">Шерсть</div><div class="tile-value">${storage.wool ?? 0}</div></div><div class="tile"><div class="tile-title">Молоко</div><div class="tile-value">${storage.milk ?? 0}</div></div><div class="tile"><div class="tile-title">Capacity</div><div class="tile-value">${storage.total ?? 0}/${storage.capacity ?? 0}</div></div></div><button class="buy-btn" id="sellAllBtn">Продати все</button>`;
+
+        const s = currentState?.storage || {};
+
+        const eggs = s.eggs ?? 0;
+        const wool = s.wool ?? 0;
+        const milk = s.milk ?? 0;
+        const capacity = s.capacity ?? 1000;
+        const total = s.total ?? eggs + wool + milk;
+
+        // 💰 розрахунок продажу
+        const coinsFromEggs = eggs * 1;
+        const coinsFromWool = wool * 3;
+        const coinsFromMilk = milk * 7;
+        const totalCoins = coinsFromEggs + coinsFromWool + coinsFromMilk;
+
+        // 📊 заповнення складу
+        const percent = Math.min(100, Math.floor((total / capacity) * 100));
+
+        let warning = "";
+        if (percent >= 95) {
+          warning = (
+            <div class="warn">🚨 Склад заповнений! Виробництво зупинено</div>
+          );
+        } else if (percent >= 80) {
+          warning = <div class="warn">⚠️ Склад майже повний</div>;
+        }
+
+        modalBody.innerHTML = `
+    <div class="modal-grid">
+
+      <div class="tile full">
+        <div class="tile-title">📊 Заповнення</div>
+        <div class="tile-value">${total} / ${capacity}</div>
+        <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
+        ${warning}
+      </div>
+
+      <div class="tile">
+        <div class="tile-title">🥚 Яйця</div>
+        <div class="tile-value">${eggs}</div>
+        <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
+      </div>
+
+      <div class="tile">
+        <div class="tile-title">🧶 Шерсть</div>
+        <div class="tile-value">${wool}</div>
+        <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
+      </div>
+
+      <div class="tile">
+        <div class="tile-title">🥛 Молоко</div>
+        <div class="tile-value">${milk}</div>
+        <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
+      </div>
+
+      <div class="tile full">
+        <div class="tile-title">💰 Продаж</div>
+        <div class="tile-value">+${totalCoins} coins</div>
+        <button class="buy-btn green" id="sellAllBtn">
+          Продати все
+        </button>
+      </div>
+
+    </div>
+  `;
+
         showModal();
+
         document.getElementById("sellAllBtn").onclick = async () => {
           const res = await apiPost("/sell");
-          setResult(res.data);
+
           if (res.ok) {
-            showToast(`+${res.data?.sold ?? 0}`);
+            showToast(`+${res.data.coins} coins 💰`);
             await loadState();
             openStorageModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
           }
         };
       }
