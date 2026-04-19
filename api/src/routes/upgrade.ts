@@ -32,8 +32,8 @@ const UPGRADE_COSTS: Record<AnimalType, Record<number, UpgradeCost>> = {
 };
 
 function getLuckyChance(currentLevel: number) {
-  if (currentLevel === 3) return 0.1; // 3 -> 4
-  if (currentLevel === 4) return 0.05; // 4 -> 5
+  if (currentLevel === 3) return 0.1;
+  if (currentLevel === 4) return 0.05;
   return 0;
 }
 
@@ -43,9 +43,9 @@ async function getTypeState(userId: number, type: AnimalType) {
     select: { level: true },
   });
 
-  const count = animals.length;
+  const owned = animals.length;
 
-  if (count === 0) {
+  if (owned === 0) {
     return {
       type,
       owned: 0,
@@ -65,7 +65,7 @@ async function getTypeState(userId: number, type: AnimalType) {
 
   return {
     type,
-    owned: count,
+    owned,
     currentLevel,
     nextLevel: maxed ? 5 : currentLevel + 1,
     maxed,
@@ -100,8 +100,6 @@ router.get("/state", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      coins: user.coins,
-      diamonds: user.diamonds,
       upgrades: {
         chicken: {
           ...chicken,
@@ -165,7 +163,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     });
 
     if (!animals.length) {
-      return res.status(400).json({ error: "Немає таких тварин для upgrade" });
+      return res.status(400).json({ error: "Спочатку купи тварин" });
     }
 
     const currentLevel = Math.max(...animals.map((a) => a.level));
@@ -207,13 +205,11 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       }),
       prisma.animal.updateMany({
         where: { userId: user.id, type },
-        data: {
-          level: nextLevel,
-        },
+        data: { level: nextLevel },
       }),
     ]);
 
-    const updatedUser = await prisma.user.findUnique({
+    const userAfter = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
         coins: true,
@@ -228,8 +224,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       level: nextLevel,
       luckyUpgrade,
       spent: cost,
-      coins: updatedUser?.coins ?? 0,
-      diamonds: updatedUser?.diamonds ?? 0,
+      coins: userAfter?.coins ?? 0,
+      diamonds: userAfter?.diamonds ?? 0,
     });
   } catch (e) {
     console.error("UPGRADE APPLY ERROR:", e);
