@@ -333,6 +333,16 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chicken: chickenAnimals.length,
         sheep: sheepAnimals.length,
         cow: cowAnimals.length,
+
+        chickenLevel: chickenAnimals.length
+          ? Math.max(...chickenAnimals.map((a) => a.level))
+          : 0,
+        sheepLevel: sheepAnimals.length
+          ? Math.max(...sheepAnimals.map((a) => a.level))
+          : 0,
+        cowLevel: cowAnimals.length
+          ? Math.max(...cowAnimals.map((a) => a.level))
+          : 0,
       },
 
       storage: {
