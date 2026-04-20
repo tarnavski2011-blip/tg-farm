@@ -1,82 +1,101 @@
-import { prisma } from "../prisma";
+import axios from "axios";
 
+const BOT_TOKEN = process.env.BOT_TOKEN;
+
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN not set");
+}
+
+const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+// =====================
+// ПАКЕТИ
+// =====================
 export const STAR_PACKAGES = {
   small: {
-    diamonds: 50,
-    stars: 25,
+    code: "small",
     title: "Малий пакет",
     description: "50 діамантів",
+    diamonds: 50,
+    stars: 20,
   },
   medium: {
-    diamonds: 120,
-    stars: 50,
+    code: "medium",
     title: "Середній пакет",
     description: "120 діамантів",
+    diamonds: 120,
+    stars: 50,
   },
   large: {
-    diamonds: 300,
-    stars: 100,
+    code: "large",
     title: "Великий пакет",
     description: "300 діамантів",
+    diamonds: 300,
+    stars: 100,
   },
 } as const;
 
 export type StarPackageCode = keyof typeof STAR_PACKAGES;
 
-export function isStarPackageCode(value: string): value is StarPackageCode {
-  return value in STAR_PACKAGES;
+export function isStarPackageCode(code: string): code is StarPackageCode {
+  return code in STAR_PACKAGES;
 }
 
-export function makeInvoicePayload(
-  telegramUserId: number | string,
-  packageCode: StarPackageCode,
+// =====================
+// PAYLOAD
+// =====================
+export function makeInvoicePayload(paymentId: number) {
+  return JSON.stringify({ paymentId });
+}
+
+export function parsePayload(payload: string): { paymentId: number } | null {
+  try {
+    const parsed = JSON.parse(payload);
+    if (!parsed?.paymentId) return null;
+    return { paymentId: Number(parsed.paymentId) };
+  } catch {
+    return null;
+  }
+}
+
+// =====================
+// TELEGRAM API
+// =====================
+export async function answerPreCheckoutQuery(
+  id: string,
+  ok: boolean,
+  errorMessage?: string,
 ) {
-  return `stars:${telegramUserId}:${packageCode}`;
+  await axios.post(`${TG_API}/answerPreCheckoutQuery`, {
+    pre_checkout_query_id: id,
+    ok,
+    error_message: errorMessage,
+  });
 }
 
-export function parseInvoicePayload(payload: string) {
-  const parts = payload.split(":");
-  if (parts.length !== 3 || parts[0] !== "stars") return null;
-
-  const telegramUserId = parts[1];
-  const packageCode = parts[2];
-
-  if (!/^\d+$/.test(telegramUserId)) return null;
-  if (!isStarPackageCode(packageCode)) return null;
-
-  return {
-    telegramUserId: BigInt(telegramUserId),
-    packageCode,
-  };
-}
-
-export async function creditDiamondsForSuccessfulPayment(payload: string) {
-  const parsed = parseInvoicePayload(payload);
-  if (!parsed) {
-    throw new Error("Invalid payment payload");
-  }
-
-  const pack = STAR_PACKAGES[parsed.packageCode];
-
-  const user = await prisma.user.findUnique({
-    where: { telegramId: parsed.telegramUserId },
-    select: { id: true },
+export async function createStarsInvoiceLink(params: {
+  title: string;
+  description: string;
+  payload: string;
+  starsAmount: number;
+}) {
+  const res = await axios.post(`${TG_API}/createInvoiceLink`, {
+    title: params.title,
+    description: params.description,
+    payload: params.payload,
+    provider_token: "",
+    currency: "XTR",
+    prices: [
+      {
+        label: params.title,
+        amount: params.starsAmount,
+      },
+    ],
   });
 
-  if (!user) {
-    throw new Error("User not found for successful payment");
+  if (!res.data?.ok) {
+    throw new Error("Telegram invoice error");
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      diamonds: { increment: pack.diamonds },
-    },
-  });
-
-  return {
-    telegramUserId: parsed.telegramUserId,
-    packageCode: parsed.packageCode,
-    diamonds: pack.diamonds,
-  };
+  return res.data.result as string;
 }
