@@ -12,7 +12,7 @@ type Quest = {
   code: string;
   title: string;
   group: QuestGroup;
-  reward: number;
+  reward: string;
   done: boolean;
   claimed: boolean;
   progress?: number;
@@ -71,6 +71,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       ? Math.max(...freshUser.animals.map((a) => a.level))
       : 1;
 
+    const referralCount = await prisma.referral.count({
+      where: { referrerId: freshUser.id },
+    });
+
     const dailyClaimed = freshUser.dailyQuestClaims
       .filter((q) => q.claimDate === today)
       .map((q) => q.code);
@@ -84,7 +88,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "tap_20",
         title: "Зроби 20 тапів",
         group: "daily",
-        reward: 50,
+        reward: "50 coins",
         progress: freshUser.tapsToday,
         target: 20,
         done: freshUser.tapsToday >= 20,
@@ -94,7 +98,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "sell_once",
         title: "Продай ресурси",
         group: "daily",
-        reward: 75,
+        reward: "75 coins",
         progress: freshUser.sellsToday,
         target: 1,
         done: freshUser.sellsToday >= 1,
@@ -104,7 +108,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "buy_feed",
         title: "Купи корм",
         group: "daily",
-        reward: 50,
+        reward: "50 coins",
         progress: freshUser.feedBuysToday,
         target: 1,
         done: freshUser.feedBuysToday >= 1,
@@ -115,7 +119,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "buy_chicken",
         title: "Купи курку",
         group: "progress",
-        reward: 100,
+        reward: "100 coins",
         done: chickenCount >= 1,
         claimed: achievementClaimed.includes("buy_chicken"),
       },
@@ -123,7 +127,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "buy_sheep",
         title: "Купи вівцю",
         group: "progress",
-        reward: 150,
+        reward: "150 coins",
         done: sheepCount >= 1,
         claimed: achievementClaimed.includes("buy_sheep"),
       },
@@ -131,7 +135,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "buy_cow",
         title: "Купи корову",
         group: "progress",
-        reward: 250,
+        reward: "250 coins",
         done: cowCount >= 1,
         claimed: achievementClaimed.includes("buy_cow"),
       },
@@ -140,7 +144,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "upgrade",
         title: "Прокачай тварину",
         group: "achievement",
-        reward: 200,
+        reward: "200 coins",
         done: maxLevel > 1,
         claimed: achievementClaimed.includes("upgrade"),
       },
@@ -148,7 +152,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "rich_1000",
         title: "Накопич 1000 монет",
         group: "achievement",
-        reward: 300,
+        reward: "300 coins",
         done: freshUser.coins >= 1000,
         claimed: achievementClaimed.includes("rich_1000"),
       },
@@ -156,9 +160,34 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         code: "warehouse_lvl2",
         title: "Покращ склад до LVL 2",
         group: "achievement",
-        reward: 250,
+        reward: "250 coins",
         done: (freshUser.warehouseLevel ?? 1) >= 2,
         claimed: achievementClaimed.includes("warehouse_lvl2"),
+      },
+
+      {
+        code: "invite_1",
+        title: "Запроси 1 друга",
+        group: "achievement",
+        reward: "1 💎",
+        done: referralCount >= 1,
+        claimed: achievementClaimed.includes("invite_1"),
+      },
+      {
+        code: "invite_3",
+        title: "Запроси 3 друзів",
+        group: "achievement",
+        reward: "3 💎",
+        done: referralCount >= 3,
+        claimed: achievementClaimed.includes("invite_3"),
+      },
+      {
+        code: "invite_5",
+        title: "Запроси 5 друзів",
+        group: "achievement",
+        reward: "5 💎",
+        done: referralCount >= 5,
+        claimed: achievementClaimed.includes("invite_5"),
       },
     ];
 
@@ -222,55 +251,105 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
       ? Math.max(...freshUser.animals.map((a) => a.level))
       : 1;
 
+    const referralCount = await prisma.referral.count({
+      where: { referrerId: freshUser.id },
+    });
+
     const rewardMap: Record<
       string,
-      { reward: number; done: boolean; daily: boolean }
+      {
+        rewardCoins: number;
+        rewardDiamonds: number;
+        rewardText: string;
+        done: boolean;
+        daily: boolean;
+      }
     > = {
       tap_20: {
-        reward: 50,
+        rewardCoins: 50,
+        rewardDiamonds: 0,
+        rewardText: "50 coins",
         done: freshUser.tapsToday >= 20,
         daily: true,
       },
       sell_once: {
-        reward: 75,
+        rewardCoins: 75,
+        rewardDiamonds: 0,
+        rewardText: "75 coins",
         done: freshUser.sellsToday >= 1,
         daily: true,
       },
       buy_feed: {
-        reward: 50,
+        rewardCoins: 50,
+        rewardDiamonds: 0,
+        rewardText: "50 coins",
         done: freshUser.feedBuysToday >= 1,
         daily: true,
       },
 
       buy_chicken: {
-        reward: 100,
+        rewardCoins: 100,
+        rewardDiamonds: 0,
+        rewardText: "100 coins",
         done: chickenCount >= 1,
         daily: false,
       },
       buy_sheep: {
-        reward: 150,
+        rewardCoins: 150,
+        rewardDiamonds: 0,
+        rewardText: "150 coins",
         done: sheepCount >= 1,
         daily: false,
       },
       buy_cow: {
-        reward: 250,
+        rewardCoins: 250,
+        rewardDiamonds: 0,
+        rewardText: "250 coins",
         done: cowCount >= 1,
         daily: false,
       },
 
       upgrade: {
-        reward: 200,
+        rewardCoins: 200,
+        rewardDiamonds: 0,
+        rewardText: "200 coins",
         done: maxLevel > 1,
         daily: false,
       },
       rich_1000: {
-        reward: 300,
+        rewardCoins: 300,
+        rewardDiamonds: 0,
+        rewardText: "300 coins",
         done: freshUser.coins >= 1000,
         daily: false,
       },
       warehouse_lvl2: {
-        reward: 250,
+        rewardCoins: 250,
+        rewardDiamonds: 0,
+        rewardText: "250 coins",
         done: (freshUser.warehouseLevel ?? 1) >= 2,
+        daily: false,
+      },
+
+      invite_1: {
+        rewardCoins: 0,
+        rewardDiamonds: 1,
+        rewardText: "1 💎",
+        done: referralCount >= 1,
+        daily: false,
+      },
+      invite_3: {
+        rewardCoins: 0,
+        rewardDiamonds: 3,
+        rewardText: "3 💎",
+        done: referralCount >= 3,
+        daily: false,
+      },
+      invite_5: {
+        rewardCoins: 0,
+        rewardDiamonds: 5,
+        rewardText: "5 💎",
+        done: referralCount >= 5,
         daily: false,
       },
     };
@@ -304,7 +383,8 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
         prisma.user.update({
           where: { id: freshUser.id },
           data: {
-            coins: { increment: quest.reward },
+            coins: { increment: quest.rewardCoins },
+            diamonds: { increment: quest.rewardDiamonds },
           },
         }),
         prisma.dailyQuestClaim.create({
@@ -333,7 +413,8 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
         prisma.user.update({
           where: { id: freshUser.id },
           data: {
-            coins: { increment: quest.reward },
+            coins: { increment: quest.rewardCoins },
+            diamonds: { increment: quest.rewardDiamonds },
           },
         }),
         prisma.achievementClaim.upsert({
@@ -357,7 +438,12 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
       ]);
     }
 
-    return res.json({ ok: true, reward: quest.reward });
+    return res.json({
+      ok: true,
+      reward: quest.rewardText,
+      rewardCoins: quest.rewardCoins,
+      rewardDiamonds: quest.rewardDiamonds,
+    });
   } catch (e) {
     console.error("QUEST CLAIM ERROR:", e);
     return res.status(500).json({ error: "Server error" });
