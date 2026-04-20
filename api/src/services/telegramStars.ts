@@ -1,64 +1,82 @@
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+import { prisma } from "../prisma";
 
-function telegramApiUrl(method: string) {
-  if (!BOT_TOKEN) {
-    throw new Error("Missing TELEGRAM_BOT_TOKEN");
-  }
-  return `https://api.telegram.org/bot${BOT_TOKEN}/${method}`;
+export const STAR_PACKAGES = {
+  small: {
+    diamonds: 50,
+    stars: 25,
+    title: "Малий пакет",
+    description: "50 діамантів",
+  },
+  medium: {
+    diamonds: 120,
+    stars: 50,
+    title: "Середній пакет",
+    description: "120 діамантів",
+  },
+  large: {
+    diamonds: 300,
+    stars: 100,
+    title: "Великий пакет",
+    description: "300 діамантів",
+  },
+} as const;
+
+export type StarPackageCode = keyof typeof STAR_PACKAGES;
+
+export function isStarPackageCode(value: string): value is StarPackageCode {
+  return value in STAR_PACKAGES;
 }
 
-export async function createStarsInvoiceLink(args: {
-  title: string;
-  description: string;
-  payload: string;
-  starsAmount: number;
-}) {
-  const res = await fetch(telegramApiUrl("createInvoiceLink"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: args.title,
-      description: args.description,
-      payload: args.payload,
-      currency: "XTR",
-      prices: [{ label: args.title, amount: args.starsAmount }],
-    }),
-  });
-
-  const json = await res.json();
-  if (!json?.ok || !json?.result) {
-    throw new Error(json?.description || "Failed to create invoice link");
-  }
-
-  return json.result as string;
-}
-
-export async function answerPreCheckoutQuery(
-  preCheckoutQueryId: string,
-  ok: boolean,
-  errorMessage?: string,
+export function makeInvoicePayload(
+  telegramUserId: number | string,
+  packageCode: StarPackageCode,
 ) {
-  const res = await fetch(telegramApiUrl("answerPreCheckoutQuery"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      pre_checkout_query_id: preCheckoutQueryId,
-      ok,
-      error_message: errorMessage,
-    }),
-  });
-
-  const json = await res.json();
-  if (!json?.ok) {
-    throw new Error(json?.description || "Failed to answer pre_checkout_query");
-  }
+  return `stars:${telegramUserId}:${packageCode}`;
 }
 
-export function parsePayload(payload: string) {
-  const parts = String(payload || "").split(":");
+export function parseInvoicePayload(payload: string) {
+  const parts = payload.split(":");
   if (parts.length !== 3 || parts[0] !== "stars") return null;
+
+  const telegramUserId = parts[1];
+  const packageCode = parts[2];
+
+  if (!/^\d+$/.test(telegramUserId)) return null;
+  if (!isStarPackageCode(packageCode)) return null;
+
   return {
-    userId: Number(parts[1]),
-    paymentId: Number(parts[2]),
+    telegramUserId: BigInt(telegramUserId),
+    packageCode,
+  };
+}
+
+export async function creditDiamondsForSuccessfulPayment(payload: string) {
+  const parsed = parseInvoicePayload(payload);
+  if (!parsed) {
+    throw new Error("Invalid payment payload");
+  }
+
+  const pack = STAR_PACKAGES[parsed.packageCode];
+
+  const user = await prisma.user.findUnique({
+    where: { telegramId: parsed.telegramUserId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new Error("User not found for successful payment");
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      diamonds: { increment: pack.diamonds },
+    },
+  });
+
+  return {
+    telegramUserId: parsed.telegramUserId,
+    packageCode: parsed.packageCode,
+    diamonds: pack.diamonds,
   };
 }

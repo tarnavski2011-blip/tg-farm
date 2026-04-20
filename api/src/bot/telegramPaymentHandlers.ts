@@ -3,7 +3,6 @@ import {
   answerPreCheckoutQuery,
   parsePayload,
 } from "../services/telegramStars";
-import { grantPremiumPurchase } from "../services/paymentGrant";
 
 export async function handleTelegramPaymentUpdate(update: any) {
   if (update?.pre_checkout_query) {
@@ -29,6 +28,7 @@ export async function handleTelegramPaymentUpdate(update: any) {
   }
 
   const successfulPayment = update?.message?.successful_payment;
+
   if (successfulPayment) {
     const parsed = parsePayload(successfulPayment.invoice_payload);
     if (!parsed) return { handled: true };
@@ -49,8 +49,29 @@ export async function handleTelegramPaymentUpdate(update: any) {
       },
     });
 
-    await grantPremiumPurchase(payment.id);
-    return { handled: true };
+    const amount = payment.amount;
+
+    await prisma.user.update({
+      where: { id: payment.userId },
+      data: {
+        diamonds: {
+          increment: amount,
+        },
+      },
+    });
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: "paid",
+        paidAt: new Date(),
+      },
+    });
+
+    return {
+      handled: true,
+      creditedDiamonds: amount,
+    };
   }
 
   return { handled: false };

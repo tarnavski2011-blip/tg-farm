@@ -4,7 +4,22 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-// GET MY REFERRALS + STATS
+const NEW_USER_BONUS_COINS = 100;
+const REFERRER_BONUS_COINS = 50;
+const REFERRER_BONUS_POINTS = 25;
+
+function makeRefCode(userId: number) {
+  return `REF${userId}`;
+}
+
+function parseRefCode(code: string) {
+  const cleaned = code.trim().toUpperCase();
+  if (!cleaned.startsWith("REF")) return null;
+  const rawId = cleaned.slice(3);
+  if (!/^\d+$/.test(rawId)) return null;
+  return Number(rawId);
+}
+
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -15,71 +30,21 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      include: {
-        referrals: true,
-      },
+      select: { id: true },
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const referredIds = user.referrals.map((r) => r.referredId);
-
-    let referredUsers: Array<{
-      id: number;
-      telegramId: bigint;
-      coins: number | null;
-      points: number | null;
-    }> = [];
-
-    if (referredIds.length > 0) {
-      referredUsers = await prisma.user.findMany({
-        where: {
-          id: {
-            in: referredIds,
-          },
-        },
-        select: {
-          id: true,
-          telegramId: true,
-          coins: true,
-          points: true,
-        },
-      });
-    }
-
-    const userById = new Map(referredUsers.map((u) => [u.id, u]));
-
-    let totalEarnedCoins = 0;
-    let totalEarnedPoints = 0;
-
-    for (const ru of referredUsers) {
-      const coins = Number(ru.coins ?? 0);
-
-      totalEarnedCoins += Math.floor(coins * 0.05);
-
-      if (coins >= 100) totalEarnedPoints += 1;
-      if (coins >= 1000) totalEarnedPoints += 2;
-      if (coins >= 5000) totalEarnedPoints += 3;
-      if (coins >= 10000) totalEarnedPoints += 5;
-    }
+    const totalRefs = await prisma.referral.count({
+      where: { referrerId: user.id },
+    });
 
     return res.json({
       ok: true,
-      myCode: String(user.telegramId),
-      totalRefs: user.referrals.length,
-      stats: {
-        earnedCoins: totalEarnedCoins,
-        earnedPoints: totalEarnedPoints,
-      },
-      refs: user.referrals.map((r) => ({
-        id: r.id,
-        telegramId: userById.get(r.referredId)
-          ? String(userById.get(r.referredId)!.telegramId)
-          : "-",
-        createdAt: r.createdAt,
-      })),
+      myCode: makeRefCode(user.id),
+      totalRefs,
     });
   } catch (e) {
     console.error("REFERRALS GET ERROR:", e);
@@ -87,137 +52,90 @@ router.get("/", async (req: TgAuthedRequest, res) => {
   }
 });
 
-// APPLY REFERRAL (manual code input)
 router.post("/apply", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const telegramId = BigInt(req.telegramUser.id);
     const code = String(req.body?.code ?? "").trim();
+    const referrerId = parseRefCode(code);
 
-    if (!code) {
-      return res.status(400).json({ error: "No code" });
+    if (!referrerId) {
+      return res.status(400).json({ error: "Невірний код" });
     }
 
-    if (code === String(telegramId)) {
-      return res.status(400).json({ error: "Self ref" });
-    }
+    const telegramId = BigInt(req.telegramUser.id);
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
+      select: {
+        id: true,
+        referredById: true,
+      },
     });
 
-    const refUser = await prisma.user.findUnique({
-      where: { telegramId: BigInt(code) },
-      include: { referrals: true },
-    });
-
-    if (!user || !refUser) {
+    if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const already = await prisma.referral.findFirst({
-      where: { referredId: user.id },
-    });
-
-    if (already) {
-      return res.status(400).json({ error: "Already referred" });
+    if (user.id === referrerId) {
+      return res.status(400).json({ error: "Не можна ввести свій код" });
     }
 
-    const rewardYou = 100;
-    const rewardRefCoins = 200;
-    const rewardRefDiamonds = 10;
-    const rewardRefPoints = 5;
+    const existingReferral = await prisma.referral.findUnique({
+      where: { referredId: user.id },
+      select: { id: true },
+    });
+
+    if (existingReferral || user.referredById) {
+      return res
+        .status(400)
+        .json({ error: "Реферальний код вже застосований" });
+    }
+
+    const referrer = await prisma.user.findUnique({
+      where: { id: referrerId },
+      select: { id: true },
+    });
+
+    if (!referrer) {
+      return res.status(404).json({ error: "Реферер не знайдений" });
+    }
 
     await prisma.$transaction([
-      prisma.referral.create({
-        data: {
-          referrerId: refUser.id,
-          referredId: user.id,
-        } as any,
-      }),
-
       prisma.user.update({
         where: { id: user.id },
         data: {
-          coins: { increment: rewardYou },
+          coins: { increment: NEW_USER_BONUS_COINS },
+          referredById: referrer.id,
         },
       }),
-
       prisma.user.update({
-        where: { id: refUser.id },
+        where: { id: referrer.id },
         data: {
-          coins: { increment: rewardRefCoins },
-          diamonds: { increment: rewardRefDiamonds },
-          points: { increment: rewardRefPoints },
+          coins: { increment: REFERRER_BONUS_COINS },
+          points: { increment: REFERRER_BONUS_POINTS },
+        },
+      }),
+      prisma.referral.create({
+        data: {
+          referrerId: referrer.id,
+          referredId: user.id,
         },
       }),
     ]);
 
-    const totalRefs = refUser.referrals.length + 1;
-
-    let bonus = 0;
-    let bonusDiamonds = 0;
-
-    if (totalRefs === 1) bonus = 50;
-    if (totalRefs === 3) bonus = 200;
-    if (totalRefs === 5) bonus = 500;
-    if (totalRefs === 10) {
-      bonus = 1000;
-      bonusDiamonds = 50;
-    }
-
-    if (bonus > 0 || bonusDiamonds > 0) {
-      await prisma.user.update({
-        where: { id: refUser.id },
-        data: {
-          coins: { increment: bonus },
-          diamonds: { increment: bonusDiamonds },
-        },
-      });
-    }
-
     return res.json({
       ok: true,
-      rewardYou,
-      rewardRefCoins,
-      rewardRefDiamonds,
-      rewardRefPoints,
-      bonus,
-      bonusDiamonds,
-      totalRefs,
-    });
-  } catch (e) {
-    console.error("REF APPLY ERROR:", e);
-    return res.status(500).json({ error: "Server error" });
-  }
-});
-
-// TOP REFERRALS
-router.get("/top", async (_req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      include: {
-        referrals: true,
+      rewardYou: NEW_USER_BONUS_COINS,
+      rewardReferrer: {
+        coins: REFERRER_BONUS_COINS,
+        points: REFERRER_BONUS_POINTS,
       },
     });
-
-    const sorted = users
-      .map((u) => ({
-        telegramId: String(u.telegramId),
-        refs: u.referrals.length,
-      }))
-      .sort((a, b) => b.refs - a.refs)
-      .slice(0, 10);
-
-    return res.json({
-      ok: true,
-      top: sorted,
-    });
   } catch (e) {
-    console.error("REF TOP ERROR:", e);
+    console.error("REFERRALS APPLY ERROR:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
