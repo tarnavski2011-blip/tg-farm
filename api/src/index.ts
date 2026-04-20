@@ -18,7 +18,7 @@ import shopRouter from "./routes/shop";
 import referralsRouter from "./routes/referrals";
 import tapRouter from "./routes/tap";
 import upgradeRouter from "./routes/upgrade";
-import shopStars from "./routes/shopStars";
+import shopStarsRouter from "./routes/shopStars";
 
 const app = express();
 
@@ -47,7 +47,7 @@ app.use("/api/shop", shopRouter);
 app.use("/api/referrals", referralsRouter);
 app.use("/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
-app.use("/api/stars", shopStars);
+app.use("/api/stars", shopStarsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 

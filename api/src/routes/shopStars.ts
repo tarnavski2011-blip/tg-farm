@@ -1,18 +1,37 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
-import {
-  STAR_PACKAGES,
-  isStarPackageCode,
-  makeInvoicePayload,
-} from "../services/telegramStars";
+import { createStarsInvoiceLink } from "../services/telegramStars";
 
 const router = Router();
 
+const PACKAGES = {
+  small: {
+    code: "small",
+    title: "Малий пакет",
+    description: "50 діамантів",
+    starsAmount: 20,
+    diamonds: 50,
+  },
+  medium: {
+    code: "medium",
+    title: "Середній пакет",
+    description: "120 діамантів",
+    starsAmount: 50,
+    diamonds: 120,
+  },
+  large: {
+    code: "large",
+    title: "Великий пакет",
+    description: "300 діамантів",
+    starsAmount: 100,
+    diamonds: 300,
+  },
+} as const;
+
 router.get("/", (_req, res) => {
   return res.json({
-    ok: true,
-    packages: STAR_PACKAGES,
+    items: Object.values(PACKAGES),
   });
 });
 
@@ -22,61 +41,60 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const telegramId = BigInt(req.telegramUser.id);
-    const packageCode = String(req.body?.packageCode ?? "").trim();
+    const code = String(req.body?.code ?? "").trim();
 
-    if (!isStarPackageCode(packageCode)) {
-      return res.status(400).json({ error: "Invalid packageCode" });
+    if (!(code in PACKAGES)) {
+      return res.status(400).json({ error: "Invalid package" });
     }
+
+    const pack = PACKAGES[code as keyof typeof PACKAGES];
+    const telegramId = BigInt(req.telegramUser.id);
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const pack = STAR_PACKAGES[packageCode];
-
-    const payment = await prisma.payment.create({
+    const created = await prisma.payment.create({
       data: {
         userId: user.id,
-        productCode: packageCode,
-        payload: stars_${user.id}_${Date.now()}_${packageCode},
+        productCode: pack.code,
+        payload: `stars:${user.id}:0`,
         currency: "XTR",
         amount: pack.diamonds,
         status: "pending",
         metadataJson: JSON.stringify({
-          packageCode,
-          stars: pack.stars,
+          title: pack.title,
+          description: pack.description,
+          starsAmount: pack.starsAmount,
           diamonds: pack.diamonds,
         }),
       },
     });
 
-    const payload = makeInvoicePayload(payment.id);
+    const payload = `stars:${user.id}:${created.id}`;
+
+    await prisma.payment.update({
+      where: { id: created.id },
+      data: { payload },
+    });
+
+    const invoiceLink = await createStarsInvoiceLink({
+      title: pack.title,
+      description: pack.description,
+      payload,
+      starsAmount: pack.starsAmount,
+    });
 
     return res.json({
       ok: true,
-      packageCode,
-      payload,
-      invoiceDraft: {
-        title: pack.title,
-        description: pack.description,
-        currency: "XTR",
-        prices: [
-          {
-            label: pack.title,
-            amount: pack.stars,
-          },
-        ],
-      },
+      invoiceLink,
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("SHOP STARS ERROR:", e);
     return res.status(500).json({ error: "Server error" });
   }
