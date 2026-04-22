@@ -24,10 +24,10 @@ export const telegramAuth = (
       return res.status(401).json({ error: "No initData" });
     }
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const botToken = process.env.BOT_TOKEN;
 
     if (!botToken) {
-      return res.status(500).json({ error: "TELEGRAM_BOT_TOKEN missing" });
+      return res.status(500).json({ error: "BOT_TOKEN missing" });
     }
 
     const urlParams = new URLSearchParams(initData);

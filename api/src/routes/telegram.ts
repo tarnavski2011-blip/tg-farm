@@ -13,7 +13,7 @@ router.post("/", async (req, res) => {
     if (!chatId) return res.sendStatus(200);
 
     if (text.startsWith("/start")) {
-      const token = process.env.TELEGRAM_BOT_TOKEN;
+      const token = process.env.BOT_TOKEN;
       if (!token) return res.sendStatus(200);
 
       const payload = text.replace("/start", "").trim();

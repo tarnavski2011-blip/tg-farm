@@ -18,7 +18,7 @@ import shopRouter from "./routes/shop";
 import referralsRouter from "./routes/referrals";
 import tapRouter from "./routes/tap";
 import upgradeRouter from "./routes/upgrade";
-import shopStarsRouter from "./routes/shopStars";
+// import shopStarsRouter from "./routes/shopStars";
 
 const app = express();
 
@@ -45,9 +45,9 @@ app.use("/api/quests", questsRouter);
 app.use("/api/wheel", wheelRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/referrals", referralsRouter);
-app.use("/tap", tapRouter);
+app.use("/api/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
-app.use("/api/stars", shopStarsRouter);
+// app.use("/api/stars", shopStarsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 

@@ -3,53 +3,55 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const router = (0, express_1.Router)();
 router.post("/", async (req, res) => {
-    try {
-        process.stdout.write("TELEGRAM UPDATE:\n");
-        process.stdout.write(JSON.stringify(req.body) + "\n");
-        const message = req.body?.message;
-        const text = message?.text;
-        const chatId = message?.chat?.id;
-        if (text === "/start" && chatId) {
-            const token = process.env.TELEGRAM_BOT_TOKEN;
-            if (!token) {
-                process.stdout.write("ERROR: TELEGRAM_BOT_TOKEN missing\n");
-                return res.sendStatus(200);
-            }
-            const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: "🚜 Welcome to My Farm Clicker!\n\nTap below to start playing 👇",
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                {
-                                    text: "🎮 Play",
-                                    web_app: {
-                                        url: "https://tg-farm-web.onrender.com",
-                                    },
-                                },
-                            ],
-                        ],
+  try {
+    process.stdout.write("TELEGRAM UPDATE:\n");
+    process.stdout.write(JSON.stringify(req.body) + "\n");
+    const message = req.body?.message;
+    const text = message?.text;
+    const chatId = message?.chat?.id;
+    if (text === "/start" && chatId) {
+      const token = process.env.BOT_TOKEN;
+      if (!token) {
+        process.stdout.write("ERROR: BOT_TOKEN missing\n");
+        return res.sendStatus(200);
+      }
+      const tgRes = await fetch(
+        `https://api.telegram.org/bot${token}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "🚜 Welcome to My Farm Clicker!\n\nTap below to start playing 👇",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🎮 Play",
+                    web_app: {
+                      url: "https://tg-farm-web.onrender.com",
                     },
-                }),
-            });
-            const tgJson = await tgRes.text();
-            process.stdout.write("SEND MESSAGE RESULT:\n");
-            process.stdout.write(tgJson + "\n");
-        }
-        return res.sendStatus(200);
+                  },
+                ],
+              ],
+            },
+          }),
+        },
+      );
+      const tgJson = await tgRes.text();
+      process.stdout.write("SEND MESSAGE RESULT:\n");
+      process.stdout.write(tgJson + "\n");
     }
-    catch (error) {
-        process.stdout.write("TELEGRAM ERROR:\n");
-        process.stdout.write(String(error) + "\n");
-        return res.sendStatus(200);
-    }
+    return res.sendStatus(200);
+  } catch (error) {
+    process.stdout.write("TELEGRAM ERROR:\n");
+    process.stdout.write(String(error) + "\n");
+    return res.sendStatus(200);
+  }
 });
 router.get("/", (_req, res) => {
-    res.send("telegram webhook ok 12345");
+  res.send("telegram webhook ok 12345");
 });
 exports.default = router;
