@@ -20,6 +20,7 @@ import tapRouter from "./routes/tap";
 import upgradeRouter from "./routes/upgrade";
 // import shopStarsRouter from "./routes/shopStars";
 import paymentsRouter from "./routes/payments";
+import testPaymentRouter from "./routes/testPayment";
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use("/api/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
+app.use("/test", testPaymentRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 

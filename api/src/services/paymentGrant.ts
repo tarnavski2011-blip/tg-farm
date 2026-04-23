@@ -1,44 +1,32 @@
 import { prisma } from "../prisma";
-import { getPremiumProduct } from "../config/premiumProducts";
 
-export async function grantPremiumPurchase(paymentId: number) {
-  const payment = await prisma.payment.findUnique({
-    where: { id: paymentId },
+export async function grantPayment(userId: number, packageCode: string) {
+  let diamonds = 0;
+
+  if (packageCode === "diamonds_small") {
+    diamonds = 50;
+  }
+
+  if (packageCode === "diamonds_medium") {
+    diamonds = 120;
+  }
+
+  if (packageCode === "diamonds_large") {
+    diamonds = 300;
+  }
+
+  if (!diamonds) {
+    throw new Error("Invalid package");
+  }
+
+  await prisma.user.update({
+    where: { telegramId: BigInt(userId) },
+    data: {
+      diamonds: {
+        increment: diamonds,
+      },
+    },
   });
 
-  if (!payment) {
-    throw new Error("Payment not found");
-  }
-
-  if (payment.status === "paid") {
-    return;
-  }
-
-  if (!payment.productCode) {
-    throw new Error("Payment productCode missing");
-  }
-
-  const product = getPremiumProduct(payment.productCode);
-
-  if (!product) {
-    throw new Error("Unknown product");
-  }
-
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: payment.userId },
-      data: {
-        diamonds: {
-          increment: product.diamonds,
-        },
-      },
-    }),
-
-    prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: "paid",
-      },
-    }),
-  ]);
+  console.log(`User ${userId} got ${diamonds} diamonds`);
 }
