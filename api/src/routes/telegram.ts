@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
+import { handleTelegramPaymentUpdate } from "../bot/telegramPaymentHandlers";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
   try {
+    const handledPayment = await handleTelegramPaymentUpdate(req.body);
+    if (handledPayment?.handled) {
+      return res.sendStatus(200);
+    }
+
     const message = req.body?.message;
     const text = String(message?.text ?? "");
     const chatId = message?.chat?.id;

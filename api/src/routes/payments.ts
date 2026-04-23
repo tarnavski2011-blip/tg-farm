@@ -38,7 +38,7 @@ router.post("/create-invoice", async (req: TgAuthedRequest, res) => {
       productCode: product.code,
       payload: `stars:${user.id}:0`,
       currency: "XTR",
-      amount: product.starsAmount,
+      amount: product.diamonds,
       metadataJson: JSON.stringify({
         title: product.title,
         description: product.description,

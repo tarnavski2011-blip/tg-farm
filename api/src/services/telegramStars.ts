@@ -8,59 +8,28 @@ if (!BOT_TOKEN) {
 
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-// =====================
-// ПАКЕТИ
-// =====================
-export const STAR_PACKAGES = {
-  small: {
-    code: "small",
-    title: "Малий пакет",
-    description: "50 діамантів",
-    diamonds: 50,
-    stars: 20,
-  },
-  medium: {
-    code: "medium",
-    title: "Середній пакет",
-    description: "120 діамантів",
-    diamonds: 120,
-    stars: 50,
-  },
-  large: {
-    code: "large",
-    title: "Великий пакет",
-    description: "300 діамантів",
-    diamonds: 300,
-    stars: 100,
-  },
-} as const;
-
-export type StarPackageCode = keyof typeof STAR_PACKAGES;
-
-export function isStarPackageCode(code: string): code is StarPackageCode {
-  return code in STAR_PACKAGES;
-}
-
-// =====================
-// PAYLOAD
-// =====================
-export function makeInvoicePayload(paymentId: number) {
-  return JSON.stringify({ paymentId });
-}
-
-export function parsePayload(payload: string): { paymentId: number } | null {
+export function parsePayload(
+  payload: string,
+): { userId: number; paymentId: number } | null {
   try {
-    const parsed = JSON.parse(payload);
-    if (!parsed?.paymentId) return null;
-    return { paymentId: Number(parsed.paymentId) };
+    const parts = payload.split(":");
+
+    if (parts.length !== 3) return null;
+    if (parts[0] !== "stars") return null;
+
+    const userId = Number(parts[1]);
+    const paymentId = Number(parts[2]);
+
+    if (!Number.isFinite(userId) || !Number.isFinite(paymentId)) {
+      return null;
+    }
+
+    return { userId, paymentId };
   } catch {
     return null;
   }
 }
 
-// =====================
-// TELEGRAM API
-// =====================
 export async function answerPreCheckoutQuery(
   id: string,
   ok: boolean,
@@ -93,8 +62,8 @@ export async function createStarsInvoiceLink(params: {
     ],
   });
 
-  if (!res.data?.ok) {
-    throw new Error("Telegram invoice error");
+  if (!res.data?.ok || !res.data?.result) {
+    throw new Error("Telegram createInvoiceLink failed");
   }
 
   return res.data.result as string;

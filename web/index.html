@@ -1339,18 +1339,55 @@
       async function openShopModal() {
         modalTitle.textContent = "💎 Diamonds за Stars";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Малий пакет</div><div class="tile-value">50 💎</div><div class="tile-row"><span>Ціна</span><span>25 Stars</span></div><button class="buy-btn" data-stars="small">Купити</button></div><div class="tile"><div class="tile-title">Середній пакет</div><div class="tile-value">120 💎</div><div class="tile-row"><span>Ціна</span><span>50 Stars</span></div><button class="buy-btn" data-stars="medium">Купити</button></div><div class="tile"><div class="tile-title">Великий пакет</div><div class="tile-value">300 💎</div><div class="tile-row"><span>Ціна</span><span>100 Stars</span></div><button class="buy-btn" data-stars="large">Купити</button></div><div class="tile full"><div class="note">UI для diamonds за Stars готовий. Для реальної покупки треба додати Stars інвойс на бекенді.</div></div></div>`;
+        modalBody.innerHTML = `
+    <div class="modal-grid">
+      <div class="tile">
+        <div class="tile-title">Малий пакет</div>
+        <div class="tile-value">50 💎</div>
+        <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
+        <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Середній пакет</div>
+        <div class="tile-value">120 💎</div>
+        <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
+        <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Великий пакет</div>
+        <div class="tile-value">300 💎</div>
+        <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
+        <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
+      </div>
+    </div>
+  `;
+
         showModal();
-        modalBody.querySelectorAll("[data-stars]").forEach((btn) => {
+
+        modalBody.querySelectorAll("[data-stars-product]").forEach((btn) => {
           btn.onclick = async () => {
-            if (tg?.showAlert)
-              tg.showAlert(
-                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
-              );
-            else
-              alert(
-                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
-              );
+            const productCode = btn.getAttribute("data-stars-product");
+            const res = await apiPost("/payments/create-invoice", {
+              productCode,
+            });
+            setResult(res.data);
+
+            if (!res.ok) {
+              showToast(res.data?.error || "Помилка");
+              return;
+            }
+
+            const link = res.data?.invoiceLink;
+            if (!link) {
+              showToast("Не вдалося створити invoice");
+              return;
+            }
+
+            if (tg?.openTelegramLink) {
+              tg.openTelegramLink(link);
+            } else {
+              window.open(link, "_blank");
+            }
           };
         });
       }
