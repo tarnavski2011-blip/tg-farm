@@ -23,12 +23,12 @@ router.post("/", async (req, res) => {
     if (update.message?.successful_payment) {
       const payload = update.message.successful_payment.invoice_payload;
 
-      // payload = paymentId
-      const paymentId = Number(payload);
+      const userId = update.message.from.id; // 👈 ДОДАЙ ЦЕ
+      const packageCode = payload;
 
-      await grantPayment(userId, payload);
+      await grantPayment(userId, packageCode);
 
-      console.log("✅ Payment granted:", paymentId);
+      console.log("✅ Payment granted:", userId, packageCode);
     }
 
     res.sendStatus(200);
