@@ -1,6 +1,6 @@
 import express from "express";
 import axios from "axios";
-import { grantPremiumPurchase } from "../services/paymentGrant";
+import { grantPayment } from "../services/paymentGrant";
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
       // payload = paymentId
       const paymentId = Number(payload);
 
-      await grantPremiumPurchase(paymentId);
+      await grantPayment(userId, payload);
 
       console.log("✅ Payment granted:", paymentId);
     }
