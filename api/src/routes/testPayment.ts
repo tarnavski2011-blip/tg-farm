@@ -1,20 +1,23 @@
-import { Router } from "express";
-import { prisma } from "../prisma";
+import express from "express";
 import { grantPayment } from "../services/paymentGrant";
 
-const router = Router();
+const router = express.Router();
 
-router.get("/test-payment", async (req, res) => {
-  const userId = Number(req.query.userId);
+router.get("/", async (req, res) => {
+  try {
+    const userId = Number(req.query.userId);
 
-  if (!userId) {
-    return res.json({ error: "no userId" });
+    if (!userId) {
+      return res.json({ error: "no userId" });
+    }
+
+    await grantPayment(userId, "diamonds_small");
+
+    return res.json({ success: true });
+  } catch (e) {
+    console.error("TEST PAYMENT ERROR:", e);
+    return res.status(500).json({ error: "test payment failed" });
   }
-
-  // симулюємо покупку
-  await grantPayment(userId, "diamonds_small");
-
-  res.json({ success: true });
 });
 
 export default router;
