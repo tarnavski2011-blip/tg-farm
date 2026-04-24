@@ -51,7 +51,7 @@ app.use("/api/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
-app.use("/test", testPaymentRouter);
+app.use("/test-payment", testPaymentRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
