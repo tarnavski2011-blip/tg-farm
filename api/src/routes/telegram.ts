@@ -1,6 +1,6 @@
 import express from "express";
 import axios from "axios";
-import { grantPayment } from "../services/paymentGrant";
+import { grantPremiumPurchase } from "../services/paymentGrant";
 
 const router = express.Router();
 
@@ -23,12 +23,15 @@ router.post("/", async (req, res) => {
     if (update.message?.successful_payment) {
       const payload = update.message.successful_payment.invoice_payload;
 
-      const userId = update.message.from.id; // 👈 ДОДАЙ ЦЕ
-      const packageCode = payload;
+      const paymentId = Number(payload);
 
-      await grantPayment(userId, packageCode);
+      if (!paymentId) {
+        throw new Error("Invalid payment payload");
+      }
 
-      console.log("✅ Payment granted:", userId, packageCode);
+      await grantPremiumPurchase(paymentId);
+
+      console.log("✅ Payment granted:", paymentId);
     }
 
     res.sendStatus(200);
