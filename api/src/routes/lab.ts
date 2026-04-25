@@ -12,22 +12,22 @@ type UpgradeCost = {
 
 const ANIMAL_UPGRADE_COSTS: Record<AnimalType, Record<number, UpgradeCost>> = {
   CHICKEN: {
-    1: { coins: 100, diamonds: 0 },
-    2: { coins: 200, diamonds: 0 },
-    3: { coins: 400, diamonds: 2 },
-    4: { coins: 800, diamonds: 5 },
+    1: { coins: 500, diamonds: 0 },
+    2: { coins: 1500, diamonds: 0 },
+    3: { coins: 5000, diamonds: 5 },
+    4: { coins: 15000, diamonds: 15 },
   },
   SHEEP: {
-    1: { coins: 250, diamonds: 0 },
-    2: { coins: 500, diamonds: 0 },
-    3: { coins: 900, diamonds: 3 },
-    4: { coins: 1500, diamonds: 6 },
+    1: { coins: 1500, diamonds: 0 },
+    2: { coins: 5000, diamonds: 0 },
+    3: { coins: 12000, diamonds: 12 },
+    4: { coins: 35000, diamonds: 35 },
   },
   COW: {
-    1: { coins: 500, diamonds: 0 },
-    2: { coins: 900, diamonds: 0 },
-    3: { coins: 1500, diamonds: 4 },
-    4: { coins: 2500, diamonds: 8 },
+    1: { coins: 4000, diamonds: 0 },
+    2: { coins: 12000, diamonds: 0 },
+    3: { coins: 30000, diamonds: 30 },
+    4: { coins: 90000, diamonds: 90 },
   },
 };
 
@@ -35,17 +35,35 @@ const STORAGE_LEVELS: Record<
   number,
   { capacity: number; cost: UpgradeCost | null }
 > = {
-  1: { capacity: 1000, cost: { coins: 300, diamonds: 0 } },
-  2: { capacity: 1500, cost: { coins: 700, diamonds: 0 } },
-  3: { capacity: 2200, cost: { coins: 1500, diamonds: 2 } },
-  4: { capacity: 3200, cost: { coins: 3000, diamonds: 5 } },
-  5: { capacity: 4500, cost: null },
+  1: { capacity: 1000, cost: { coins: 1500, diamonds: 0 } },
+  2: { capacity: 2000, cost: { coins: 5000, diamonds: 0 } },
+  3: { capacity: 3500, cost: { coins: 15000, diamonds: 10 } },
+  4: { capacity: 6000, cost: { coins: 40000, diamonds: 25 } },
+  5: { capacity: 10000, cost: null },
 };
 
-function getLuckyChance(currentLevel: number) {
-  if (currentLevel === 3) return 0.1;
-  if (currentLevel === 4) return 0.05;
-  return 0;
+const ANIMAL_SUCCESS_CHANCE: Record<number, number> = {
+  1: 0.8,
+  2: 0.6,
+  3: 0.35,
+  4: 0.15,
+};
+
+const STORAGE_SUCCESS_CHANCE: Record<number, number> = {
+  1: 0.9,
+  2: 0.75,
+  3: 0.55,
+  4: 0.35,
+};
+
+function getChanceWithPity(baseChance: number, fails: number) {
+  if (fails >= 5) return 1;
+  if (fails >= 3) return Math.min(1, baseChance + 0.1);
+  return baseChance;
+}
+
+function rollSuccess(chance: number) {
+  return Math.random() < chance;
 }
 
 async function getAnimalTypeState(
@@ -56,7 +74,7 @@ async function getAnimalTypeState(
 ) {
   const animals = await prisma.animal.findMany({
     where: { userId, type },
-    select: { level: true },
+    select: { level: true, upgradeFails: true },
   });
 
   const owned = animals.length;
@@ -70,14 +88,25 @@ async function getAnimalTypeState(
       maxed: false,
       upgradeCost: null,
       canUpgrade: false,
+      successChance: 0,
+      upgradeFails: 0,
+      pity: false,
     };
   }
 
   const currentLevel = Math.max(...animals.map((a) => a.level));
+  const sameLevelAnimals = animals.filter((a) => a.level === currentLevel);
+  const upgradeFails = sameLevelAnimals.length
+    ? Math.max(...sameLevelAnimals.map((a) => a.upgradeFails ?? 0))
+    : 0;
+
   const maxed = currentLevel >= 5;
   const upgradeCost = maxed
     ? null
     : (ANIMAL_UPGRADE_COSTS[type][currentLevel] ?? null);
+
+  const baseChance = ANIMAL_SUCCESS_CHANCE[currentLevel] ?? 0;
+  const successChance = maxed ? 0 : getChanceWithPity(baseChance, upgradeFails);
 
   return {
     type,
@@ -90,6 +119,9 @@ async function getAnimalTypeState(
       !!upgradeCost &&
       coins >= upgradeCost.coins &&
       diamonds >= upgradeCost.diamonds,
+    successChance: Math.round(successChance * 100),
+    upgradeFails,
+    pity: upgradeFails >= 5,
   };
 }
 
@@ -137,6 +169,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       STORAGE_LEVELS[nextStorageLevel] ?? currentStorageCfg;
     const maxed = currentStorageLevel >= 5;
     const storageCost = currentStorageCfg.cost;
+    const storageBaseChance = STORAGE_SUCCESS_CHANCE[currentStorageLevel] ?? 0;
+    const storageSuccessChance = maxed
+      ? 0
+      : getChanceWithPity(storageBaseChance, user.storageUpgradeFails ?? 0);
 
     return res.json({
       ok: true,
@@ -159,6 +195,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           !!storageCost &&
           (user.coins ?? 0) >= storageCost.coins &&
           (user.diamonds ?? 0) >= storageCost.diamonds,
+        successChance: Math.round(storageSuccessChance * 100),
+        upgradeFails: user.storageUpgradeFails ?? 0,
+        pity: (user.storageUpgradeFails ?? 0) >= 5,
       },
     });
   } catch (e) {
@@ -192,7 +231,7 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
 
     const animals = await prisma.animal.findMany({
       where: { userId: user.id, type },
-      select: { id: true, level: true },
+      select: { id: true, level: true, upgradeFails: true },
     });
 
     if (!animals.length) {
@@ -219,14 +258,17 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
       return res.status(400).json({ error: "Не вистачає diamonds" });
     }
 
-    let nextLevel = currentLevel + 1;
-    let luckyUpgrade = false;
+    const sameLevelAnimals = animals.filter((a) => a.level === currentLevel);
+    const upgradeFails = sameLevelAnimals.length
+      ? Math.max(...sameLevelAnimals.map((a) => a.upgradeFails ?? 0))
+      : 0;
 
-    const luckyChance = getLuckyChance(currentLevel);
-    if (luckyChance > 0 && Math.random() < luckyChance) {
-      nextLevel = Math.min(5, nextLevel + 1);
-      luckyUpgrade = true;
-    }
+    const baseChance = ANIMAL_SUCCESS_CHANCE[currentLevel] ?? 0;
+    const successChance = getChanceWithPity(baseChance, upgradeFails);
+    const success = rollSuccess(successChance);
+
+    const nextLevel = success ? currentLevel + 1 : currentLevel;
+    const nextFails = success ? 0 : upgradeFails + 1;
 
     await prisma.$transaction([
       prisma.user.update({
@@ -238,7 +280,10 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
       }),
       prisma.animal.updateMany({
         where: { userId: user.id, type },
-        data: { level: nextLevel },
+        data: {
+          level: nextLevel,
+          upgradeFails: nextFails,
+        },
       }),
     ]);
 
@@ -249,11 +294,17 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
+      success,
       type,
       previousLevel: currentLevel,
       level: nextLevel,
-      luckyUpgrade,
       spent: cost,
+      successChance: Math.round(successChance * 100),
+      upgradeFails: nextFails,
+      pity: nextFails >= 5,
+      message: success
+        ? `✅ Успіх! ${type} LVL ${nextLevel}`
+        : `❌ Не вийшло. Спроба ${nextFails}/5`,
       coins: updatedUser?.coins ?? 0,
       diamonds: updatedUser?.diamonds ?? 0,
     });
@@ -301,28 +352,55 @@ router.post("/storage-upgrade", async (req: TgAuthedRequest, res) => {
       return res.status(400).json({ error: "Не вистачає diamonds" });
     }
 
-    await prisma.$transaction([
+    const baseChance = STORAGE_SUCCESS_CHANCE[currentLevel] ?? 0;
+    const successChance = getChanceWithPity(
+      baseChance,
+      user.storageUpgradeFails ?? 0,
+    );
+    const success = rollSuccess(successChance);
+
+    const nextFails = success ? 0 : (user.storageUpgradeFails ?? 0) + 1;
+    const nextLevel = success ? currentLevel + 1 : currentLevel;
+    const nextCapacity = success ? nextCfg.capacity : user.storage.capacity;
+
+    const tx: any[] = [
       prisma.user.update({
         where: { id: user.id },
         data: {
           coins: { decrement: currentCfg.cost.coins },
           diamonds: { decrement: currentCfg.cost.diamonds },
-          warehouseLevel: currentLevel + 1,
+          warehouseLevel: nextLevel,
+          storageUpgradeFails: nextFails,
         },
       }),
-      prisma.storage.update({
-        where: { userId: user.id },
-        data: {
-          capacity: nextCfg.capacity,
-        },
-      }),
-    ]);
+    ];
+
+    if (success) {
+      tx.push(
+        prisma.storage.update({
+          where: { userId: user.id },
+          data: {
+            capacity: nextCfg.capacity,
+          },
+        }),
+      );
+    }
+
+    await prisma.$transaction(tx);
 
     return res.json({
       ok: true,
-      level: currentLevel + 1,
-      capacity: nextCfg.capacity,
+      success,
+      previousLevel: currentLevel,
+      level: nextLevel,
+      capacity: nextCapacity,
       spent: currentCfg.cost,
+      successChance: Math.round(successChance * 100),
+      upgradeFails: nextFails,
+      pity: nextFails >= 5,
+      message: success
+        ? `✅ Склад LVL ${nextLevel}`
+        : `❌ Не вийшло. Спроба ${nextFails}/5`,
     });
   } catch (e) {
     console.error("LAB STORAGE UPGRADE ERROR:", e);

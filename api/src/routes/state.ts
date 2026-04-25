@@ -39,6 +39,19 @@ function getAnimalProducedPerCycle(
   return 1;
 }
 
+function getAnimalPointsPerCycle(
+  type: "CHICKEN" | "SHEEP" | "COW",
+  level: number,
+) {
+  if (level < 4) return 0;
+
+  if (type === "CHICKEN") return level === 4 ? 1 : 3;
+  if (type === "SHEEP") return level === 4 ? 3 : 8;
+  if (type === "COW") return level === 4 ? 8 : 20;
+
+  return 0;
+}
+
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -103,6 +116,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let eggsAdd = 0;
     let woolAdd = 0;
     let milkAdd = 0;
+    let pointsAdd = 0;
 
     let chickenFeedLeft = user.chickenFeed ?? 0;
     let sheepFeedLeft = user.sheepFeed ?? 0;
@@ -157,6 +171,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         produced *= 2;
       }
 
+      pointsAdd +=
+        usedCycles * getAnimalPointsPerCycle(animal.type, animal.level);
+
       if (animal.type === "CHICKEN") chickenFeedLeft -= usedCycles;
       if (animal.type === "SHEEP") sheepFeedLeft -= usedCycles;
       if (animal.type === "COW") cowFeedLeft -= usedCycles;
@@ -206,6 +223,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chickenFeed: chickenFeedLeft,
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
+        points: { increment: pointsAdd },
         lastSeenAt: now,
       },
     });
@@ -383,6 +401,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           eggs: eggsAdd,
           wool: woolAdd,
           milk: milkAdd,
+          points: pointsAdd,
         },
       },
     });

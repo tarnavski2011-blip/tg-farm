@@ -40,6 +40,7 @@ model User {
   dailyStreak       Int      @default(0)
 
   warehouseLevel    Int      @default(1)
+  storageUpgradeFails Int      @default(0)
   labLevel          Int      @default(1)
   labMultiplier     Float    @default(1)
 
@@ -81,6 +82,7 @@ model Animal {
   userId    Int
   type      AnimalType
   level     Int        @default(1)
+  upgradeFails Int        @default(0)
   lastClaim DateTime   @default(now())
   createdAt DateTime   @default(now())
 
