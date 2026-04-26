@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
 import { AnimalType } from "@prisma/client";
+import { addXp } from "../lib/xp";
 
 const router = Router();
 
@@ -287,6 +288,8 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
       }),
     ]);
 
+    const xpResult = await addXp(user.id, success ? 50 : 10);
+
     const updatedUser = await prisma.user.findUnique({
       where: { id: user.id },
       select: { coins: true, diamonds: true },
@@ -307,6 +310,7 @@ router.post("/animal-upgrade", async (req: TgAuthedRequest, res) => {
         : `❌ Не вийшло. Спроба ${nextFails}/5`,
       coins: updatedUser?.coins ?? 0,
       diamonds: updatedUser?.diamonds ?? 0,
+      xp: xpResult,
     });
   } catch (e) {
     console.error("LAB ANIMAL UPGRADE ERROR:", e);
@@ -388,6 +392,8 @@ router.post("/storage-upgrade", async (req: TgAuthedRequest, res) => {
 
     await prisma.$transaction(tx);
 
+    const xpResult = await addXp(user.id, success ? 70 : 15);
+
     return res.json({
       ok: true,
       success,
@@ -401,6 +407,7 @@ router.post("/storage-upgrade", async (req: TgAuthedRequest, res) => {
       message: success
         ? `✅ Склад LVL ${nextLevel}`
         : `❌ Не вийшло. Спроба ${nextFails}/5`,
+      xp: xpResult,
     });
   } catch (e) {
     console.error("LAB STORAGE UPGRADE ERROR:", e);

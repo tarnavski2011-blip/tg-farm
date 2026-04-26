@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
 import { AnimalType } from "@prisma/client";
+import { addXp } from "../lib/xp";
 
 const router = Router();
 
@@ -83,11 +84,14 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       }),
     ]);
 
+    const xpResult = await addXp(user.id, 20);
+
     return res.json({
       ok: true,
       animal,
       coins: updatedUser.coins,
       spent: price,
+      xp: xpResult,
     });
   } catch (e) {
     console.error("BUY ANIMAL ERROR:", e);

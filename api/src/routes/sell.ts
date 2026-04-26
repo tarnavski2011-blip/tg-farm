@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
 import { addSellToday } from "../lib/questProgress";
+import { addXp } from "../lib/xp";
 
 const router = Router();
 
@@ -70,6 +71,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     await addSellToday(user.id, 1);
 
+    const xpResult = await addXp(user.id, Math.floor(totalCoins / 20));
+
     return res.json({
       ok: true,
       sold: {
@@ -80,6 +83,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       prices: PRICES,
       earned: totalCoins,
       totalCoins: updated.coins,
+      xp: xpResult,
     });
   } catch (e) {
     console.error("SELL ERROR:", e);

@@ -189,6 +189,47 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         done: referralCount >= 5,
         claimed: achievementClaimed.includes("invite_5"),
       },
+
+      {
+        code: "lvl_5",
+        title: "Досягни LVL 5",
+        group: "achievement",
+        reward: "5 💎",
+        progress: freshUser.level,
+        target: 5,
+        done: freshUser.level >= 5,
+        claimed: achievementClaimed.includes("lvl_5"),
+      },
+      {
+        code: "lvl_10",
+        title: "Досягни LVL 10",
+        group: "achievement",
+        reward: "15 💎",
+        progress: freshUser.level,
+        target: 10,
+        done: freshUser.level >= 10,
+        claimed: achievementClaimed.includes("lvl_10"),
+      },
+      {
+        code: "lvl_20",
+        title: "Досягни LVL 20",
+        group: "achievement",
+        reward: "50 💎",
+        progress: freshUser.level,
+        target: 20,
+        done: freshUser.level >= 20,
+        claimed: achievementClaimed.includes("lvl_20"),
+      },
+      {
+        code: "lvl_50",
+        title: "Досягни LVL 50",
+        group: "achievement",
+        reward: "200 💎",
+        progress: freshUser.level,
+        target: 50,
+        done: freshUser.level >= 50,
+        claimed: achievementClaimed.includes("lvl_50"),
+      },
     ];
 
     return res.json({ ok: true, quests });
@@ -350,6 +391,35 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
         rewardDiamonds: 5,
         rewardText: "5 💎",
         done: referralCount >= 5,
+        daily: false,
+      },
+
+      lvl_5: {
+        rewardCoins: 0,
+        rewardDiamonds: 5,
+        rewardText: "5 💎",
+        done: freshUser.level >= 5,
+        daily: false,
+      },
+      lvl_10: {
+        rewardCoins: 0,
+        rewardDiamonds: 15,
+        rewardText: "15 💎",
+        done: freshUser.level >= 10,
+        daily: false,
+      },
+      lvl_20: {
+        rewardCoins: 0,
+        rewardDiamonds: 50,
+        rewardText: "50 💎",
+        done: freshUser.level >= 20,
+        daily: false,
+      },
+      lvl_50: {
+        rewardCoins: 0,
+        rewardDiamonds: 200,
+        rewardText: "200 💎",
+        done: freshUser.level >= 50,
         daily: false,
       },
     };
