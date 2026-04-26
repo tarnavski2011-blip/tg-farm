@@ -443,6 +443,26 @@
         color: #fff;
         background: linear-gradient(135deg, #2563eb, #60a5fa);
       }
+
+      .chance-green {
+        color: #22c55e;
+        font-weight: 900;
+      }
+
+      .chance-gold {
+        color: #facc15;
+        font-weight: 900;
+      }
+
+      .chance-danger {
+        color: #f87171;
+        font-weight: 900;
+      }
+
+      .unlock-progress {
+        color: #93c5fd;
+        font-weight: 800;
+      }
     </style>
   </head>
   <body>
@@ -687,6 +707,10 @@
               <div class="tile-title">${emoji} ${title}</div>
               <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
               <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
+              <div class="tile-row">
+                <span>Прогрес</span>
+                <span class="unlock-progress">${Math.min(level, unlockLevel)} / ${unlockLevel}</span>
+              </div>
               <div class="tile-row"><span>Відкривається</span><span>LVL ${unlockLevel}</span></div>
               ${
                 unlocked
@@ -1015,6 +1039,12 @@
         const animals = res.data?.animals || {};
         const storage = res.data?.storage || {};
 
+        function chanceClass(chance) {
+          if (chance >= 80) return "chance-green";
+          if (chance >= 50) return "chance-gold";
+          return "chance-danger";
+        }
+
         function animalCard(title, emoji, item, type) {
           if (!item || item.owned <= 0) {
             return `
@@ -1085,7 +1115,11 @@
                       <div class="modal-grid">
                         <div class="tile full">
                           <div class="tile-title">🐾 Upgrade тварин</div>
-                          <div class="note">Всі покращення перенесені в лабораторію.</div>
+                          <div class="note">
+                            ⭐ Points відкриваються з LVL 4 тварин.<br>
+                            Чим вищий рівень тварини — тим більше Points вона дає.<br>
+                            У майбутньому Points можна буде обмінювати на TON.
+                          </div>
                         </div>
 
                         ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
