@@ -11,13 +11,19 @@ const ANIMAL_PRICES: Record<AnimalType, number> = {
   COW: 1000,
 };
 
+const ANIMAL_UNLOCK_LEVEL: Record<AnimalType, number> = {
+  CHICKEN: 1,
+  SHEEP: 5,
+  COW: 10,
+};
+
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { type } = req.body as { type?: AnimalType };
+    const type = String(req.body?.type ?? "").trim() as AnimalType;
 
     if (!type || !["CHICKEN", "SHEEP", "COW"].includes(type)) {
       return res.status(400).json({ error: "Invalid animal type" });
@@ -29,6 +35,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       where: { telegramId },
       select: {
         id: true,
+        level: true,
         coins: true,
       },
     });
@@ -37,63 +44,50 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const price = ANIMAL_PRICES[type];
+    const unlockLevel = ANIMAL_UNLOCK_LEVEL[type];
 
-    if (user.coins < price) {
-      return res.status(400).json({ error: "Не вистачає coins" });
+    if ((user.level ?? 1) < unlockLevel) {
+      return res.status(400).json({
+        error: `Ця тварина відкривається на LVL ${unlockLevel}`,
+        requiredLevel: unlockLevel,
+        yourLevel: user.level ?? 1,
+      });
     }
 
-    const ownedOfType = await prisma.animal.findMany({
-      where: { userId: user.id, type },
-      select: { level: true },
-    });
+    const price = ANIMAL_PRICES[type];
 
-    const startLevel = ownedOfType.length
-      ? Math.max(...ownedOfType.map((a) => a.level))
-      : 1;
+    if ((user.coins ?? 0) < price) {
+      return res.status(400).json({
+        error: "Не вистачає coins",
+        need: price,
+        have: user.coins ?? 0,
+      });
+    }
 
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.user.update({
+    const [animal, updatedUser] = await prisma.$transaction([
+      prisma.animal.create({
+        data: {
+          userId: user.id,
+          type,
+          level: 1,
+        },
+      }),
+      prisma.user.update({
         where: { id: user.id },
         data: {
           coins: { decrement: price },
         },
-      });
-
-      const animal = await tx.animal.create({
-        data: {
-          userId: user.id,
-          type,
-          level: startLevel,
-          lastClaim: new Date(),
-        },
-      });
-
-      const userAfter = await tx.user.findUnique({
-        where: { id: user.id },
         select: {
           coins: true,
         },
-      });
-
-      const totalOwned = await tx.animal.count({
-        where: { userId: user.id, type },
-      });
-
-      return {
-        animal,
-        coins: userAfter?.coins ?? 0,
-        totalOwned,
-      };
-    });
+      }),
+    ]);
 
     return res.json({
       ok: true,
-      type,
-      bought: 1,
-      level: result.animal.level,
-      totalOwned: result.totalOwned,
-      coins: result.coins,
+      animal,
+      coins: updatedUser.coins,
+      spent: price,
     });
   } catch (e) {
     console.error("BUY ANIMAL ERROR:", e);
