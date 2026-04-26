@@ -463,6 +463,76 @@
         color: #93c5fd;
         font-weight: 800;
       }
+
+      .levelup-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.82);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+      }
+
+      .levelup-modal.show {
+        display: flex;
+      }
+
+      .levelup-card {
+        width: 100%;
+        max-width: 360px;
+        background: linear-gradient(180deg, #111827, #0f172a);
+        border: 1px solid rgba(250, 204, 21, 0.35);
+        border-radius: 28px;
+        padding: 24px;
+        text-align: center;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        animation: levelPop 0.25s ease-out;
+      }
+
+      @keyframes levelPop {
+        from {
+          transform: scale(0.86);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .levelup-title {
+        font-size: 28px;
+        font-weight: 900;
+        color: #facc15;
+        margin-bottom: 8px;
+      }
+
+      .levelup-level {
+        font-size: 38px;
+        font-weight: 900;
+        color: #f8fafc;
+        margin-bottom: 16px;
+      }
+
+      .levelup-reward {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 18px;
+        padding: 14px;
+        margin: 10px 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #e5e7eb;
+      }
+
+      .levelup-note {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-top: 10px;
+        line-height: 1.4;
+      }
     </style>
   </head>
   <body>
@@ -534,6 +604,20 @@
       </div>
       <div id="resultBox">ще нічого</div>
     </div>
+
+    <div class="levelup-modal" id="levelUpModal">
+      <div class="levelup-card">
+        <div class="levelup-title">🎉 LEVEL UP!</div>
+        <div class="levelup-level" id="levelUpText">LVL 2</div>
+        <div class="levelup-reward" id="levelUpCoins">+0 coins</div>
+        <div class="levelup-reward" id="levelUpDiamonds">+0 diamonds</div>
+        <div class="levelup-note">
+          Новий рівень відкриває більше можливостей у грі 🚜
+        </div>
+        <button class="buy-btn gold" id="levelUpCloseBtn">Забрати</button>
+      </div>
+    </div>
+
     <div class="modal" id="modal">
       <div class="modal-sheet">
         <div class="modal-header">
@@ -574,7 +658,12 @@
         pointsEl = document.getElementById("points"),
         xpEl = document.getElementById("xp"),
         levelBadgeEl = document.getElementById("levelBadge"),
-        boostStatusEl = document.getElementById("boostStatus");
+        boostStatusEl = document.getElementById("boostStatus"),
+        levelUpModal = document.getElementById("levelUpModal"),
+        levelUpText = document.getElementById("levelUpText"),
+        levelUpCoins = document.getElementById("levelUpCoins"),
+        levelUpDiamonds = document.getElementById("levelUpDiamonds"),
+        levelUpCloseBtn = document.getElementById("levelUpCloseBtn");
       let currentState = null;
       let wheelRotation = 0;
       function setStatus(t) {
@@ -626,6 +715,23 @@
       function showToast(text) {
         spawnFloatingText(text);
       }
+
+      function showLevelUpPopup(xpData) {
+        if (!xpData || !xpData.leveledUp || !levelUpModal) return;
+
+        levelUpText.textContent = `LVL ${xpData.level}`;
+        levelUpCoins.textContent = `+${xpData.rewardCoins ?? 0} coins`;
+        levelUpDiamonds.textContent = `+${xpData.rewardDiamonds ?? 0} diamonds`;
+
+        levelUpModal.classList.add("show");
+      }
+
+      if (levelUpCloseBtn) {
+        levelUpCloseBtn.addEventListener("click", () => {
+          levelUpModal.classList.remove("show");
+        });
+      }
+
       function applyState(data) {
         currentState = data;
         coinsEl.textContent = data?.coins ?? 0;
@@ -685,9 +791,7 @@
         setResult(res.data);
         if (res.ok) {
           if (res.data?.xp?.leveledUp) {
-            showToast(
-              `🎉 LVL ${res.data.xp.level}! +${res.data.xp.rewardCoins ?? 0} coins`,
-            );
+            showLevelUpPopup(res.data.xp);
           } else {
             showToast("Куплено");
           }
@@ -1169,7 +1273,7 @@
               }
 
               if (resp.data?.xp?.leveledUp) {
-                showToast(`🎉 LVL ${resp.data.xp.level}!`);
+                showLevelUpPopup(resp.data.xp);
               }
 
               await loadState();
