@@ -1068,6 +1068,9 @@
                         `;
           }
 
+          const chance = item.successChance ?? 0;
+          const fails = item.upgradeFails ?? 0;
+
           return `
                         <div class="tile">
                           <div class="tile-title">${emoji} ${title}</div>
@@ -1075,7 +1078,10 @@
                           <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
                           <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
                           <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                          <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                          <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
                           ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
+                          ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
                           <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
                             ${item.canUpgrade ? "Покращити" : "Не вистачає"}
                           </button>
@@ -1096,6 +1102,9 @@
                         `;
           }
 
+          const chance = item.successChance ?? 0;
+          const fails = item.upgradeFails ?? 0;
+
           return `
                         <div class="tile full">
                           <div class="tile-title">📦 Склад</div>
@@ -1103,7 +1112,9 @@
                           <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
                           <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
                           <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                          ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
+                          <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                          <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+                          ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
                           <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
                             ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
                           </button>
@@ -1133,26 +1144,30 @@
         showModal();
 
         modalBody.querySelectorAll("[data-lab-animal]").forEach((btn) => {
-          btn.onclick = async () => {
-            const type = btn.dataset.labAnimal;
+          btn.addEventListener("click", async () => {
+            const type = btn.getAttribute("data-lab-animal");
             btn.disabled = true;
 
             const resp = await apiPost("/lab/animal-upgrade", { type });
             setResult(resp.data);
 
             if (resp.ok) {
-              if (resp.data?.luckyUpgrade) {
-                showToast(`🔥 LVL ${resp.data?.level}`);
+              if (resp.data?.success) {
+                showToast(resp.data?.message || `✅ LVL ${resp.data?.level}`);
               } else {
-                showToast(`⬆️ LVL ${resp.data?.level}`);
+                showToast(
+                  resp.data?.message ||
+                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
+                );
               }
+
               await loadState();
               await openLabModal();
             } else {
               showToast(resp.data?.error || "Помилка");
               btn.disabled = false;
             }
-          };
+          });
         });
 
         const storageBtn = document.getElementById("storageUpgradeBtn");
