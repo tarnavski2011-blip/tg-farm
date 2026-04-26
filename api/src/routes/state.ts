@@ -348,6 +348,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         milk: user.storage.milk ?? 0,
         total: storageTotal,
         capacity: user.storage.capacity ?? 1000,
+        sellValue:
+          (user.storage.eggs ?? 0) * 6 +
+          (user.storage.wool ?? 0) * 15 +
+          (user.storage.milk ?? 0) * 30,
       },
 
       feedStock: {
