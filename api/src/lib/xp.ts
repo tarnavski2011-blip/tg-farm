@@ -5,30 +5,34 @@ function getXpNeeded(level: number) {
 }
 
 export async function addXp(userId: number, amount: number) {
-  if (amount <= 0) {
-    return null;
-  }
+  if (amount <= 0) return null;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { xp: true, level: true },
   });
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   let xp = user.xp + amount;
   let level = user.level;
 
   let leveledUp = false;
   let levelsGained = 0;
+  let rewardCoins = 0;
+  let rewardDiamonds = 0;
 
   while (xp >= getXpNeeded(level)) {
     xp -= getXpNeeded(level);
     level += 1;
     leveledUp = true;
     levelsGained += 1;
+
+    rewardCoins += level * 100;
+
+    if (level % 5 === 0) {
+      rewardDiamonds += 2;
+    }
   }
 
   const updated = await prisma.user.update({
@@ -36,10 +40,14 @@ export async function addXp(userId: number, amount: number) {
     data: {
       xp,
       level,
+      coins: { increment: rewardCoins },
+      diamonds: { increment: rewardDiamonds },
     },
     select: {
       xp: true,
       level: true,
+      coins: true,
+      diamonds: true,
     },
   });
 
@@ -49,5 +57,8 @@ export async function addXp(userId: number, amount: number) {
     added: amount,
     leveledUp,
     levelsGained,
+    rewardCoins,
+    rewardDiamonds,
+    xpNeeded: getXpNeeded(updated.level),
   };
 }

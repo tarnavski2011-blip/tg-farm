@@ -324,7 +324,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       points: user.points,
       level,
       xp,
-      xpNeeded,
+      xpNeeded: 100 + (user.level ?? 1) * 50,
       xpPercent,
 
       animals: {

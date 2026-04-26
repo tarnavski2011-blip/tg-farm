@@ -631,7 +631,7 @@
         coinsEl.textContent = data?.coins ?? 0;
         diamondsEl.textContent = data?.diamonds ?? 0;
         pointsEl.textContent = data?.points ?? 0;
-        xpEl.textContent = data?.xp ?? 0;
+        xpEl.textContent = `${data?.xp ?? 0}/${data?.xpNeeded ?? 0}`;
         levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
         const boost = data?.boost?.active ? "ON" : "OFF";
         const auto = data?.autoCollect?.active ? "ON" : "OFF";
@@ -684,7 +684,14 @@
         const res = await apiPost("/buy-animal", { type });
         setResult(res.data);
         if (res.ok) {
-          showToast("Куплено");
+          if (res.data?.xp?.leveledUp) {
+            showToast(
+              `🎉 LVL ${res.data.xp.level}! +${res.data.xp.rewardCoins ?? 0} coins`,
+            );
+          } else {
+            showToast("Куплено");
+          }
+
           await loadState();
           renderAnimalsOwned();
         } else {
@@ -1159,6 +1166,10 @@
                   resp.data?.message ||
                     `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
                 );
+              }
+
+              if (resp.data?.xp?.leveledUp) {
+                showToast(`🎉 LVL ${resp.data.xp.level}!`);
               }
 
               await loadState();
