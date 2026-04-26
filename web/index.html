@@ -798,68 +798,70 @@
         const capacity = s.capacity ?? 1000;
         const total = s.total ?? eggs + wool + milk;
 
-        // ✅ беремо правильну суму з backend
-        const totalCoins = s.sellValue ?? s.sellCoins ?? s.coins ?? 0;
+        // Якщо backend повертає правильну суму продажу — беремо її.
+        // Якщо ні — лишаємо запасний розрахунок, щоб UI не ламався.
+        const fallbackCoins = eggs * 1 + wool * 3 + milk * 7;
+        const totalCoins =
+          s.sellValue ?? s.sellCoins ?? s.coins ?? fallbackCoins;
 
         const percent = Math.min(100, Math.floor((total / capacity) * 100));
 
         let warning = "";
         if (percent >= 95) {
-          warning = (
-            <div class="warn">
-              🚨 Склад заповнений! Виробництво майже стоїть
-            </div>
-          );
+          warning = `<div class="warn">🚨 Склад заповнений! Виробництво майже стоїть</div>`;
         } else if (percent >= 80) {
-          warning = <div class="warn">⚠️ Склад майже повний</div>;
+          warning = `<div class="warn">⚠️ Склад майже повний</div>`;
         }
 
         modalBody.innerHTML = `
-    <div class="modal-grid">
-      <div class="tile full">
-        <div class="tile-title">📊 Заповнення</div>
-        <div class="tile-value">${total} / ${capacity}</div>
-        <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
-        ${warning}
-      </div>
+                      <div class="modal-grid">
+                        <div class="tile full">
+                          <div class="tile-title">📊 Заповнення</div>
+                          <div class="tile-value">${total} / ${capacity}</div>
+                          <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
+                          ${warning}
+                        </div>
 
-      <div class="tile">
-        <div class="tile-title">🥚 Яйця</div>
-        <div class="tile-value">${eggs}</div>
-      </div>
+                        <div class="tile">
+                          <div class="tile-title">🥚 Яйця</div>
+                          <div class="tile-value">${eggs}</div>
+                        </div>
 
-      <div class="tile">
-        <div class="tile-title">🧶 Шерсть</div>
-        <div class="tile-value">${wool}</div>
-      </div>
+                        <div class="tile">
+                          <div class="tile-title">🧶 Шерсть</div>
+                          <div class="tile-value">${wool}</div>
+                        </div>
 
-      <div class="tile">
-        <div class="tile-title">🥛 Молоко</div>
-        <div class="tile-value">${milk}</div>
-      </div>
+                        <div class="tile">
+                          <div class="tile-title">🥛 Молоко</div>
+                          <div class="tile-value">${milk}</div>
+                        </div>
 
-      <div class="tile full">
-        <div class="tile-title">💰 Продаж</div>
-        <div class="tile-value">+${totalCoins} coins</div>
-        <button class="buy-btn green" id="sellAllBtn">Продати все</button>
-      </div>
-    </div>
-  `;
+                        <div class="tile full">
+                          <div class="tile-title">💰 Продаж</div>
+                          <div class="tile-value">+${totalCoins} coins</div>
+                          <button class="buy-btn green" id="sellAllBtn">Продати все</button>
+                        </div>
+                      </div>
+                    `;
 
         showModal();
 
-        document.getElementById("sellAllBtn").onclick = async () => {
-          const res = await apiPost("/sell");
-          setResult(res.data);
+        const sellBtn = document.getElementById("sellAllBtn");
+        if (sellBtn) {
+          sellBtn.addEventListener("click", async () => {
+            const res = await apiPost("/sell");
+            setResult(res.data);
 
-          if (res.ok) {
-            showToast(`+${res.data?.coins ?? 0} coins 💰`);
-            await loadState();
-            await openStorageModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
+            if (res.ok) {
+              showToast(`+${res.data?.coins ?? 0} coins 💰`);
+              await loadState();
+              await openStorageModal();
+            } else {
+              showToast(res.data?.error || "Помилка");
+            }
+          });
+        }
       }
 
       function openFeedModal() {
@@ -952,41 +954,41 @@
         function animalCard(title, emoji, item, type) {
           if (!item || item.owned <= 0) {
             return `
-      <div class="tile">
-        <div class="tile-title">${emoji} ${title}</div>
-        <div class="tile-value">0 шт</div>
-        <div class="warn">Спочатку купи тварин</div>
-      </div>
-    `;
+                          <div class="tile">
+                            <div class="tile-title">${emoji} ${title}</div>
+                            <div class="tile-value">0 шт</div>
+                            <div class="warn">Спочатку купи тварин</div>
+                          </div>
+                        `;
           }
 
           if (item.maxed) {
             return `
-      <div class="tile">
-        <div class="tile-title">${emoji} ${title}</div>
-        <div class="tile-value">LVL ${item.currentLevel}</div>
-        <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-        <button class="buy-btn green" disabled>MAX</button>
-      </div>
-    `;
+                          <div class="tile">
+                            <div class="tile-title">${emoji} ${title}</div>
+                            <div class="tile-value">LVL ${item.currentLevel}</div>
+                            <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                            <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                            <button class="buy-btn green" disabled>MAX</button>
+                          </div>
+                        `;
           }
 
           return `
-    <div class="tile">
-      <div class="tile-title">${emoji} ${title}</div>
-      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-      <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-      <div class="tile-row"><span>Шанс</span><span>${item.successChance ?? 0}%</span></div>
-      <div class="tile-row"><span>Невдачі</span><span>${item.upgradeFails ?? 0}/5</span></div>
-      ${item.pity ? <div class="warn">🔥 Наступна спроба гарантована</div> : ""}
-      <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
-        ${item.canUpgrade ? "Покращити" : "Не вистачає"}
-      </button>
-    </div>
-  `;
+                        <div class="tile">
+                          <div class="tile-title">${emoji} ${title}</div>
+                          <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                          <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                          <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                          <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                          <div class="tile-row"><span>Шанс</span><span>${item.successChance ?? 0}%</span></div>
+                          <div class="tile-row"><span>Невдачі</span><span>${item.upgradeFails ?? 0}/5</span></div>
+                          ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+                          <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
+                            ${item.canUpgrade ? "Покращити" : "Не вистачає"}
+                          </button>
+                        </div>
+                      `;
         }
 
         function storageCard(item) {
@@ -1008,20 +1010,10 @@
                           <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
                           <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
                           <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-<div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-
-<div class="tile-row"><span>Шанс</span><span>${item.successChance ?? 0}%</span></div>
-<div class="tile-row"><span>Невдачі</span><span>${item.upgradeFails ?? 0}</span></div>
-${
-  item.pity ? (
-    <div class="tile-row">
-      <span>🔥 PITY</span>
-      <span>Гарант</span>
-    </div>
-  ) : (
-    ""
-  )
-}
+                          <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                          <div class="tile-row"><span>Шанс</span><span>${item.successChance ?? 0}%</span></div>
+                          <div class="tile-row"><span>Невдачі</span><span>${item.upgradeFails ?? 0}/5</span></div>
+                          ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
                           <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
                             ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
                           </button>
@@ -1047,45 +1039,57 @@ ${
         showModal();
 
         modalBody.querySelectorAll("[data-lab-animal]").forEach((btn) => {
-          btn.onclick = async () => {
-            const type = btn.dataset.labAnimal;
+          btn.addEventListener("click", async () => {
+            const type = btn.getAttribute("data-lab-animal");
             btn.disabled = true;
 
             const resp = await apiPost("/lab/animal-upgrade", { type });
             setResult(resp.data);
 
             if (resp.ok) {
-              if (resp.data?.luckyUpgrade) {
-                showToast(`🔥 LVL ${resp.data?.level}`);
+              if (resp.data?.success) {
+                showToast(resp.data?.message || `✅ LVL ${resp.data?.level}`);
               } else {
-                showToast(`⬆️ LVL ${resp.data?.level}`);
+                showToast(
+                  resp.data?.message ||
+                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
+                );
               }
+
               await loadState();
               await openLabModal();
             } else {
               showToast(resp.data?.error || "Помилка");
               btn.disabled = false;
             }
-          };
+          });
         });
 
         const storageBtn = document.getElementById("storageUpgradeBtn");
         if (storageBtn) {
-          storageBtn.onclick = async () => {
+          storageBtn.addEventListener("click", async () => {
             storageBtn.disabled = true;
 
             const resp = await apiPost("/lab/storage-upgrade");
             setResult(resp.data);
 
             if (resp.ok) {
-              showToast(`📦 ${resp.data?.capacity ?? ""}`);
+              if (resp.data?.success) {
+                showToast(resp.data?.message || `📦 LVL ${resp.data?.level}`);
+              } else {
+                showToast(
+                  resp.data?.message ||
+                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
+                );
+              }
+
               await loadState();
               await openLabModal();
             } else {
               showToast(resp.data?.error || "Помилка");
               storageBtn.disabled = false;
             }
-          };
+          });
         }
       }
 
@@ -1180,10 +1184,34 @@ ${
           if (raw.includes("progress")) return "progress";
           if (raw.includes("achievement")) return "achievement";
 
+          const code = (q.code || "").toString().toLowerCase();
+          const title = (q.title || "").toString().toLowerCase();
+
+          if (
+            code.includes("daily") ||
+            title.includes("daily") ||
+            title.includes("щод") ||
+            title.includes("забери daily")
+          ) {
+            return "daily";
+          }
+
+          if (
+            code.includes("achievement") ||
+            title.includes("досягнення") ||
+            title.includes("вперше")
+          ) {
+            return "achievement";
+          }
+
           return "progress";
         }
 
-        const grouped = { daily: [], progress: [], achievement: [] };
+        const grouped = {
+          daily: [],
+          progress: [],
+          achievement: [],
+        };
 
         quests.forEach((q) => {
           grouped[detectGroup(q)].push(q);
@@ -1191,41 +1219,57 @@ ${
 
         function renderQuestCard(q) {
           const progress =
-            typeof q.progress === "number" && typeof q.target === "number"
-              ? `<div class="tile-row"><span>Прогрес</span><span>${q.progress} / ${q.target}</span></div>`
-              : "";
+            typeof q.progress === "number" && typeof q.target === "number" ? (
+              <div class="tile-row">
+                <span>Прогрес</span>
+                <span>
+                  ${q.progress} / ${q.target}
+                </span>
+              </div>
+            ) : (
+              ""
+            );
 
           return `
-      <div class="tile">
-        <div class="tile-title">${q.title}</div>
-        <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
-        ${progress}
-        <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
-        <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
-          ${q.claimed ? "Забрано" : "Забрати"}
-        </button>
-      </div>
-    `;
+            <div class="tile">
+              <div class="tile-title">${q.title}</div>
+              <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
+              ${progress}
+              <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
+              <button
+                class="buy-btn ${q.claimed ? "green" : ""}"
+                data-quest="${q.code}"
+                ${q.claimed ? "disabled" : ""}
+              >
+                ${q.claimed ? "Забрано" : "Забрати"}
+              </button>
+            </div>
+          `;
         }
 
         function renderGroup(groupKey) {
           const items = grouped[groupKey] || [];
-          if (!items.length) {
-            return `<div class="tile full"><div class="note">Тут поки немає квестів</div></div>`;
-          }
-          return items.map(renderQuestCard).join("");
+
+          return items.length ? (
+            items.map(renderQuestCard).join("")
+          ) : (
+            <div class="tile full">
+              <div class="note">Тут поки немає квестів</div>
+            </div>
+          );
         }
 
         modalBody.innerHTML = `
-    <div class="quest-tabs">
-      <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
-      <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
-      <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
-    </div>
-    <div class="modal-grid">
-      ${renderGroup(activeGroup)}
-    </div>
-  `;
+          <div class="quest-tabs">
+            <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
+            <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
+            <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
+          </div>
+
+          <div class="modal-grid">
+            ${renderGroup(activeGroup)}
+          </div>
+        `;
 
         showModal();
 
@@ -1354,55 +1398,18 @@ ${
       async function openShopModal() {
         modalTitle.textContent = "💎 Diamonds за Stars";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `
-    <div class="modal-grid">
-      <div class="tile">
-        <div class="tile-title">Малий пакет</div>
-        <div class="tile-value">50 💎</div>
-        <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
-        <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
-      </div>
-      <div class="tile">
-        <div class="tile-title">Середній пакет</div>
-        <div class="tile-value">120 💎</div>
-        <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
-        <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
-      </div>
-      <div class="tile">
-        <div class="tile-title">Великий пакет</div>
-        <div class="tile-value">300 💎</div>
-        <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
-        <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
-      </div>
-    </div>
-  `;
-
+        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">Малий пакет</div><div class="tile-value">50 💎</div><div class="tile-row"><span>Ціна</span><span>25 Stars</span></div><button class="buy-btn" data-stars="small">Купити</button></div><div class="tile"><div class="tile-title">Середній пакет</div><div class="tile-value">120 💎</div><div class="tile-row"><span>Ціна</span><span>50 Stars</span></div><button class="buy-btn" data-stars="medium">Купити</button></div><div class="tile"><div class="tile-title">Великий пакет</div><div class="tile-value">300 💎</div><div class="tile-row"><span>Ціна</span><span>100 Stars</span></div><button class="buy-btn" data-stars="large">Купити</button></div><div class="tile full"><div class="note">UI для diamonds за Stars готовий. Для реальної покупки треба додати Stars інвойс на бекенді.</div></div></div>`;
         showModal();
-
-        modalBody.querySelectorAll("[data-stars-product]").forEach((btn) => {
+        modalBody.querySelectorAll("[data-stars]").forEach((btn) => {
           btn.onclick = async () => {
-            const productCode = btn.getAttribute("data-stars-product");
-            const res = await apiPost("/payments/create-invoice", {
-              productCode,
-            });
-            setResult(res.data);
-
-            if (!res.ok) {
-              showToast(res.data?.error || "Помилка");
-              return;
-            }
-
-            const link = res.data?.invoiceLink;
-            if (!link) {
-              showToast("Не вдалося створити invoice");
-              return;
-            }
-
-            if (tg?.openTelegramLink) {
-              tg.openTelegramLink(link);
-            } else {
-              window.open(link, "_blank");
-            }
+            if (tg?.showAlert)
+              tg.showAlert(
+                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
+              );
+            else
+              alert(
+                "Щоб купівля працювала, треба додати Stars інвойс на бекенді.",
+              );
           };
         });
       }
