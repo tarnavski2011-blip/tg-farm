@@ -6,7 +6,7 @@ import { grantPremiumPurchase } from "../services/paymentGrant";
 const router = express.Router();
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
-const TG_API = https://api.telegram.org/bot${BOT_TOKEN};
+const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://tg-farm-web.onrender.com";
 
 router.post("/", async (req, res) => {
@@ -21,7 +21,9 @@ router.post("/", async (req, res) => {
     }
 
     if (update.message?.successful_payment) {
-      const paymentId = Number(update.message.successful_payment.invoice_payload);
+      const paymentId = Number(
+        update.message.successful_payment.invoice_payload,
+      );
       await grantPremiumPurchase(paymentId);
     }
 
@@ -76,7 +78,9 @@ router.post("/", async (req, res) => {
                   }),
                 ]);
 
-                console.log(`✅ Referral applied: ${user.id} -> ${referrer.id}`);
+                console.log(
+                  `✅ Referral applied: ${user.id} -> ${referrer.id}`,
+                );
               }
             }
           }
@@ -87,12 +91,14 @@ router.post("/", async (req, res) => {
         chat_id: chatId,
         text: "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇",
         reply_markup: {
-          inline_keyboard: [[
-            {
-              text: "🎮 PLAY",
-              web_app: { url: WEBAPP_URL },
-            },
-          ]],
+          inline_keyboard: [
+            [
+              {
+                text: "🎮 PLAY",
+                web_app: { url: WEBAPP_URL },
+              },
+            ],
+          ],
         },
       });
     }
