@@ -8,6 +8,9 @@ const router = express.Router();
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
+// 🔥 сюди встав свій URL гри, не API
+const WEBAPP_URL = process.env.WEBAPP_URL || "https://ТВІЙ-САЙТ-ГРИ";
+
 router.post("/", async (req, res) => {
   const update = req.body;
 
@@ -30,16 +33,18 @@ router.post("/", async (req, res) => {
       }
 
       await grantPremiumPurchase(paymentId);
-
       console.log("✅ Payment granted:", paymentId);
     }
 
-    // ✅ РЕФЕРАЛЬНИЙ START
+    // ✅ /start + referral + PLAY message
     if (update.message?.text?.startsWith("/start")) {
       const telegramId = BigInt(update.message.from.id);
+      const chatId = update.message.chat.id;
+
       const parts = update.message.text.split(" ");
       const refCode = parts[1]?.trim();
 
+      // ✅ REFERRAL: /start ref_123456789
       if (refCode?.startsWith("ref_")) {
         const refTelegramId = BigInt(refCode.replace("ref_", ""));
 
@@ -86,12 +91,30 @@ router.post("/", async (req, res) => {
           }
         }
       }
+
+      // ✅ welcome + PLAY
+      await axios.post(`${TG_API}/sendMessage`, {
+        chat_id: chatId,
+        text: "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🎮 PLAY",
+                web_app: {
+                  url: WEBAPP_URL,
+                },
+              },
+            ],
+          ],
+        },
+      });
     }
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
   } catch (err) {
     console.error("Telegram webhook error:", err);
-    res.sendStatus(500);
+    return res.sendStatus(500);
   }
 });
 
