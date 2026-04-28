@@ -9,7 +9,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 // 🔥 сюди встав свій URL гри, не API
-const WEBAPP_URL = process.env.WEBAPP_URL || "https://ТВІЙ-САЙТ-ГРИ";
+const WEBAPP_URL = process.env.WEBAPP_URL || "https://tg-farm-web.onrender.com";
 
 router.post("/", async (req, res) => {
   const update = req.body;
