@@ -7,15 +7,12 @@ const router = express.Router();
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
-// 🔥 сюди встав свій URL гри, не API
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://tg-farm-web.onrender.com";
 
 router.post("/", async (req, res) => {
   const update = req.body;
 
   try {
-    // ✅ ПІДТВЕРДЖЕННЯ ПЛАТЕЖУ
     if (update.pre_checkout_query) {
       await axios.post(`${TG_API}/answerPreCheckoutQuery`, {
         pre_checkout_query_id: update.pre_checkout_query.id,
@@ -23,7 +20,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ УСПІШНА ОПЛАТА
     if (update.message?.successful_payment) {
       const payload = update.message.successful_payment.invoice_payload;
       const paymentId = Number(payload);
@@ -36,7 +32,6 @@ router.post("/", async (req, res) => {
       console.log("✅ Payment granted:", paymentId);
     }
 
-    // ✅ /start + referral + PLAY message
     if (update.message?.text?.startsWith("/start")) {
       const telegramId = BigInt(update.message.from.id);
       const chatId = update.message.chat.id;
@@ -44,7 +39,6 @@ router.post("/", async (req, res) => {
       const parts = update.message.text.split(" ");
       const refCode = parts[1]?.trim();
 
-      // ✅ REFERRAL: /start ref_123456789
       if (refCode?.startsWith("ref_")) {
         const refTelegramId = BigInt(refCode.replace("ref_", ""));
 
@@ -92,23 +86,28 @@ router.post("/", async (req, res) => {
         }
       }
 
-      // ✅ welcome + PLAY
-      await axios.post(`${TG_API}/sendMessage`, {
-        chat_id: chatId,
-        text: "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🎮 PLAY",
-                web_app: {
-                  url: WEBAPP_URL,
+      try {
+        await axios.post(`${TG_API}/sendMessage`, {
+          chat_id: chatId,
+          text: "🚜 Ласкаво просимо в My Farm Clicker!\n\nНатисни кнопку нижче, щоб відкрити гру 👇",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🎮 PLAY",
+                  web_app: {
+                    url: WEBAPP_URL,
+                  },
                 },
-              },
+              ],
             ],
-          ],
-        },
-      });
+          },
+        });
+
+        console.log("✅ Welcome message sent");
+      } catch (e: any) {
+        console.error("❌ SEND MESSAGE ERROR:", e.response?.data || e.message);
+      }
     }
 
     return res.sendStatus(200);
