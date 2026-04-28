@@ -41,10 +41,15 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       where: { referrerId: user.id },
     });
 
+    const earnedCoins = totalRefs * 50;
+    const earnedPoints = totalRefs * 25;
+
     return res.json({
       ok: true,
       myCode: makeRefCode(user.id),
       totalRefs,
+      earnedCoins,
+      earnedPoints,
     });
   } catch (e) {
     console.error("REFERRALS GET ERROR:", e);
