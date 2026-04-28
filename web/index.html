@@ -643,7 +643,19 @@
         tg.expand();
       }
       const initData = tg?.initData ?? "";
-      const shareBase = `https://t.me/${BOT_USERNAME}?start=ref_`;
+      function getMyTelegramId() {
+        return currentState?.telegramId || tg?.initDataUnsafe?.user?.id || "";
+      }
+
+      function makeReferralLink() {
+        const myTelegramId = getMyTelegramId();
+
+        if (!myTelegramId) {
+          return `https://t.me/${BOT_USERNAME}`;
+        }
+
+        return `https://t.me/${BOT_USERNAME}?start=ref_${myTelegramId}`;
+      }
       const modal = document.getElementById("modal"),
         modalTitle = document.getElementById("modalTitle"),
         modalBody = document.getElementById("modalBody"),
@@ -998,10 +1010,12 @@
         const capacity = s.capacity ?? 1000;
         const total = s.total ?? eggs + wool + milk;
 
-        const coinsFromEggs = eggs * 1;
-        const coinsFromWool = wool * 3;
-        const coinsFromMilk = milk * 7;
-        const totalCoins = coinsFromEggs + coinsFromWool + coinsFromMilk;
+        const coinsFromEggs = eggs * 6;
+        const coinsFromWool = wool * 15;
+        const coinsFromMilk = milk * 30;
+        const fallbackCoins = coinsFromEggs + coinsFromWool + coinsFromMilk;
+        const totalCoins =
+          s.sellValue ?? s.sellCoins ?? s.coins ?? fallbackCoins;
 
         const percent = Math.min(100, Math.floor((total / capacity) * 100));
 
@@ -1054,7 +1068,14 @@
           setResult(res.data);
 
           if (res.ok) {
-            showToast(`+${res.data?.coins ?? 0} coins 💰`);
+            if (res.data?.xp?.leveledUp) {
+              showLevelUpPopup(res.data.xp);
+            } else {
+              showToast(
+                `+${res.data?.earned ?? res.data?.coins ?? 0} coins 💰`,
+              );
+            }
+
             await loadState();
             await openStorageModal();
           } else {
@@ -1294,7 +1315,19 @@
             setResult(resp.data);
 
             if (resp.ok) {
-              showToast(`📦 ${resp.data?.capacity ?? ""}`);
+              if (resp.data?.success) {
+                showToast(resp.data?.message || `📦 LVL ${resp.data?.level}`);
+              } else {
+                showToast(
+                  resp.data?.message ||
+                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
+                );
+              }
+
+              if (resp.data?.xp?.leveledUp) {
+                showLevelUpPopup(resp.data.xp);
+              }
+
               await loadState();
               await openLabModal();
             } else {
@@ -1627,7 +1660,7 @@
         modalTabs.style.display = "none";
         const res = await apiGet("/referrals"),
           data = res.data || {},
-          shareLink = `${shareBase}${data.myCode ?? ""}`;
+          shareLink = makeReferralLink();
         modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
         showModal();
         document.getElementById("copyRefBtn").onclick = async () => {
