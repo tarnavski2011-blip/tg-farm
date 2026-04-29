@@ -34,16 +34,22 @@ app.get("/", (_req, res) => {
   res.send("tg-farm-api is running");
 });
 
+// Telegram webhook
 app.use("/telegram", telegramRouter);
 
 // адмінка без Telegram auth
 app.use("/admin", adminPaymentsRouter);
 
+// payment logs
 app.use("/api/payment-logs", paymentLogsRouter);
+
+// public leaderboard без auth
+app.use("/api/leaderboard", leaderboardRouter);
 
 // auth only for game api
 app.use("/api", telegramAuth);
 
+// game routes
 app.use("/api/state", stateRouter);
 app.use("/api/collect", collectRouter);
 app.use("/api/buy-animal", buyAnimalRouter);
@@ -59,8 +65,9 @@ app.use("/api/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
+
+// test routes
 app.use("/test-payment", testPaymentRouter);
-app.use("/api/leaderboard", leaderboardRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
