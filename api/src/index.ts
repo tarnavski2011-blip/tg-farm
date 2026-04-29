@@ -23,6 +23,7 @@ import paymentsRouter from "./routes/payments";
 import testPaymentRouter from "./routes/testPayment";
 import paymentLogsRouter from "./routes/paymentLogs";
 import adminPaymentsRouter from "./routes/adminPayments";
+import leaderboardRouter from "./routes/leaderboard";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/test-payment", testPaymentRouter);
+app.use("/api/leaderboard", leaderboardRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
