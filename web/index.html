@@ -595,11 +595,12 @@
           ><button class="menu-btn" id="boostBtn">
             <span class="menu-emoji">⚡</span><span>Boosters</span></button
           ><button class="menu-btn" id="refsBtn">
-            <span class="menu-emoji">👥</span><span>Referrals</span></button
-          ><button class="menu-btn" id="refreshBtn">
-            <button class="menu-btn" id="leaderboardBtn">
-              <span class="menu-emoji">🏆</span><span>Топ</span>
-            </button>
+            <span class="menu-emoji">👥</span><span>Referrals</span>
+          </button>
+          <button class="menu-btn" id="leaderboardBtn">
+            <span class="menu-emoji">🏆</span><span>Топ</span>
+          </button>
+          <button class="menu-btn" id="refreshBtn">
             <span class="menu-emoji">🔄</span><span>Оновити</span>
           </button>
         </div>
@@ -1697,36 +1698,44 @@
         };
       }
       async function openLeaderboardModal() {
-        const res = await fetch(`${API}/leaderboard`);
-        const data = await res.json();
+        modalTitle.textContent = "🏆 Топ рефералів";
+        modalTabs.style.display = "none";
 
-        if (!data.ok) {
-          alert("Помилка завантаження топу");
-          return;
+        try {
+          const res = await fetch(`${API}/leaderboard`);
+          const data = await res.json();
+
+          if (!data.ok) {
+            modalBody.innerHTML = `<div class="warn">Помилка завантаження топу</div>`;
+            showModal();
+            return;
+          }
+
+          const rows = (data.leaderboard || [])
+            .map(
+              (user) => `
+                <div class="tile full">
+                  <div class="tile-title">#${user.rank}</div>
+                  <div class="tile-value">👥 ${user.referrals} рефералів</div>
+                  <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
+                  <div class="tile-row"><span>Coins</span><span>${user.coins}</span></div>
+                  <div class="tile-row"><span>Points</span><span>${user.points}</span></div>
+                </div>
+              `,
+            )
+            .join("");
+
+          modalBody.innerHTML = `
+            <div class="modal-grid">
+              ${rows || `<div class="tile full"><div class="note">Поки немає рефералів</div></div>`}
+            </div>
+          `;
+
+          showModal();
+        } catch (e) {
+          modalBody.innerHTML = `<div class="warn">Помилка завантаження топу</div>`;
+          showModal();
         }
-
-        const rows = data.leaderboard
-          .map(
-            (user) => `
-    <div class="tile" style="margin-bottom:10px;">
-      <div><b>#${user.rank}</b></div>
-      <div>ID: ${user.telegramId}</div>
-      <div>👥 Реферали: ${user.referrals}</div>
-      <div>🪙 Coins: ${user.coins}</div>
-      <div>⭐ Points: ${user.points}</div>
-    </div>
-  `,
-          )
-          .join("");
-
-        openModal(
-          "🏆 Топ рефералів",
-          `
-    <div class="grid">
-      ${rows}
-    </div>
-  `,
-        );
       }
       document.getElementById("tapBtn").addEventListener("click", collect);
       document
