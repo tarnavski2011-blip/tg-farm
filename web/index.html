@@ -597,7 +597,9 @@
           ><button class="menu-btn" id="refsBtn">
             <span class="menu-emoji">👥</span><span>Referrals</span></button
           ><button class="menu-btn" id="refreshBtn">
-            <button onclick="openLeaderboardModal()">🏆 Топ</button>
+            <button class="menu-btn" id="leaderboardBtn">
+              <span class="menu-emoji">🏆</span><span>Топ</span>
+            </button>
             <span class="menu-emoji">🔄</span><span>Оновити</span>
           </button>
         </div>
@@ -1694,6 +1696,38 @@
           }
         };
       }
+      async function openLeaderboardModal() {
+        const res = await fetch(`${API}/leaderboard`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          alert("Помилка завантаження топу");
+          return;
+        }
+
+        const rows = data.leaderboard
+          .map(
+            (user) => `
+    <div class="tile" style="margin-bottom:10px;">
+      <div><b>#${user.rank}</b></div>
+      <div>ID: ${user.telegramId}</div>
+      <div>👥 Реферали: ${user.referrals}</div>
+      <div>🪙 Coins: ${user.coins}</div>
+      <div>⭐ Points: ${user.points}</div>
+    </div>
+  `,
+          )
+          .join("");
+
+        openModal(
+          "🏆 Топ рефералів",
+          `
+    <div class="grid">
+      ${rows}
+    </div>
+  `,
+        );
+      }
       document.getElementById("tapBtn").addEventListener("click", collect);
       document
         .getElementById("loadStateBtn")
@@ -1730,45 +1764,15 @@
         .getElementById("refsBtn")
         .addEventListener("click", openRefsModal);
       document
+        .getElementById("leaderboardBtn")
+        .addEventListener("click", openLeaderboardModal);
+      document
         .getElementById("closeModalBtn")
         .addEventListener("click", closeModal);
       tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
       loadState();
-
-      async function openLeaderboardModal() {
-        const res = await fetch(`${API}/leaderboard`);
-        const data = await res.json();
-
-        if (!data.ok) {
-          alert("Помилка завантаження топу");
-          return;
-        }
-
-        const rows = data.leaderboard
-          .map(
-            (user) => `
-    <div class="tile" style="margin-bottom:10px;">
-      <div><b>#${user.rank}</b></div>
-      <div>ID: ${user.telegramId}</div>
-      <div>👥 Реферали: ${user.referrals}</div>
-      <div>🪙 Coins: ${user.coins}</div>
-      <div>⭐ Points: ${user.points}</div>
-    </div>
-  `,
-          )
-          .join("");
-
-        openModal(
-          "🏆 Топ рефералів",
-          `
-    <div class="grid">
-      ${rows}
-    </div>
-  `,
-        );
-      }
     </script>
   </body>
 </html>
