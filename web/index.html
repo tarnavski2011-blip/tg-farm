@@ -817,7 +817,7 @@
           const res = await apiPost("/collect");
           setResult(res.data);
           if (res.ok) {
-            if (!handleXpResult(res.data?.xp)) {
+            if (!handleXpResult(res.data?.levelUpData)) {
               showToast(`+${res.data?.added ?? 1}`);
             }
 
@@ -844,7 +844,7 @@
         const res = await apiPost("/buy-animal", { type });
         setResult(res.data);
         if (res.ok) {
-          if (!handleXpResult(res.data?.xp)) {
+          if (!handleXpResult(res.data?.levelUpData)) {
             showToast("Куплено");
           }
 
@@ -1108,7 +1108,7 @@
           setResult(res.data);
 
           if (res.ok) {
-            if (!handleXpResult(res.data?.xp)) {
+            if (!handleXpResult(res.data?.levelUpData)) {
               showToast(
                 `+${res.data?.earned ?? res.data?.coins ?? 0} coins 💰`,
               );
