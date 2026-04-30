@@ -91,7 +91,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       },
 
       // ✅ це читає твій index.html
-      xp: {
+      levelUpData: {
         leveledUp,
         level,
         rewardCoins: levelRewardCoins,
