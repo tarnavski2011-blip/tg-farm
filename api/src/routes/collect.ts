@@ -34,7 +34,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       xp -= getXpNeeded(level);
       level += 1;
 
-      levelRewardCoins += 25;
+      levelRewardCoins += level * 100;
 
       if (level % 10 === 0) {
         levelRewardDiamonds += 15;
@@ -42,6 +42,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         levelRewardDiamonds += 5;
       }
     }
+
+    const leveledUp = levelRewardCoins > 0 || levelRewardDiamonds > 0;
 
     await prisma.user.update({
       where: { id: user.id },
@@ -79,7 +81,23 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       xpAdded,
       level,
       xp,
-      levelUp: levelRewardCoins > 0 || levelRewardDiamonds > 0,
+
+      // ✅ це потрібно для Level Up popup в index.html
+      xpResult: {
+        leveledUp,
+        level,
+        rewardCoins: levelRewardCoins,
+        rewardDiamonds: levelRewardDiamonds,
+      },
+
+      // ✅ це читає твій index.html
+      xp: {
+        leveledUp,
+        level,
+        rewardCoins: levelRewardCoins,
+        rewardDiamonds: levelRewardDiamonds,
+      },
+
       reward: {
         coins: levelRewardCoins,
         diamonds: levelRewardDiamonds,
