@@ -600,7 +600,7 @@
           <button
             class="menu-btn"
             id="leaderboardBtn"
-            onclick="openLeaderboardModal()"
+            onclick="openLeaderboardModal('referrals')"
           >
             <span class="menu-emoji">🏆</span><span>Топ</span>
           </button>
@@ -1733,46 +1733,148 @@
           }
         };
       }
-      async function openLeaderboardModal() {
-        modalTitle.textContent = "🏆 Топ рефералів";
+      async function openLeaderboardModal(type = "referrals") {
+        const tabs = [
+          { key: "referrals", label: "👥 Referrals" },
+          { key: "coins", label: "🪙 Coins" },
+          { key: "points", label: "⭐ Points" },
+        ];
+
+        const activeTab = tabs.find((t) => t.key === type) ? type : "referrals";
+        const activeInfo = tabs.find((t) => t.key === activeTab);
+
+        modalTitle.textContent = "🏆 Топ";
         modalTabs.style.display = "none";
 
+        modalBody.innerHTML = `
+          <div class="quest-tabs">
+            ${tabs
+              .map(
+                (t) => `
+                  <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                    ${t.label}
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="tile full">
+            <div class="note">Завантаження рейтингу...</div>
+          </div>
+        `;
+
+        showModal();
+
+        modalBody.querySelectorAll("[data-leaderboard-tab]").forEach((btn) => {
+          btn.onclick = () => openLeaderboardModal(btn.dataset.leaderboardTab);
+        });
+
         try {
-          const res = await fetch(`${API}/leaderboard`);
+          const res = await fetch(`${API}/leaderboard?type=${activeTab}`);
           const data = await res.json();
 
           if (!data.ok) {
-            modalBody.innerHTML = `<div class="warn">Помилка завантаження топу</div>`;
-            showModal();
+            modalBody.innerHTML = `
+              <div class="quest-tabs">
+                ${tabs
+                  .map(
+                    (t) => `
+                      <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                        ${t.label}
+                      </button>
+                    `,
+                  )
+                  .join("")}
+              </div>
+              <div class="warn">Помилка завантаження топу</div>
+            `;
+
+            modalBody
+              .querySelectorAll("[data-leaderboard-tab]")
+              .forEach((btn) => {
+                btn.onclick = () =>
+                  openLeaderboardModal(btn.dataset.leaderboardTab);
+              });
+
             return;
+          }
+
+          function valueLine(user) {
+            if (activeTab === "coins") {
+              return `<div class="tile-value">🪙 ${user.coins ?? user.value ?? 0} coins</div>`;
+            }
+
+            if (activeTab === "points") {
+              return `<div class="tile-value">⭐ ${user.points ?? user.value ?? 0} points</div>`;
+            }
+
+            return `<div class="tile-value">👥 ${user.referrals ?? user.value ?? 0} рефералів</div>`;
           }
 
           const rows = (data.leaderboard || [])
             .map(
               (user) => `
                 <div class="tile full">
-                  <div class="tile-title">#${user.rank}</div>
-                  <div class="tile-value">👥 ${user.referrals} рефералів</div>
+                  <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
+                  ${valueLine(user)}
                   <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
-                  <div class="tile-row"><span>Coins</span><span>${user.coins}</span></div>
-                  <div class="tile-row"><span>Points</span><span>${user.points}</span></div>
+                  <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
+                  <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
+                  <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
                 </div>
               `,
             )
             .join("");
 
           modalBody.innerHTML = `
+            <div class="quest-tabs">
+              ${tabs
+                .map(
+                  (t) => `
+                    <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                      ${t.label}
+                    </button>
+                  `,
+                )
+                .join("")}
+            </div>
+
             <div class="modal-grid">
-              ${rows || `<div class="tile full"><div class="note">Поки немає рефералів</div></div>`}
+              ${rows || `<div class="tile full"><div class="note">Поки немає даних</div></div>`}
             </div>
           `;
 
-          showModal();
+          modalBody
+            .querySelectorAll("[data-leaderboard-tab]")
+            .forEach((btn) => {
+              btn.onclick = () =>
+                openLeaderboardModal(btn.dataset.leaderboardTab);
+            });
         } catch (e) {
-          modalBody.innerHTML = `<div class="warn">Помилка завантаження топу</div>`;
-          showModal();
+          modalBody.innerHTML = `
+            <div class="quest-tabs">
+              ${tabs
+                .map(
+                  (t) => `
+                    <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                      ${t.label}
+                    </button>
+                  `,
+                )
+                .join("")}
+            </div>
+            <div class="warn">Помилка завантаження топу</div>
+          `;
+
+          modalBody
+            .querySelectorAll("[data-leaderboard-tab]")
+            .forEach((btn) => {
+              btn.onclick = () =>
+                openLeaderboardModal(btn.dataset.leaderboardTab);
+            });
         }
       }
+
       document.getElementById("tapBtn").addEventListener("click", collect);
       document
         .getElementById("loadStateBtn")
@@ -1810,7 +1912,7 @@
         .addEventListener("click", openRefsModal);
       document
         .getElementById("leaderboardBtn")
-        .addEventListener("click", openLeaderboardModal);
+        .addEventListener("click", () => openLeaderboardModal("referrals"));
       document
         .getElementById("closeModalBtn")
         .addEventListener("click", closeModal);
