@@ -685,6 +685,7 @@
         levelUpDiamonds = document.getElementById("levelUpDiamonds"),
         levelUpCloseBtn = document.getElementById("levelUpCloseBtn");
       let currentState = null;
+      let lastKnownLevel = null;
       let wheelRotation = 0;
       function setStatus(t) {
         statusEl.textContent = t;
@@ -749,6 +750,11 @@
       function handleXpResult(xpData) {
         if (xpData?.leveledUp) {
           showLevelUpPopup(xpData);
+
+          if (xpData.level) {
+            lastKnownLevel = xpData.level;
+          }
+
           return true;
         }
 
@@ -762,12 +768,28 @@
       }
 
       function applyState(data) {
+        const newLevel = data?.level ?? 1;
+
+        if (
+          lastKnownLevel !== null &&
+          newLevel > lastKnownLevel &&
+          levelUpModal
+        ) {
+          showLevelUpPopup({
+            level: newLevel,
+            rewardCoins: data?.lastLevelRewardCoins ?? 0,
+            rewardDiamonds: data?.lastLevelRewardDiamonds ?? 0,
+          });
+        }
+
+        lastKnownLevel = newLevel;
         currentState = data;
+
         coinsEl.textContent = data?.coins ?? 0;
         diamondsEl.textContent = data?.diamonds ?? 0;
         pointsEl.textContent = data?.points ?? 0;
         xpEl.textContent = `${data?.xp ?? 0}/${data?.xpNeeded ?? 0}`;
-        levelBadgeEl.textContent = `LVL ${data?.level ?? 1}`;
+        levelBadgeEl.textContent = `LVL ${newLevel}`;
         const boost = data?.boost?.active ? "ON" : "OFF";
         const auto = data?.autoCollect?.active ? "ON" : "OFF";
         const vip = data?.vip?.active ? "ON" : "OFF";
