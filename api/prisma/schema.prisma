@@ -63,6 +63,7 @@ model User {
   animals           Animal[]
   storage           Storage?
   achievementClaims AchievementClaim[]
+  leaderboardRewards LeaderboardReward[]
 }
 
 model Storage {
@@ -148,4 +149,19 @@ model Payment {
 
   @@index([userId, status])
   @@index([productCode])
+}
+
+model LeaderboardReward {
+  id        Int      @id @default(autoincrement())
+  period    String
+  type      String
+  userId    Int
+  rank      Int
+  reward    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([period, type, userId])
+  @@index([period, type])
 }

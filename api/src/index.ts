@@ -24,6 +24,7 @@ import testPaymentRouter from "./routes/testPayment";
 import paymentLogsRouter from "./routes/paymentLogs";
 import adminPaymentsRouter from "./routes/adminPayments";
 import leaderboardRouter from "./routes/leaderboard";
+import adminLeaderboardRewardsRouter from "./routes/adminLeaderboardRewards";
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use("/api/tap", tapRouter);
 app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
+app.use("/admin/leaderboard-rewards", adminLeaderboardRewardsRouter);
 
 // test routes
 app.use("/test-payment", testPaymentRouter);
