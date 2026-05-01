@@ -2,12 +2,9 @@ import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
 import { addTapToday } from "../lib/questProgress";
+import { calculateLevelProgress } from "../lib/levelSystem";
 
 const router = Router();
-
-function getXpNeeded(level: number) {
-  return 100 + level * 50;
-}
 
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
@@ -24,34 +21,19 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const coinsAdded = 1;
     const xpAdded = 1;
 
-    let xp = (user.xp ?? 0) + xpAdded;
-    let level = user.level ?? 1;
-
-    let levelRewardCoins = 0;
-    let levelRewardDiamonds = 0;
-
-    while (xp >= getXpNeeded(level)) {
-      xp -= getXpNeeded(level);
-      level += 1;
-
-      levelRewardCoins += level * 100;
-
-      if (level % 10 === 0) {
-        levelRewardDiamonds += 15;
-      } else if (level % 5 === 0) {
-        levelRewardDiamonds += 5;
-      }
-    }
-
-    const leveledUp = levelRewardCoins > 0 || levelRewardDiamonds > 0;
+    const levelResult = calculateLevelProgress(
+      user.level ?? 1,
+      user.xp ?? 0,
+      xpAdded,
+    );
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        coins: { increment: coinsAdded + levelRewardCoins },
-        diamonds: { increment: levelRewardDiamonds },
-        xp,
-        level,
+        coins: { increment: coinsAdded + levelResult.rewardCoins },
+        diamonds: { increment: levelResult.rewardDiamonds },
+        xp: levelResult.xp,
+        level: levelResult.level,
       },
     });
 
@@ -62,8 +44,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     });
 
     if (referral) {
-      const percent = 0.05;
-      const bonusCoins = Math.floor(coinsAdded * percent);
+      const bonusCoins = Math.floor(coinsAdded * 0.05);
 
       if (bonusCoins > 0) {
         await prisma.user.update({
@@ -79,28 +60,20 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       ok: true,
       coinsAdded,
       xpAdded,
-      level,
-      xp,
+      level: levelResult.level,
+      xp: levelResult.xp,
 
-      // ✅ це потрібно для Level Up popup в index.html
-      xpResult: {
-        leveledUp,
-        level,
-        rewardCoins: levelRewardCoins,
-        rewardDiamonds: levelRewardDiamonds,
-      },
-
-      // ✅ це читає твій index.html
       levelUpData: {
-        leveledUp,
-        level,
-        rewardCoins: levelRewardCoins,
-        rewardDiamonds: levelRewardDiamonds,
+        leveledUp: levelResult.leveledUp,
+        level: levelResult.lastReachedLevel,
+        rewardCoins: levelResult.rewardCoins,
+        rewardDiamonds: levelResult.rewardDiamonds,
+        reachedLevels: levelResult.reachedLevels,
       },
 
       reward: {
-        coins: levelRewardCoins,
-        diamonds: levelRewardDiamonds,
+        coins: levelResult.rewardCoins,
+        diamonds: levelResult.rewardDiamonds,
       },
     });
   } catch (e) {
