@@ -773,7 +773,8 @@
         if (
           lastKnownLevel !== null &&
           newLevel > lastKnownLevel &&
-          levelUpModal
+          levelUpModal &&
+          data?.lastLevelRewardCoins > 0
         ) {
           showLevelUpPopup({
             level: newLevel,
