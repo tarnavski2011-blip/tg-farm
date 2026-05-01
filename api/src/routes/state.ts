@@ -52,6 +52,53 @@ function getAnimalPointsPerCycle(
   return 0;
 }
 
+function getAnimalLifeDays(type: "CHICKEN" | "SHEEP" | "COW") {
+  if (type === "CHICKEN") return 3;
+  if (type === "SHEEP") return 5;
+  if (type === "COW") return 7;
+  return 1;
+}
+
+function getAnimalEfficiency(animal: {
+  type: "CHICKEN" | "SHEEP" | "COW";
+  bornAt: Date;
+  lastFedAt: Date;
+}) {
+  const now = Date.now();
+
+  const totalLifeMs = getAnimalLifeDays(animal.type) * 24 * 60 * 60 * 1000;
+
+  const ageMs = now - new Date(animal.bornAt).getTime();
+
+  if (ageMs >= totalLifeMs) {
+    return {
+      lifePercent: 0,
+      efficiencyPercent: 0,
+      daysLeft: 0,
+    };
+  }
+
+  const daysLeft = Math.max(0, (totalLifeMs - ageMs) / (24 * 60 * 60 * 1000));
+
+  const hoursWithoutFeed =
+    (now - new Date(animal.lastFedAt).getTime()) / (60 * 60 * 1000);
+
+  const efficiencyLoss = Math.floor(hoursWithoutFeed / 12) * 10;
+
+  const efficiencyPercent = Math.max(0, 100 - efficiencyLoss);
+
+  const lifePercent = Math.max(
+    0,
+    Math.round(((totalLifeMs - ageMs) / totalLifeMs) * 100),
+  );
+
+  return {
+    lifePercent,
+    efficiencyPercent,
+    daysLeft: Math.ceil(daysLeft),
+  };
+}
+
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -164,8 +211,26 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
+      const animalStats = getAnimalEfficiency({
+        type: animal.type,
+        bornAt: animal.bornAt,
+        lastFedAt: animal.lastFedAt,
+      });
+
+      if (animalStats.lifePercent <= 0 || animalStats.efficiencyPercent <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
+        continue;
+      }
+
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
+
+      produced = Math.floor(produced * (animalStats.efficiencyPercent / 100));
 
       if (user.boostUntil && user.boostUntil > now) {
         produced *= 2;
