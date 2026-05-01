@@ -12,6 +12,12 @@ const PRICES = {
   milk: 30,
 } as const;
 
+const POINTS = {
+  eggs: 1,
+  wool: 2,
+  milk: 3,
+} as const;
+
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -33,22 +39,20 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const wool = user.storage.wool ?? 0;
     const milk = user.storage.milk ?? 0;
 
-    const eggsCoins = eggs * PRICES.eggs;
-    const woolCoins = wool * PRICES.wool;
-    const milkCoins = milk * PRICES.milk;
+    const totalCoins =
+      eggs * PRICES.eggs + wool * PRICES.wool + milk * PRICES.milk;
 
-    const totalCoins = eggsCoins + woolCoins + milkCoins;
+    const totalPoints =
+      eggs * POINTS.eggs + wool * POINTS.wool + milk * POINTS.milk;
 
-    if (totalCoins <= 0) {
+    if (totalCoins <= 0 && totalPoints <= 0) {
       return res.json({
         ok: true,
-        sold: {
-          eggs,
-          wool,
-          milk,
-        },
+        sold: { eggs, wool, milk },
         earned: 0,
+        earnedPoints: 0,
         totalCoins: user.coins,
+        totalPoints: user.points,
       });
     }
 
@@ -56,6 +60,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       where: { telegramId },
       data: {
         coins: { increment: totalCoins },
+        points: { increment: totalPoints },
         storage: {
           update: {
             eggs: 0,
@@ -66,6 +71,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       },
       select: {
         coins: true,
+        points: true,
       },
     });
 
@@ -75,14 +81,13 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      sold: {
-        eggs,
-        wool,
-        milk,
-      },
+      sold: { eggs, wool, milk },
       prices: PRICES,
+      pointsRates: POINTS,
       earned: totalCoins,
+      earnedPoints: totalPoints,
       totalCoins: updated.coins,
+      totalPoints: updated.points,
       xp: xpResult,
     });
   } catch (e) {
