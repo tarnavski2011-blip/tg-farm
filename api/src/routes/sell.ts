@@ -12,11 +12,11 @@ const PRICES = {
   milk: 30,
 } as const;
 
-const POINTS = {
-  eggs: 1,
-  wool: 2,
-  milk: 3,
-} as const;
+function pointsRate(level: number, lvl4Rate: number, lvl5Rate: number) {
+  if (level >= 5) return lvl5Rate;
+  if (level >= 4) return lvl4Rate;
+  return 0;
+}
 
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
@@ -28,7 +28,10 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      include: { storage: true },
+      include: {
+        storage: true,
+        animals: true,
+      },
     });
 
     if (!user || !user.storage) {
@@ -42,8 +45,18 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const totalCoins =
       eggs * PRICES.eggs + wool * PRICES.wool + milk * PRICES.milk;
 
-    const totalPoints =
-      eggs * POINTS.eggs + wool * POINTS.wool + milk * POINTS.milk;
+    const chickenLevel =
+      user.animals.find((a) => a.type === "CHICKEN")?.level ?? 0;
+
+    const sheepLevel = user.animals.find((a) => a.type === "SHEEP")?.level ?? 0;
+
+    const cowLevel = user.animals.find((a) => a.type === "COW")?.level ?? 0;
+
+    const eggsPoints = eggs * pointsRate(chickenLevel, 1, 3);
+    const woolPoints = wool * pointsRate(sheepLevel, 2, 6);
+    const milkPoints = milk * pointsRate(cowLevel, 3, 10);
+
+    const totalPoints = eggsPoints + woolPoints + milkPoints;
 
     if (totalCoins <= 0 && totalPoints <= 0) {
       return res.json({
@@ -83,11 +96,20 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       ok: true,
       sold: { eggs, wool, milk },
       prices: PRICES,
-      pointsRates: POINTS,
       earned: totalCoins,
       earnedPoints: totalPoints,
       totalCoins: updated.coins,
       totalPoints: updated.points,
+      pointsBreakdown: {
+        eggs: eggsPoints,
+        wool: woolPoints,
+        milk: milkPoints,
+      },
+      animalLevels: {
+        chicken: chickenLevel,
+        sheep: sheepLevel,
+        cow: cowLevel,
+      },
       xp: xpResult,
     });
   } catch (e) {
