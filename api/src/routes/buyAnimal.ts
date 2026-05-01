@@ -18,6 +18,12 @@ const ANIMAL_UNLOCK_LEVEL: Record<AnimalType, number> = {
   COW: 10,
 };
 
+const ANIMAL_LIMITS: Record<AnimalType, number> = {
+  CHICKEN: 5,
+  SHEEP: 5,
+  COW: 5,
+};
+
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
     if (!req.telegramUser?.id) {
@@ -38,6 +44,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         id: true,
         level: true,
         coins: true,
+        animals: true,
       },
     });
 
@@ -55,6 +62,18 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       });
     }
 
+    const ownedCount = user.animals.filter((a) => a.type === type).length;
+    const maxCount = ANIMAL_LIMITS[type];
+
+    if (ownedCount >= maxCount) {
+      return res.status(400).json({
+        error: `Максимум ${maxCount} тварин цього типу`,
+        type,
+        ownedCount,
+        maxCount,
+      });
+    }
+
     const price = ANIMAL_PRICES[type];
 
     if ((user.coins ?? 0) < price) {
@@ -65,12 +84,17 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       });
     }
 
+    const now = new Date();
+
     const [animal, updatedUser] = await prisma.$transaction([
       prisma.animal.create({
         data: {
           userId: user.id,
           type,
           level: 1,
+          bornAt: now,
+          lastFedAt: now,
+          lastClaim: now,
         },
       }),
       prisma.user.update({
@@ -91,6 +115,11 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       animal,
       coins: updatedUser.coins,
       spent: price,
+      limit: {
+        type,
+        ownedCount: ownedCount + 1,
+        maxCount,
+      },
       xp: xpResult,
     });
   } catch (e) {

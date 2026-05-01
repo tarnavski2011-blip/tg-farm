@@ -84,7 +84,11 @@ model Animal {
   type      AnimalType
   level     Int        @default(1)
   upgradeFails Int        @default(0)
+
+  bornAt    DateTime @default(now())
+  lastFedAt DateTime @default(now())
   lastClaim DateTime   @default(now())
+
   createdAt DateTime   @default(now())
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
