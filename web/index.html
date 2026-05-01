@@ -1097,9 +1097,28 @@
                               <div class="tile full">
                                 <div class="tile-title">💰 Продаж</div>
                                 <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
-  <span>+${totalCoins} coins 💰</span>
-  <span>+${eggs + wool * 2 + milk * 3} points ⭐</span>
-</div>
+                               <span>+${totalCoins} coins 💰</span>
+                               <span>+${
+                                 (currentState?.animals?.chickenLevel >= 4
+                                   ? eggs *
+                                     (currentState.animals.chickenLevel >= 5
+                                       ? 3
+                                       : 1)
+                                   : 0) +
+                                 (currentState?.animals?.sheepLevel >= 4
+                                   ? wool *
+                                     (currentState.animals.sheepLevel >= 5
+                                       ? 8
+                                       : 3)
+                                   : 0) +
+                                 (currentState?.animals?.cowLevel >= 4
+                                   ? milk *
+                                     (currentState.animals.cowLevel >= 5
+                                       ? 20
+                                       : 8)
+                                   : 0)
+                               } points ⭐</span>
+                               </div>
                                 <button class="buy-btn green" id="sellAllBtn">Продати все</button>
                               </div>
                             </div>
