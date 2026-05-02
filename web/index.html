@@ -604,6 +604,9 @@
           >
             <span class="menu-emoji">🏆</span><span>Топ</span>
           </button>
+          <button class="menu-btn" id="walletBtn" onclick="openWalletModal()">
+            <span class="menu-emoji">👛</span><span>Wallet</span>
+          </button>
           <button class="menu-btn" id="refreshBtn">
             <span class="menu-emoji">🔄</span><span>Оновити</span>
           </button>
@@ -1724,6 +1727,89 @@
           };
         });
       }
+      async function openWalletModal() {
+        modalTitle.textContent = "👛 Wallet";
+        modalTabs.style.display = "none";
+
+        const res = await apiGet("/wallet");
+        const data = res.data || {};
+
+        if (!res.ok) {
+          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
+          showModal();
+          return;
+        }
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">💰 TON Баланс</div>
+              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+              <div class="tile-row"><span>Points</span><span>${data.points ?? 0}</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">📥 Поповнення</div>
+              <div class="note">Надішли TON на адресу:</div>
+              <input class="code-box" value="${data.depositWallet}" readonly />
+              <div class="note" style="margin-top:8px;">
+                Коментар: USER_${getMyTelegramId()}
+              </div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">💎 Small</div>
+              <div class="tile-value">50 Diamonds</div>
+              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
+              <button class="buy-btn" data-wallet-buy="small">Купити</button>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">💎 Medium</div>
+              <div class="tile-value">120 Diamonds</div>
+              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
+              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">💎 Large</div>
+              <div class="tile-value">700 Diamonds</div>
+              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
+              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">⭐ Points → TON</div>
+              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
+              <div class="note">Скоро буде доступно</div>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        modalBody.querySelectorAll("[data-wallet-buy]").forEach((btn) => {
+          btn.onclick = async () => {
+            const pkg = btn.getAttribute("data-wallet-buy");
+
+            const resp = await apiPost("/wallet/buy-diamonds", {
+              package: pkg,
+            });
+
+            setResult(resp.data);
+
+            if (resp.ok) {
+              showToast(`💎 +${resp.data?.diamondsReceived ?? 0}`);
+              await loadState();
+              await openWalletModal();
+            } else {
+              showToast(resp.data?.error || "Помилка");
+            }
+          };
+        });
+      }
+
       async function openRefsModal() {
         modalTitle.textContent = "👥 Referrals";
         modalTabs.style.display = "none";
@@ -1936,6 +2022,9 @@
       document
         .getElementById("shopBtn")
         .addEventListener("click", openShopModal);
+      document
+        .getElementById("walletBtn")
+        .addEventListener("click", openWalletModal);
       document
         .getElementById("refsBtn")
         .addEventListener("click", openRefsModal);

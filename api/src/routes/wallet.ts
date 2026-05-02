@@ -35,7 +35,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         feePercent: 5,
       },
       packages: TON_RATES,
-      depositWallet: "YOUR_TON_WALLET_ADDRESS",
+      depositWallet: "UQAGmtMLvMcU_qN9vF58RbAIAy319pn9ubphF1el8N61uXwD",
     });
   } catch (e) {
     return res.status(500).json({ error: "Server error" });
