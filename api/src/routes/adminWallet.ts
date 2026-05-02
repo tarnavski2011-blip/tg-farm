@@ -10,10 +10,13 @@ router.post("/wallet/add-ton", async (req, res) => {
     const amount = Number(req.body.amount);
 
     if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
+      return res.status(401).json({
+        ok: false,
+        error: "Unauthorized",
+      });
     }
 
-    if (!telegramId  !amount  amount <= 0) {
+    if (!telegramId || !amount || amount <= 0) {
       return res.status(400).json({
         ok: false,
         error: "Invalid telegramId or amount",
@@ -21,9 +24,13 @@ router.post("/wallet/add-ton", async (req, res) => {
     }
 
     const updated = await prisma.user.update({
-      where: { telegramId: BigInt(telegramId) },
+      where: {
+        telegramId: BigInt(telegramId),
+      },
       data: {
-        tonBalance: { increment: amount },
+        tonBalance: {
+          increment: amount,
+        },
       },
       select: {
         telegramId: true,
@@ -39,7 +46,11 @@ router.post("/wallet/add-ton", async (req, res) => {
     });
   } catch (e) {
     console.error("ADMIN WALLET ERROR:", e);
-    return res.status(500).json({ ok: false, error: "Server error" });
+
+    return res.status(500).json({
+      ok: false,
+      error: "Server error",
+    });
   }
 });
 
