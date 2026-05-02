@@ -20,6 +20,7 @@ model User {
   coins             Int      @default(0)
   diamonds          Int      @default(0)
   points            Int      @default(0)
+  tonBalance        Float    @default(0)
 
   chickenFeed       Int      @default(0)
   sheepFeed         Int      @default(0)
