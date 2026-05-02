@@ -591,7 +591,7 @@
           ><button class="menu-btn" id="wheelBtn">
             <span class="menu-emoji">🎰</span><span>Wheel</span></button
           ><button class="menu-btn" id="shopBtn">
-            <span class="menu-emoji">💎</span><span>Diamonds</span></button
+            <span class="menu-emoji">🛒</span><span>Магазин</span></button
           ><button class="menu-btn" id="boostBtn">
             <span class="menu-emoji">⚡</span><span>Boosters</span></button
           ><button class="menu-btn" id="refsBtn">
@@ -604,8 +604,8 @@
           >
             <span class="menu-emoji">🏆</span><span>Топ</span>
           </button>
-          <button class="menu-btn" id="walletBtn" onclick="openWalletModal()">
-            <span class="menu-emoji">👛</span><span>Wallet</span>
+          <button class="menu-btn" id="walletBtn">
+            <span class="menu-emoji">👛</span><span>Гаманець</span>
           </button>
           <button class="menu-btn" id="refreshBtn">
             <span class="menu-emoji">🔄</span><span>Оновити</span>
@@ -1673,27 +1673,70 @@
       }
 
       async function openShopModal() {
-        modalTitle.textContent = "💎 Diamonds за Stars";
+        modalTitle.textContent = "🛒 Магазин";
         modalTabs.style.display = "none";
+
+        const walletRes = await apiGet("/wallet");
+        const wallet = walletRes.ok ? walletRes.data || {} : {};
+
         modalBody.innerHTML = `
           <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">👛 TON Баланс</div>
+              <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
+              <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">⭐ Telegram Stars</div>
+              <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
+            </div>
+
             <div class="tile">
               <div class="tile-title">Малий пакет</div>
               <div class="tile-value">50 💎</div>
               <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
             </div>
+
             <div class="tile">
               <div class="tile-title">Середній пакет</div>
               <div class="tile-value">120 💎</div>
               <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
             </div>
-            <div class="tile">
+
+            <div class="tile full">
               <div class="tile-title">Великий пакет</div>
               <div class="tile-value">300 💎</div>
               <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">💎 Diamonds за TON</div>
+              <div class="note">Покупка йде з TON балансу у гаманці</div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">TON Small</div>
+              <div class="tile-value">50 💎</div>
+              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
+              <button class="buy-btn" data-wallet-buy="small">Купити</button>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">TON Medium</div>
+              <div class="tile-value">120 💎</div>
+              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
+              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">TON Large</div>
+              <div class="tile-value">700 💎</div>
+              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
+              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
             </div>
           </div>
         `;
@@ -1726,68 +1769,6 @@
             }
           };
         });
-      }
-      async function openWalletModal() {
-        modalTitle.textContent = "👛 Wallet";
-        modalTabs.style.display = "none";
-
-        const res = await apiGet("/wallet");
-        const data = res.data || {};
-
-        if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
-          showModal();
-          return;
-        }
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">💰 TON Баланс</div>
-              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Points</span><span>${data.points ?? 0}</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">📥 Поповнення</div>
-              <div class="note">Надішли TON на адресу:</div>
-              <input class="code-box" value="${data.depositWallet}" readonly />
-              <div class="note" style="margin-top:8px;">
-                Коментар: USER_${getMyTelegramId()}
-              </div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">💎 Small</div>
-              <div class="tile-value">50 Diamonds</div>
-              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">💎 Medium</div>
-              <div class="tile-value">120 Diamonds</div>
-              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">💎 Large</div>
-              <div class="tile-value">700 Diamonds</div>
-              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
-              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">⭐ Points → TON</div>
-              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-              <div class="note">Скоро буде доступно</div>
-            </div>
-          </div>
-        `;
-
-        showModal();
 
         modalBody.querySelectorAll("[data-wallet-buy]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1802,12 +1783,91 @@
             if (resp.ok) {
               showToast(`💎 +${resp.data?.diamondsReceived ?? 0}`);
               await loadState();
-              await openWalletModal();
+              await openShopModal();
             } else {
               showToast(resp.data?.error || "Помилка");
             }
           };
         });
+      }
+      async function openWalletModal() {
+        modalTitle.textContent = "👛 Гаманець";
+        modalTabs.style.display = "none";
+
+        const res = await apiGet("/wallet");
+        const data = res.data || {};
+
+        if (!res.ok) {
+          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
+          showModal();
+          return;
+        }
+
+        const points = data.points ?? currentState?.points ?? 0;
+        const availableTon = Math.floor(points / 100000);
+        const receiveTon =
+          availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">💰 TON Баланс</div>
+              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+              <div class="tile-row"><span>Points</span><span>${points}</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">📥 Поповнення TON</div>
+              <div class="note">Надішли TON на адресу:</div>
+              <input class="code-box" value="${data.depositWallet}" readonly />
+              <div class="note" style="margin-top:8px;">
+                Коментар платежу: USER_${getMyTelegramId()}
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">⭐ Points → TON</div>
+              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
+              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
+              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
+              <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
+              <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
+              <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
+              <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        const withdrawBtn = document.getElementById("requestWithdrawBtn");
+        if (withdrawBtn) {
+          withdrawBtn.onclick = async () => {
+            const tonAddress =
+              document.getElementById("withdrawTonAddress").value;
+            const pointsAmount = Number(
+              document.getElementById("withdrawPointsAmount").value,
+            );
+
+            const resp = await apiPost("/wallet/request-withdraw", {
+              tonAddress,
+              pointsAmount,
+            });
+
+            setResult(resp.data);
+
+            if (resp.ok) {
+              showToast("✅ Заявку створено");
+              await loadState();
+              await openWalletModal();
+            } else {
+              showToast(
+                resp.data?.error || "Потрібно підключити backend withdraw",
+              );
+            }
+          };
+        }
       }
 
       async function openRefsModal() {
