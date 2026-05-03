@@ -342,7 +342,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle("CHICKEN", animal.level)
+          (user!.vipUntil && user!.vipUntil > new Date()
+            ? Math.ceil(
+                getAnimalProducedPerCycle("CHICKEN", animal.level) * 1.2,
+              )
+            : getAnimalProducedPerCycle("CHICKEN", animal.level))
       );
     }, 0);
 
@@ -358,7 +362,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle("SHEEP", animal.level)
+          (user!.vipUntil && user!.vipUntil > new Date()
+            ? Math.ceil(getAnimalProducedPerCycle("SHEEP", animal.level) * 1.2)
+            : getAnimalProducedPerCycle("SHEEP", animal.level))
       );
     }, 0);
 
@@ -374,7 +380,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       return (
         sum +
         Math.min(fullCycles, feedCycles) *
-          getAnimalProducedPerCycle("COW", animal.level)
+          (user!.vipUntil && user!.vipUntil > new Date()
+            ? Math.ceil(getAnimalProducedPerCycle("COW", animal.level) * 1.2)
+            : getAnimalProducedPerCycle("COW", animal.level))
       );
     }, 0);
 
