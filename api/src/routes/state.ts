@@ -264,6 +264,26 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
+      const projectedStorage =
+        (user.storage?.eggs ?? 0) +
+        (user.storage?.wool ?? 0) +
+        (user.storage?.milk ?? 0) +
+        eggsAdd +
+        woolAdd +
+        milkAdd;
+
+      const storageCapacity = user.storage?.capacity ?? 1000;
+
+      if (!vipActiveNow && projectedStorage >= storageCapacity) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
+        continue;
+      }
+
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
