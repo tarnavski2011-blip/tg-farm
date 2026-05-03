@@ -50,10 +50,18 @@ const SHOP_ITEMS = {
   },
   vip_1d: {
     code: "vip_1d",
-    title: "VIP на 1 день",
+    title: "VIP на 24 години",
     currency: "diamonds",
-    price: 50,
+    price: 150,
     effect: "vip_1d",
+  },
+
+  vip_7d: {
+    code: "vip_7d",
+    title: "VIP на 7 днів",
+    currency: "diamonds",
+    price: 800,
+    effect: "vip_7d",
   },
 } as const;
 
@@ -160,11 +168,23 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
     }
 
     if (item.effect === "vip_1d") {
-      const base =
-        user.vipUntil && user.vipUntil.getTime() > now
-          ? user.vipUntil.getTime()
-          : now;
-      data.vipUntil = new Date(base + 24 * 60 * 60 * 1000);
+      data.vipUntil = new Date(
+        Math.max(
+          Date.now(),
+          user.vipUntil ? new Date(user.vipUntil).getTime() : 0,
+        ) +
+          1 * 24 * 60 * 60 * 1000,
+      );
+    }
+
+    if (item.effect === "vip_7d") {
+      data.vipUntil = new Date(
+        Math.max(
+          Date.now(),
+          user.vipUntil ? new Date(user.vipUntil).getTime() : 0,
+        ) +
+          7 * 24 * 60 * 60 * 1000,
+      );
     }
 
     const updated = await prisma.user.update({
