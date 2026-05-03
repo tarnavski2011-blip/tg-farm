@@ -8,9 +8,7 @@ export function getLevelReward(level: number) {
   let rewardCoins = level * 100;
   let rewardDiamonds = 0;
 
-  if (level % 10 === 0) {
-    rewardDiamonds += 15;
-  } else if (level % 5 === 0) {
+  if (level % 5 === 0) {
     rewardDiamonds += 5;
   }
 
