@@ -307,15 +307,58 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       );
     }
 
-    const currentTotal =
-      (user.storage?.eggs ?? 0) +
-      (user.storage?.wool ?? 0) +
-      (user.storage?.milk ?? 0);
+    let storageEggs = user.storage?.eggs ?? 0;
+    let storageWool = user.storage?.wool ?? 0;
+    let storageMilk = user.storage?.milk ?? 0;
+
+    let currentTotal = storageEggs + storageWool + storageMilk;
 
     const capacity = user.storage?.capacity ?? 1000;
-    const freeSpace = Math.max(0, capacity - currentTotal);
 
     let totalAdd = eggsAdd + woolAdd + milkAdd;
+
+    if (
+      vipActiveNow &&
+      currentTotal > 0 &&
+      currentTotal >= Math.floor(capacity * 0.95)
+    ) {
+      autoSellCoinsAdd =
+        storageEggs * SELL_PRICES.eggs +
+        storageWool * SELL_PRICES.wool +
+        storageMilk * SELL_PRICES.milk;
+
+      const autoSellChickenAnimals = user.animals.filter(
+        (a) => a.type === "CHICKEN",
+      );
+      const autoSellSheepAnimals = user.animals.filter(
+        (a) => a.type === "SHEEP",
+      );
+      const autoSellCowAnimals = user.animals.filter((a) => a.type === "COW");
+
+      const chickenLevel = autoSellChickenAnimals.length
+        ? Math.max(...autoSellChickenAnimals.map((a) => a.level))
+        : 0;
+
+      const sheepLevel = autoSellSheepAnimals.length
+        ? Math.max(...autoSellSheepAnimals.map((a) => a.level))
+        : 0;
+
+      const cowLevel = autoSellCowAnimals.length
+        ? Math.max(...autoSellCowAnimals.map((a) => a.level))
+        : 0;
+
+      autoSellPointsAdd =
+        storageEggs * sellPointsRate(chickenLevel, 1, 3) +
+        storageWool * sellPointsRate(sheepLevel, 2, 6) +
+        storageMilk * sellPointsRate(cowLevel, 3, 10);
+
+      storageEggs = 0;
+      storageWool = 0;
+      storageMilk = 0;
+      currentTotal = 0;
+    }
+
+    const freeSpace = Math.max(0, capacity - currentTotal);
 
     if (totalAdd > freeSpace && totalAdd > 0) {
       const ratio = freeSpace / totalAdd;
