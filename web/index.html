@@ -1140,7 +1140,7 @@
           setResult(res.data);
 
           if (res.ok) {
-            if (!handleXpResult(res.data?.levelUpData)) {
+            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
               showToast(
                 `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
               );
