@@ -27,6 +27,13 @@ const SHOP_ITEMS = {
     price: 250,
     effect: "cow_feed_10",
   },
+  feed_all_10: {
+    code: "feed_all_10",
+    title: "Feed All x10",
+    currency: "coins",
+    price: 420,
+    effect: "feed_all_10",
+  },
   boost_1h: {
     code: "boost_1h",
     title: "Boost x2 на 1 годину",
@@ -130,6 +137,12 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
       data.cowFeed = { increment: 10 };
     }
 
+    if (item.effect === "feed_all_10") {
+      data.chickenFeed = { increment: 10 };
+      data.sheepFeed = { increment: 10 };
+      data.cowFeed = { increment: 10 };
+    }
+
     if (item.effect === "boost_1h") {
       const base =
         user.boostUntil && user.boostUntil.getTime() > now
@@ -172,7 +185,8 @@ router.post("/buy", async (req: TgAuthedRequest, res) => {
     if (
       code === "chicken_feed_10" ||
       code === "sheep_feed_10" ||
-      code === "cow_feed_10"
+      code === "cow_feed_10" ||
+      code === "feed_all_10"
     ) {
       await addFeedBuyToday(user.id, 1);
     }

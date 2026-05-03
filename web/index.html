@@ -1001,8 +1001,8 @@
                                 <div class="tile-title">🐑 Вівці</div>
                                 <div class="tile-value">${animals.sheep ?? 0}</div>
                                 <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
                                 <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
@@ -1158,7 +1158,45 @@
         const feed = currentState?.feedStock || {};
         modalTitle.textContent = "🌾 Корм";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">👑 VIP Auto</div>
+              <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
+              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+              <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">🌾 Feed All</div>
+              <div class="tile-value">+10 / +10 / +10</div>
+              <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
+              <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">🐔 Корм для курки</div>
+              <div class="tile-value">${feed.chicken ?? 0} шт</div>
+              <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
+              <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">🐑 Корм для вівці</div>
+              <div class="tile-value">${feed.sheep ?? 0} шт</div>
+              <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
+              <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">🐄 Корм для корови</div>
+              <div class="tile-value">${feed.cow ?? 0} шт</div>
+              <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
+              <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
+            </div>
+          </div>
+        `;
         showModal();
         modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1166,7 +1204,9 @@
             const res = await apiPost("/shop/buy", { code });
             setResult(res.data);
             if (res.ok) {
-              showToast("Корм куплено");
+              showToast(
+                code === "feed_all_10" ? "🌾 Усі нагодовані" : "Корм куплено",
+              );
               await loadState();
               openFeedModal();
             } else {

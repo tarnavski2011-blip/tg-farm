@@ -19,6 +19,24 @@ const ANIMAL_PRODUCTION = {
   },
 } as const;
 
+const AUTO_FEED_PRICES = {
+  CHICKEN: 50,
+  SHEEP: 120,
+  COW: 250,
+} as const;
+
+const SELL_PRICES = {
+  eggs: 6,
+  wool: 15,
+  milk: 30,
+} as const;
+
+function sellPointsRate(level: number, lvl4Rate: number, lvl5Rate: number) {
+  if (level >= 5) return lvl5Rate;
+  if (level >= 4) return lvl4Rate;
+  return 0;
+}
+
 function secondsLeft(futureDate?: Date | null) {
   if (!futureDate) return 0;
   const diff = Math.floor((futureDate.getTime() - Date.now()) / 1000);
@@ -164,10 +182,15 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let woolAdd = 0;
     let milkAdd = 0;
     let pointsAdd = 0;
+    let autoFeedCoinsSpent = 0;
+    let autoSellCoinsAdd = 0;
+    let autoSellPointsAdd = 0;
+    const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
 
     let chickenFeedLeft = user.chickenFeed ?? 0;
     let sheepFeedLeft = user.sheepFeed ?? 0;
     let cowFeedLeft = user.cowFeed ?? 0;
+    let userCoinsLeft = user.coins ?? 0;
 
     const animalUpdates: Promise<any>[] = [];
 
@@ -187,6 +210,20 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       if (animal.type === "CHICKEN") feedAvailable = chickenFeedLeft;
       if (animal.type === "SHEEP") feedAvailable = sheepFeedLeft;
       if (animal.type === "COW") feedAvailable = cowFeedLeft;
+
+      if (feedAvailable <= 0 && vipActiveNow) {
+        const feedPrice = AUTO_FEED_PRICES[animal.type];
+
+        if (userCoinsLeft >= feedPrice) {
+          userCoinsLeft -= feedPrice;
+          autoFeedCoinsSpent += feedPrice;
+          feedAvailable = 10;
+
+          if (animal.type === "CHICKEN") chickenFeedLeft += 10;
+          if (animal.type === "SHEEP") sheepFeedLeft += 10;
+          if (animal.type === "COW") cowFeedLeft += 10;
+        }
+      }
 
       if (feedAvailable <= 0) {
         animalUpdates.push(
@@ -298,19 +335,27 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chickenFeed: chickenFeedLeft,
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
-        points: { increment: pointsAdd },
+        coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
+        points: { increment: pointsAdd + autoSellPointsAdd },
         lastSeenAt: now,
       },
     });
 
-    if (totalAdd > 0) {
+    if (autoSellCoinsAdd > 0 || totalAdd > 0) {
       await prisma.storage.update({
         where: { userId: user.id },
-        data: {
-          eggs: { increment: eggsAdd },
-          wool: { increment: woolAdd },
-          milk: { increment: milkAdd },
-        },
+        data:
+          autoSellCoinsAdd > 0
+            ? {
+                eggs: eggsAdd,
+                wool: woolAdd,
+                milk: milkAdd,
+              }
+            : {
+                eggs: { increment: eggsAdd },
+                wool: { increment: woolAdd },
+                milk: { increment: milkAdd },
+              },
       });
     }
 
@@ -489,6 +534,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           wool: woolAdd,
           milk: milkAdd,
           points: pointsAdd,
+          autoFeedCoinsSpent,
+          autoSellCoins: autoSellCoinsAdd,
+          autoSellPoints: autoSellPointsAdd,
         },
       },
     });
