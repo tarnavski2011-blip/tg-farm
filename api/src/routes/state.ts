@@ -237,14 +237,14 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       }
 
       if (user.vipUntil && user.vipUntil > now) {
-        produced = Math.floor(produced * 1.2);
+        produced = Math.ceil(produced * 1.2);
       }
 
       let earnedPoints =
         usedCycles * getAnimalPointsPerCycle(animal.type, animal.level);
 
       if (user.vipUntil && user.vipUntil > now) {
-        earnedPoints = Math.floor(earnedPoints * 1.2);
+        earnedPoints = Math.ceil(earnedPoints * 1.2);
       }
 
       pointsAdd += earnedPoints;
