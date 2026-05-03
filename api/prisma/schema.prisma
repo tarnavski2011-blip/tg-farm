@@ -65,6 +65,7 @@ model User {
   storage           Storage?
   achievementClaims AchievementClaim[]
   leaderboardRewards LeaderboardReward[]
+  withdrawals WithdrawalRequest[]
 }
 
 model Storage {
@@ -169,4 +170,17 @@ model LeaderboardReward {
 
   @@unique([period, type, userId])
   @@index([period, type])
+}
+
+model WithdrawalRequest {
+  id          Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+
+  pointsAmount Int
+  tonAmount    Float
+  tonAddress   String
+
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
 }
