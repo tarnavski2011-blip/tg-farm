@@ -1218,7 +1218,73 @@
       function openBoostersModal() {
         modalTitle.textContent = "⚡ Boosters";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">${currentState?.boost?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.boost?.active ? "green" : ""}" id="buyBoostBtn">${currentState?.boost?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">🤖 Auto Collect</div><div class="tile-value">${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}" id="buyAutoBtn">${currentState?.autoCollect?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">👑 VIP</div><div class="tile-value">${currentState?.vip?.active ? "ON" : "50 diamonds"}</div><button class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}" id="buyVipBtn">${currentState?.vip?.active ? "ON" : "Купити"}</button></div></div>`;
+        modalBody.innerHTML = `
+  <div class="modal-grid">
+
+    <div class="tile">
+      <div class="tile-title">⚡ Boost x2</div>
+      <div class="tile-value">
+        ${currentState?.boost?.active ? "ON" : "10 diamonds"}
+      </div>
+      <button
+        class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
+        id="buyBoostBtn"
+      >
+        ${currentState?.boost?.active ? "ON" : "Купити"}
+      </button>
+    </div>
+
+    <div class="tile">
+      <div class="tile-title">🤖 Auto Collect</div>
+      <div class="tile-value">
+        ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
+      </div>
+      <button
+        class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
+        id="buyAutoBtn"
+      >
+        ${currentState?.autoCollect?.active ? "ON" : "Купити"}
+      </button>
+    </div>
+
+    <div class="tile">
+      <div class="tile-title">👑 VIP 24h</div>
+      <div class="tile-value">
+        ${currentState?.vip?.active ? "ON" : "150 diamonds"}
+      </div>
+      <div class="tile-row">
+        <span>Auto Feed</span><span>ON</span>
+      </div>
+      <div class="tile-row">
+        <span>Auto Sell</span><span>ON</span>
+      </div>
+      <button
+        class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
+        id="buyVip1dBtn"
+      >
+        ${currentState?.vip?.active ? "ON" : "Купити"}
+      </button>
+    </div>
+
+    <div class="tile">
+      <div class="tile-title">👑 VIP 7d</div>
+      <div class="tile-value">800 diamonds</div>
+      <div class="tile-row">
+        <span>VIP Premium</span><span>7 днів</span>
+      </div>
+      <div class="tile-row">
+        <span>Економія</span><span>вигідніше</span>
+      </div>
+      <button
+        class="buy-btn gold"
+        id="buyVip7dBtn"
+      >
+        Купити
+      </button>
+    </div>
+
+  </div>
+`;
         showModal();
         document.getElementById("buyBoostBtn").onclick = async () => {
           if (currentState?.boost?.active) return;
