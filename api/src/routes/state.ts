@@ -186,6 +186,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let autoSellCoinsAdd = 0;
     let autoSellPointsAdd = 0;
     const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
+    const autoSellActiveNow =
+      vipActiveNow || !!(user.autoCollectUntil && user.autoCollectUntil > now);
 
     let chickenFeedLeft = user.chickenFeed ?? 0;
     let sheepFeedLeft = user.sheepFeed ?? 0;
@@ -264,26 +266,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
-      const projectedStorage =
-        (user.storage?.eggs ?? 0) +
-        (user.storage?.wool ?? 0) +
-        (user.storage?.milk ?? 0) +
-        eggsAdd +
-        woolAdd +
-        milkAdd;
-
-      const storageCapacity = user.storage?.capacity ?? 1000;
-
-      if (!vipActiveNow && projectedStorage >= storageCapacity) {
-        animalUpdates.push(
-          prisma.animal.update({
-            where: { id: animal.id },
-            data: { lastClaim: now },
-          }),
-        );
-        continue;
-      }
-
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
@@ -338,7 +320,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let totalAdd = eggsAdd + woolAdd + milkAdd;
 
     if (
-      vipActiveNow &&
+      autoSellActiveNow &&
       currentTotal > 0 &&
       currentTotal >= Math.floor(capacity * 0.95)
     ) {
