@@ -304,7 +304,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       animalUpdates.push(
         prisma.animal.update({
           where: { id: animal.id },
-          data: { lastClaim: newLastClaim },
+          data: {
+            lastClaim: newLastClaim,
+            lastFedAt: now,
+          },
         }),
       );
     }
