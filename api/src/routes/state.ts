@@ -525,6 +525,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chicken: chickenAnimals.length,
         sheep: sheepAnimals.length,
         cow: cowAnimals.length,
+
         chickenLevel: chickenAnimals.length
           ? Math.max(...chickenAnimals.map((a) => a.level))
           : 0,
@@ -533,6 +534,96 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           : 0,
         cowLevel: cowAnimals.length
           ? Math.max(...cowAnimals.map((a) => a.level))
+          : 0,
+
+        chickenLife: chickenAnimals.length
+          ? Math.round(
+              chickenAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).lifePercent,
+                0,
+              ) / chickenAnimals.length,
+            )
+          : 0,
+
+        sheepLife: sheepAnimals.length
+          ? Math.round(
+              sheepAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).lifePercent,
+                0,
+              ) / sheepAnimals.length,
+            )
+          : 0,
+
+        cowLife: cowAnimals.length
+          ? Math.round(
+              cowAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).lifePercent,
+                0,
+              ) / cowAnimals.length,
+            )
+          : 0,
+
+        chickenEfficiency: chickenAnimals.length
+          ? Math.round(
+              chickenAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).efficiencyPercent,
+                0,
+              ) / chickenAnimals.length,
+            )
+          : 0,
+
+        sheepEfficiency: sheepAnimals.length
+          ? Math.round(
+              sheepAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).efficiencyPercent,
+                0,
+              ) / sheepAnimals.length,
+            )
+          : 0,
+
+        cowEfficiency: cowAnimals.length
+          ? Math.round(
+              cowAnimals.reduce(
+                (sum, a) =>
+                  sum +
+                  getAnimalEfficiency({
+                    type: a.type,
+                    bornAt: a.bornAt,
+                    lastFedAt: a.lastFedAt,
+                  }).efficiencyPercent,
+                0,
+              ) / cowAnimals.length,
+            )
           : 0,
       },
 
