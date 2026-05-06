@@ -195,8 +195,24 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let userCoinsLeft = user.coins ?? 0;
 
     const animalUpdates: Promise<any>[] = [];
+    const deadAnimalDeletes: Promise<any>[] = [];
 
     for (const animal of user.animals) {
+      const preCheckStats = getAnimalEfficiency({
+        type: animal.type,
+        bornAt: animal.bornAt,
+        lastFedAt: animal.lastFedAt,
+      });
+
+      if (preCheckStats.lifePercent <= 0) {
+        deadAnimalDeletes.push(
+          prisma.animal.delete({
+            where: { id: animal.id },
+          }),
+        );
+        continue;
+      }
+
       const cfg = ANIMAL_PRODUCTION[animal.type];
       const passedSec = Math.floor(
         (now.getTime() - animal.lastClaim.getTime()) / 1000,
@@ -256,13 +272,16 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         lastFedAt: animal.lastFedAt,
       });
 
-      if (animalStats.lifePercent <= 0 || animalStats.efficiencyPercent <= 0) {
-        animalUpdates.push(
-          prisma.animal.update({
+      if (animalStats.lifePercent <= 0) {
+        deadAnimalDeletes.push(
+          prisma.animal.delete({
             where: { id: animal.id },
-            data: { lastClaim: now },
           }),
         );
+        continue;
+      }
+
+      if (animalStats.efficiencyPercent <= 0) {
         continue;
       }
 
@@ -306,7 +325,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           where: { id: animal.id },
           data: {
             lastClaim: newLastClaim,
-            lastFedAt: now,
           },
         }),
       );
@@ -373,8 +391,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       totalAdd = eggsAdd + woolAdd + milkAdd;
     }
 
-    if (animalUpdates.length > 0) {
-      await Promise.all(animalUpdates);
+    if (animalUpdates.length > 0 || deadAnimalDeletes.length > 0) {
+      await Promise.all([...animalUpdates, ...deadAnimalDeletes]);
     }
 
     await prisma.user.update({
@@ -585,6 +603,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           autoFeedCoinsSpent,
           autoSellCoins: autoSellCoinsAdd,
           autoSellPoints: autoSellPointsAdd,
+          deadAnimalsRemoved: deadAnimalDeletes.length,
         },
       },
     });
