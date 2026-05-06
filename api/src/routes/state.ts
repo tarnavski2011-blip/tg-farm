@@ -186,6 +186,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let autoSellCoinsAdd = 0;
     let autoSellPointsAdd = 0;
     const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
+    const autoSellActiveNow =
+      vipActiveNow || !!(user.autoCollectUntil && user.autoCollectUntil > now);
 
     let chickenFeedLeft = user.chickenFeed ?? 0;
     let sheepFeedLeft = user.sheepFeed ?? 0;
@@ -226,6 +228,12 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       }
 
       if (feedAvailable <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
         continue;
       }
 
@@ -233,13 +241,19 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
 
       if (usedCycles <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
+            where: { id: animal.id },
+            data: { lastClaim: now },
+          }),
+        );
         continue;
       }
 
       const animalStats = getAnimalEfficiency({
         type: animal.type,
         bornAt: animal.bornAt,
-        lastFedAt: now,
+        lastFedAt: animal.lastFedAt,
       });
 
       if (animalStats.lifePercent <= 0 || animalStats.efficiencyPercent <= 0) {
@@ -290,10 +304,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       animalUpdates.push(
         prisma.animal.update({
           where: { id: animal.id },
-          data: {
-            lastClaim: newLastClaim,
-            lastFedAt: now,
-          },
+          data: { lastClaim: newLastClaim },
         }),
       );
     }
@@ -309,7 +320,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let totalAdd = eggsAdd + woolAdd + milkAdd;
 
     if (
-      vipActiveNow &&
+      autoSellActiveNow &&
       currentTotal > 0 &&
       currentTotal >= Math.floor(capacity * 0.95)
     ) {
