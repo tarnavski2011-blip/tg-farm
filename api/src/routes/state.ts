@@ -228,12 +228,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       }
 
       if (feedAvailable <= 0) {
-        animalUpdates.push(
-          prisma.animal.update({
-            where: { id: animal.id },
-            data: { lastClaim: now },
-          }),
-        );
         continue;
       }
 
@@ -241,12 +235,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
 
       if (usedCycles <= 0) {
-        animalUpdates.push(
-          prisma.animal.update({
-            where: { id: animal.id },
-            data: { lastClaim: now },
-          }),
-        );
         continue;
       }
 
