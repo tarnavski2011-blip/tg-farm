@@ -537,21 +537,23 @@
         line-height: 1.4;
       }
 
-      /* PREMIUM UI REDESIGN OVERRIDES */
+      /* CARTOON FARM PREMIUM DESIGN */
       :root {
-        --premium-bg: #07111f;
-        --premium-card: rgba(15, 23, 42, 0.86);
-        --premium-tile: rgba(30, 41, 59, 0.92);
-        --premium-blue: #3b82f6;
-        --premium-blue-2: #60a5fa;
-        --premium-green: #22c55e;
-        --premium-gold: #f59e0b;
-        --premium-text: #f8fafc;
-        --premium-muted: #94a3b8;
+        --farm-bg: #071323;
+        --farm-panel: rgba(11, 22, 38, 0.88);
+        --farm-card: rgba(19, 36, 58, 0.92);
+        --farm-border: rgba(125, 211, 252, 0.22);
+        --farm-blue: #1797ff;
+        --farm-blue2: #63c7ff;
+        --farm-green: #35d46b;
+        --farm-gold: #ffb321;
+        --farm-orange: #ff8a00;
+        --farm-text: #f8fafc;
+        --farm-muted: #b6c7dc;
       }
 
       html {
-        background: var(--premium-bg);
+        background: var(--farm-bg);
       }
 
       body {
@@ -559,398 +561,411 @@
         overscroll-behavior: none;
         background:
           radial-gradient(
-            circle at 15% 5%,
-            rgba(96, 165, 250, 0.28),
-            transparent 28%
-          ),
-          radial-gradient(
-            circle at 85% 10%,
-            rgba(34, 197, 94, 0.16),
-            transparent 24%
-          ),
-          radial-gradient(
-            circle at 50% 95%,
-            rgba(245, 158, 11, 0.12),
+            circle at 50% -10%,
+            rgba(56, 189, 248, 0.38),
             transparent 30%
           ),
-          linear-gradient(180deg, #07111f 0%, #0f172a 46%, #08111f 100%) !important;
-        overflow-x: hidden;
+          linear-gradient(180deg, #071323 0%, #0b1a2f 45%, #07111f 100%) !important;
       }
 
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background-image:
-          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-          linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.035) 1px,
-            transparent 1px
-          );
-        background-size: 34px 34px;
-        mask-image: linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 0.55),
-          transparent 70%
-        );
+      .app {
+        padding-bottom: 96px !important;
       }
 
       .card {
-        position: relative;
-        overflow: hidden;
-        border-radius: 28px !important;
         background: linear-gradient(
           180deg,
-          rgba(30, 41, 59, 0.86),
-          rgba(15, 23, 42, 0.86)
+          rgba(22, 43, 69, 0.96),
+          rgba(8, 19, 34, 0.95)
         ) !important;
-        border: 1px solid rgba(148, 163, 184, 0.17) !important;
+        border: 1px solid var(--farm-border) !important;
+        border-radius: 26px !important;
         box-shadow:
-          0 18px 55px rgba(0, 0, 0, 0.34),
-          inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-        backdrop-filter: blur(14px);
-      }
-
-      .card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background: radial-gradient(
-          circle at 15% 0%,
-          rgba(96, 165, 250, 0.12),
-          transparent 32%
-        );
-      }
-
-      .top-row,
-      .stats-grid,
-      .section-title,
-      .status-line,
-      .tap-wrap,
-      .menu-grid {
-        position: relative;
-        z-index: 1;
+          0 18px 48px rgba(0, 0, 0, 0.38),
+          inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
       }
 
       .title {
-        font-size: 29px !important;
-        font-weight: 950 !important;
-        letter-spacing: -0.7px;
+        color: #ffffff !important;
+        font-size: 27px !important;
+        font-weight: 1000 !important;
+        text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35);
       }
 
       .subtitle {
-        font-weight: 700;
+        color: var(--farm-muted) !important;
+        font-weight: 800 !important;
       }
 
       .level-badge {
-        border-radius: 22px !important;
-        font-weight: 950 !important;
-        background: linear-gradient(
-          135deg,
-          rgba(37, 99, 235, 0.95),
-          rgba(96, 165, 250, 0.95)
-        ) !important;
+        border-radius: 20px !important;
+        background: linear-gradient(135deg, #00a3ff, #0066ff) !important;
         box-shadow:
-          0 14px 28px rgba(37, 99, 235, 0.35),
-          inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-        border: 1px solid rgba(147, 197, 253, 0.25);
+          0 12px 28px rgba(0, 132, 255, 0.35),
+          inset 0 2px 0 rgba(255, 255, 255, 0.24) !important;
+        font-weight: 1000 !important;
       }
 
       .stat-box {
-        border-radius: 20px !important;
-        background: linear-gradient(
-          180deg,
-          rgba(30, 41, 59, 0.94),
-          rgba(15, 23, 42, 0.94)
-        ) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        background: linear-gradient(180deg, #162b45, #0c1a2c) !important;
+        border: 1px solid rgba(125, 211, 252, 0.18) !important;
+        border-radius: 18px !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
       .stat-label {
-        font-weight: 900;
-        letter-spacing: 0.3px;
+        color: #99b7d5 !important;
+        font-weight: 900 !important;
         text-transform: uppercase;
+        letter-spacing: 0.25px;
       }
 
       .stat-value {
-        font-weight: 950 !important;
+        font-weight: 1000 !important;
+        color: #fff !important;
       }
 
       .status-line {
-        padding: 10px 12px;
+        background: rgba(4, 12, 25, 0.58) !important;
+        border: 1px solid rgba(125, 211, 252, 0.14);
+        border-radius: 16px !important;
+        color: #dbeafe !important;
+      }
+
+      .hero-farm {
+        padding: 14px !important;
+        overflow: hidden;
+      }
+
+      .hero-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 3;
+      }
+
+      .hero-sub {
+        color: var(--farm-muted);
+        font-size: 12px;
+        font-weight: 800;
+        margin-top: -6px;
+      }
+
+      .hero-vip {
+        background: linear-gradient(135deg, #ffca28, #ff7a00);
+        color: #fff;
+        padding: 9px 12px;
         border-radius: 16px;
-        background: rgba(15, 23, 42, 0.55);
-        border: 1px solid rgba(148, 163, 184, 0.12);
+        font-weight: 1000;
+        box-shadow: 0 10px 22px rgba(255, 154, 0, 0.28);
       }
 
-      .farm-scene {
-        min-height: 150px;
-        padding: 0 !important;
-        background:
-          linear-gradient(
-            180deg,
-            rgba(59, 130, 246, 0.22),
-            rgba(34, 197, 94, 0.12)
-          ),
-          linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(8, 17, 31, 0.9)) !important;
+      .farm-world {
+        position: relative;
+        height: 250px;
+        border-radius: 28px;
+        overflow: hidden;
+        margin: 12px 0;
+        background: linear-gradient(
+          180deg,
+          #5ecbff 0%,
+          #9ee7ff 44%,
+          #57c85d 45%,
+          #1e8b3f 100%
+        );
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.35),
+          0 18px 38px rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.18);
       }
 
-      .sun {
+      .sky-sun {
         position: absolute;
-        top: 18px;
-        right: 22px;
-        width: 44px;
-        height: 44px;
+        top: 22px;
+        right: 24px;
+        width: 54px;
+        height: 54px;
         border-radius: 50%;
-        background: radial-gradient(circle, #fde68a, #f59e0b);
-        box-shadow: 0 0 38px rgba(245, 158, 11, 0.55);
-        animation: pulseSun 3s ease-in-out infinite;
+        background: radial-gradient(circle, #fff4a3, #ffc107 58%, #ff8a00);
+        box-shadow: 0 0 42px rgba(255, 193, 7, 0.72);
+        animation: sunPulse 3s infinite ease-in-out;
       }
 
-      @keyframes pulseSun {
+      @keyframes sunPulse {
         50% {
           transform: scale(1.08);
-          box-shadow: 0 0 48px rgba(245, 158, 11, 0.75);
         }
       }
 
-      .cloud {
+      .farm-cloud {
         position: absolute;
-        width: 70px;
-        height: 24px;
-        background: rgba(226, 232, 240, 0.18);
+        top: 38px;
+        width: 78px;
+        height: 26px;
         border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
+        animation: cloudMove 7s infinite ease-in-out;
       }
 
-      .cloud::before,
-      .cloud::after {
+      .farm-cloud::before,
+      .farm-cloud::after {
         content: "";
         position: absolute;
-        background: inherit;
         border-radius: 50%;
+        background: inherit;
       }
 
-      .cloud::before {
-        width: 34px;
-        height: 34px;
-        top: -16px;
+      .farm-cloud::before {
+        width: 36px;
+        height: 36px;
         left: 12px;
+        top: -17px;
       }
 
-      .cloud::after {
-        width: 28px;
-        height: 28px;
-        top: -12px;
+      .farm-cloud::after {
+        width: 32px;
+        height: 32px;
         right: 12px;
+        top: -14px;
       }
 
-      .cloud-one {
-        left: 30px;
-        top: 36px;
-        animation: drift 7s ease-in-out infinite;
+      .farm-cloud.c1 {
+        left: 24px;
       }
 
-      .cloud-two {
+      .farm-cloud.c2 {
         left: 160px;
-        top: 18px;
-        width: 58px;
-        opacity: 0.72;
-        animation: drift 8s ease-in-out infinite reverse;
+        top: 24px;
+        width: 62px;
+        opacity: 0.7;
+        animation-delay: 0.6s;
       }
 
-      @keyframes drift {
+      @keyframes cloudMove {
         50% {
           transform: translateX(16px);
         }
       }
 
-      .farm-land {
+      .farm-bg-hill {
         position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        left: -40px;
+        right: -40px;
+        bottom: 66px;
         height: 82px;
-        background:
-          repeating-linear-gradient(
-            135deg,
-            rgba(34, 197, 94, 0.22) 0 12px,
-            rgba(22, 163, 74, 0.16) 12px 24px
-          ),
-          linear-gradient(
-            180deg,
-            rgba(34, 197, 94, 0.08),
-            rgba(22, 101, 52, 0.36)
-          );
-        border-top: 1px solid rgba(134, 239, 172, 0.2);
+        border-radius: 50% 50% 0 0;
+        background: linear-gradient(180deg, #55b94f, #238b3b);
       }
 
-      .barn {
+      .farm-barn {
         position: absolute;
+        left: 58px;
+        bottom: 76px;
+        font-size: 78px;
+        filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.25));
+      }
+
+      .farm-windmill {
+        position: absolute;
+        right: 76px;
+        bottom: 100px;
+        font-size: 46px;
+        filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.2));
+      }
+
+      .farm-animal {
+        position: absolute;
+        font-size: 54px;
+        filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.28));
+        animation: animalBounce 2.4s infinite ease-in-out;
+      }
+
+      .farm-animal.chicken {
         left: 28px;
-        bottom: 30px;
-        font-size: 48px;
-        filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+        bottom: 25px;
+        font-size: 72px;
       }
 
-      .animal-float {
-        position: absolute;
-        bottom: 18px;
-        font-size: 28px;
-        filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3));
-        animation: animalBob 2.4s ease-in-out infinite;
+      .farm-animal.sheep {
+        left: 210px;
+        bottom: 22px;
+        animation-delay: 0.25s;
       }
 
-      .a1 {
-        left: 145px;
-      }
-      .a2 {
-        left: 230px;
-        animation-delay: 0.35s;
-      }
-      .a3 {
-        left: 320px;
-        animation-delay: 0.7s;
+      .farm-animal.cow {
+        right: 46px;
+        bottom: 38px;
+        font-size: 66px;
+        animation-delay: 0.5s;
       }
 
-      @keyframes animalBob {
+      @keyframes animalBounce {
         50% {
           transform: translateY(-7px);
         }
       }
 
-      .farm-caption {
+      .coin-pop {
         position: absolute;
-        left: 18px;
-        top: 14px;
-        z-index: 1;
-        font-weight: 950;
-        color: #f8fafc;
-        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
-      }
-
-      .farm-caption span {
-        display: block;
-        margin-top: 4px;
-        color: #cbd5e1;
-        font-size: 12px;
-        font-weight: 800;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        background: rgba(91, 49, 0, 0.55);
+        color: white;
+        padding: 9px 18px;
+        border-radius: 999px;
+        font-size: 24px;
+        font-weight: 1000;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
       }
 
       .tap-btn {
-        width: 205px !important;
-        height: 205px !important;
-        font-weight: 1000 !important;
+        width: 156px !important;
+        height: 156px !important;
+        font-size: 29px !important;
         background: radial-gradient(
-          circle at 32% 22%,
-          #dbeafe 0,
-          #93c5fd 22%,
-          #3b82f6 55%,
-          #1d4ed8 100%
+          circle at 35% 20%,
+          #fff7b5,
+          #ffd23f 38%,
+          #ff9e00 73%,
+          #d97706
         ) !important;
+        border: 6px solid rgba(255, 255, 255, 0.24) !important;
+        color: #fff !important;
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.5);
         box-shadow:
-          0 26px 60px rgba(37, 99, 235, 0.42),
-          0 0 0 12px rgba(59, 130, 246, 0.08),
-          inset 0 9px 18px rgba(255, 255, 255, 0.3),
-          inset 0 -12px 24px rgba(15, 23, 42, 0.22) !important;
+          0 18px 42px rgba(255, 158, 0, 0.38),
+          inset 0 6px 16px rgba(255, 255, 255, 0.34),
+          inset 0 -10px 18px rgba(120, 53, 15, 0.24) !important;
       }
 
       .tap-btn:active {
-        transform: scale(0.955) !important;
-        filter: brightness(1.08);
+        transform: scale(0.94) !important;
+      }
+
+      .tap-hint {
+        color: #dbeafe !important;
+        font-weight: 900 !important;
+      }
+
+      .menu-grid {
+        gap: 11px !important;
       }
 
       .menu-btn {
-        border-radius: 24px !important;
-        min-height: 100px !important;
-        font-weight: 950 !important;
-        background: linear-gradient(
-          180deg,
-          rgba(30, 41, 59, 0.94),
-          rgba(15, 23, 42, 0.88)
-        ) !important;
+        background: linear-gradient(180deg, #17314f, #0c1d33) !important;
+        border: 1px solid rgba(125, 211, 252, 0.18) !important;
+        border-radius: 22px !important;
+        min-height: 96px !important;
         box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.05),
-          0 10px 24px rgba(0, 0, 0, 0.18);
-        transition:
-          transform 0.12s ease,
-          border-color 0.12s ease;
+          0 12px 26px rgba(0, 0, 0, 0.25),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        font-weight: 1000 !important;
       }
 
       .menu-btn:active {
-        transform: translateY(2px) scale(0.98);
+        transform: scale(0.97);
       }
 
-      .menu-btn:hover {
-        border-color: rgba(96, 165, 250, 0.36);
+      .menu-emoji {
+        font-size: 33px !important;
+        filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.25));
       }
 
-      .modal {
-        backdrop-filter: blur(8px);
-      }
-
-      .modal-sheet {
-        border-top-left-radius: 30px !important;
-        border-top-right-radius: 30px !important;
-        background:
-          radial-gradient(
-            circle at top,
-            rgba(59, 130, 246, 0.13),
-            transparent 34%
-          ),
-          #0f172a !important;
-        box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);
-      }
-
-      .tile {
-        border-radius: 22px !important;
-        background: linear-gradient(
-          180deg,
-          rgba(30, 41, 59, 0.94),
-          rgba(15, 23, 42, 0.92)
-        ) !important;
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.05),
-          0 12px 26px rgba(0, 0, 0, 0.17);
-      }
-
-      .tile::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background: radial-gradient(
-          circle at 10% 0%,
-          rgba(96, 165, 250, 0.09),
-          transparent 34%
-        );
-      }
-
-      .tile-title,
-      .tile-value,
-      .tile-row,
+      .main-btn,
       .buy-btn {
-        position: relative;
-      }
-
-      .buy-btn,
-      .main-btn {
-        font-weight: 950 !important;
+        background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
+        border-radius: 17px !important;
+        font-weight: 1000 !important;
         box-shadow:
-          0 12px 26px rgba(37, 99, 235, 0.24),
-          inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-      }
-
-      .buy-btn.gold {
-        background: linear-gradient(135deg, #b45309, #f59e0b) !important;
-        box-shadow: 0 10px 22px rgba(245, 158, 11, 0.22) !important;
+          0 12px 24px rgba(14, 165, 233, 0.24),
+          inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
       }
 
       .buy-btn.green {
-        background: linear-gradient(135deg, #15803d, #22c55e) !important;
-        box-shadow: 0 10px 22px rgba(34, 197, 94, 0.2) !important;
+        background: linear-gradient(135deg, #16a34a, #4ade80) !important;
+      }
+
+      .buy-btn.gold {
+        background: linear-gradient(135deg, #f97316, #facc15) !important;
+      }
+
+      .modal {
+        backdrop-filter: blur(9px);
+      }
+
+      .modal-sheet {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(14, 165, 233, 0.17),
+            transparent 28%
+          ),
+          linear-gradient(180deg, #10233b, #081524) !important;
+        border: 1px solid rgba(125, 211, 252, 0.2) !important;
+        border-top-left-radius: 30px !important;
+        border-top-right-radius: 30px !important;
+        box-shadow: 0 -24px 56px rgba(0, 0, 0, 0.42);
+      }
+
+      .modal-title {
+        font-weight: 1000 !important;
+        font-size: 24px !important;
+      }
+
+      .close-btn {
+        background: linear-gradient(180deg, #1f3d60, #10233b) !important;
+        border-radius: 18px !important;
+      }
+
+      .tab-btn,
+      .quest-tab-btn {
+        border-radius: 17px !important;
+        background: #17314f !important;
+        font-weight: 1000 !important;
+      }
+
+      .tab-btn.active,
+      .quest-tab-btn.active {
+        background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
+      }
+
+      .tile {
+        background: linear-gradient(180deg, #17314f, #0d1e34) !important;
+        border: 1px solid rgba(125, 211, 252, 0.17) !important;
+        border-radius: 22px !important;
+        box-shadow:
+          0 12px 24px rgba(0, 0, 0, 0.23),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .tile-title {
+        color: #bdd7ef !important;
+        font-weight: 900 !important;
+        font-size: 14px !important;
+      }
+
+      .tile-value {
+        font-size: 22px !important;
+        font-weight: 1000 !important;
+        color: #fff !important;
+      }
+
+      .tile-row {
+        color: #cbd5e1 !important;
+        font-weight: 800 !important;
+      }
+
+      .tile-row span:last-child {
+        color: #fff;
+        font-weight: 1000;
+      }
+
+      /* bottom-like navigation feeling */
+      .card:last-of-type {
+        border-color: rgba(14, 165, 233, 0.24) !important;
       }
     </style>
   </head>
@@ -984,26 +999,32 @@
         </div>
         <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
       </div>
+      <div class="hero-farm card">
+        <div class="hero-top">
+          <div>
+            <div class="section-title">🌾 Твоя ферма</div>
+            <div class="hero-sub">
+              Збирай ресурси • розвивай тварин • заробляй
+            </div>
+          </div>
+          <div class="hero-vip">👑 VIP</div>
+        </div>
 
-      <div class="farm-scene card">
-        <div class="sun"></div>
-        <div class="cloud cloud-one"></div>
-        <div class="cloud cloud-two"></div>
-        <div class="farm-land">
-          <div class="barn">🏡</div>
-          <div class="animal-float a1">🐔</div>
-          <div class="animal-float a2">🐑</div>
-          <div class="animal-float a3">🐄</div>
+        <div class="farm-world">
+          <div class="sky-sun"></div>
+          <div class="farm-cloud c1"></div>
+          <div class="farm-cloud c2"></div>
+          <div class="farm-bg-hill"></div>
+          <div class="farm-barn">🏠</div>
+          <div class="farm-windmill">🌾</div>
+          <div class="farm-animal chicken">🐔</div>
+          <div class="farm-animal sheep">🐑</div>
+          <div class="farm-animal cow">🐄</div>
+          <div class="coin-pop">+1 🪙</div>
         </div>
-        <div class="farm-caption">
-          <div>🌾 Premium Farm</div>
-          <span>Grow • Sell • Upgrade • Earn</span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-title">💰 Тапай і заробляй</div>
+
         <div class="tap-wrap">
-          <button class="tap-btn" id="tapBtn">TAP</button>
+          <button class="tap-btn" id="tapBtn">TAP!</button>
           <div class="tap-hint">1 тап = 1 монета</div>
         </div>
         <div class="status-line" id="status">ok</div>
