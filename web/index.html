@@ -2,7 +2,10 @@
 <html lang="uk">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>My Farm Clicker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -14,6 +17,8 @@
         margin: 0;
         font-family: Arial, sans-serif;
         color: #e5e7eb;
+        touch-action: manipulation;
+        overscroll-behavior: none;
         background:
           radial-gradient(
             circle at top,
@@ -858,6 +863,19 @@
           showToast(res.data?.error || "Помилка");
         }
       }
+      async function healAnimals(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          renderAnimalsOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
+      }
+
       function renderAnimalsBuy() {
         tabBuyBtn.classList.add("active");
         tabOwnedBtn.classList.remove("active");
@@ -982,45 +1000,56 @@
           return Math.floor(perHourOne * count);
         }
 
+        function healButton(type, count, price) {
+          if (!count || count <= 0) {
+            return `<button class="buy-btn gold" disabled>Немає тварин</button>`;
+          }
+
+          return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${count * price} coins)</button>`;
+        }
+
         modalBody.innerHTML = `
                             <div class="modal-grid">
                               <div class="tile">
                                 <div class="tile-title">🐔 Курки</div>
                                 <div class="tile-value">${animals.chicken ?? 0}</div>
                                 <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${(animals.chicken ?? 0) > 0 ? `${animals.chickenLife ?? 0}%` : "-"}</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${(animals.chicken ?? 0) > 0 ? `${animals.chickenEfficiency ?? 0}%` : "-"}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
                                 <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.chicken ?? 0)}
+                                ${healButton("CHICKEN", animals.chicken ?? 0, 50)}
                               </div>
 
                               <div class="tile">
                                 <div class="tile-title">🐑 Вівці</div>
                                 <div class="tile-value">${animals.sheep ?? 0}</div>
                                 <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${(animals.sheep ?? 0) > 0 ? `${animals.sheepLife ?? 0}%` : "-"}</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${(animals.sheep ?? 0) > 0 ? `${animals.sheepEfficiency ?? 0}%` : "-"}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
                                 <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.sheep ?? 0)}
+                                ${healButton("SHEEP", animals.sheep ?? 0, 150)}
                               </div>
 
                               <div class="tile">
                                 <div class="tile-title">🐄 Корови</div>
                                 <div class="tile-value">${animals.cow ?? 0}</div>
                                 <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${(animals.cow ?? 0) > 0 ? `${animals.cowLife ?? 0}%` : "-"}</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${(animals.cow ?? 0) > 0 ? `${animals.cowEfficiency ?? 0}%` : "-"}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
                                 <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.cow ?? 0)}
+                                ${healButton("COW", animals.cow ?? 0, 300)}
                               </div>
 
                               <div class="tile">
@@ -1028,9 +1057,17 @@
                                 <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
                                 <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
                                 <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                                <button class="buy-btn gold" data-heal="ALL">❤️ Лікувати всіх</button>
                               </div>
                             </div>
                           `;
+
+        modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
+          btn.onclick = async () => {
+            const type = btn.getAttribute("data-heal");
+            await healAnimals(type);
+          };
+        });
       }
       function renderAnimalsUpgrade() {
         openLabModal();

@@ -29,6 +29,7 @@ import adminLeaderboardRewardsRouter from "./routes/adminLeaderboardRewards";
 import adminWalletRouter from "./routes/adminWallet";
 import walletWithdrawRouter from "./routes/walletWithdraw";
 import adminWithdrawalsRouter from "./routes/adminWithdrawals";
+import healRouter from "./routes/heal";
 
 const app = express();
 
@@ -75,6 +76,7 @@ app.use("/admin/leaderboard-rewards", adminLeaderboardRewardsRouter);
 app.use("/admin", adminWalletRouter);
 app.use("/api/wallet/request-withdraw", walletWithdrawRouter);
 app.use("/admin", adminWithdrawalsRouter);
+app.use("/api/heal", healRouter);
 
 // test routes
 app.use("/test-payment", testPaymentRouter);
