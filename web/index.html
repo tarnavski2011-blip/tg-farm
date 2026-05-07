@@ -537,23 +537,21 @@
         line-height: 1.4;
       }
 
-      /* CARTOON FARM PREMIUM DESIGN */
+      /* PREMIUM REFERENCE FARM GAME STYLE */
       :root {
-        --farm-bg: #071323;
-        --farm-panel: rgba(11, 22, 38, 0.88);
-        --farm-card: rgba(19, 36, 58, 0.92);
-        --farm-border: rgba(125, 211, 252, 0.22);
-        --farm-blue: #1797ff;
-        --farm-blue2: #63c7ff;
-        --farm-green: #35d46b;
-        --farm-gold: #ffb321;
-        --farm-orange: #ff8a00;
-        --farm-text: #f8fafc;
-        --farm-muted: #b6c7dc;
+        --game-bg: #06111f;
+        --game-panel: rgba(8, 20, 36, 0.92);
+        --game-line: rgba(80, 170, 255, 0.28);
+        --game-blue: #0ea5ff;
+        --game-green: #37d34a;
+        --game-gold: #ffbe1b;
+        --game-orange: #ff8a00;
+        --game-text: #ffffff;
+        --game-muted: #b8cbe3;
       }
 
       html {
-        background: var(--farm-bg);
+        background: var(--game-bg);
       }
 
       body {
@@ -561,472 +559,579 @@
         overscroll-behavior: none;
         background:
           radial-gradient(
-            circle at 50% -10%,
-            rgba(56, 189, 248, 0.38),
-            transparent 30%
+            circle at 50% -15%,
+            rgba(36, 145, 255, 0.34),
+            transparent 34%
           ),
-          linear-gradient(180deg, #071323 0%, #0b1a2f 45%, #07111f 100%) !important;
+          linear-gradient(180deg, #06111f 0%, #0a1b2d 46%, #06111f 100%) !important;
+        color: var(--game-text);
+        overflow-x: hidden;
       }
 
       .app {
-        padding-bottom: 96px !important;
+        max-width: 480px;
+        padding: 14px 12px 110px !important;
       }
 
-      .card {
+      .game-home {
+        border-radius: 30px;
         background: linear-gradient(
           180deg,
-          rgba(22, 43, 69, 0.96),
-          rgba(8, 19, 34, 0.95)
-        ) !important;
-        border: 1px solid var(--farm-border) !important;
-        border-radius: 26px !important;
+          rgba(16, 38, 64, 0.96),
+          rgba(5, 15, 29, 0.98)
+        );
+        border: 1px solid var(--game-line);
         box-shadow:
-          0 18px 48px rgba(0, 0, 0, 0.38),
-          inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+          0 22px 55px rgba(0, 0, 0, 0.42),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08);
+        padding: 14px;
+        margin-bottom: 18px;
+        overflow: hidden;
+      }
+
+      .hud-card {
+        background: linear-gradient(
+          180deg,
+          rgba(17, 39, 65, 0.95),
+          rgba(8, 21, 38, 0.96)
+        );
+        border: 1px solid rgba(101, 190, 255, 0.22);
+        border-radius: 24px;
+        padding: 13px;
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.07);
+      }
+
+      .profile-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .farmer-avatar {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        font-size: 32px;
+        background: linear-gradient(135deg, #0ea5ff, #1953e8);
+        box-shadow: 0 12px 24px rgba(14, 165, 255, 0.28);
+      }
+
+      .profile-title {
+        flex: 1;
       }
 
       .title {
-        color: #ffffff !important;
-        font-size: 27px !important;
+        font-size: 22px !important;
         font-weight: 1000 !important;
-        text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35);
+        color: white !important;
+        line-height: 1;
       }
 
       .subtitle {
-        color: var(--farm-muted) !important;
-        font-weight: 800 !important;
+        font-size: 12px !important;
+        color: #b8cbe3 !important;
+        margin-top: 6px;
+        font-weight: 800;
       }
 
       .level-badge {
-        border-radius: 20px !important;
-        background: linear-gradient(135deg, #00a3ff, #0066ff) !important;
-        box-shadow:
-          0 12px 28px rgba(0, 132, 255, 0.35),
-          inset 0 2px 0 rgba(255, 255, 255, 0.24) !important;
+        min-width: 88px !important;
+        border-radius: 18px !important;
+        padding: 15px 12px !important;
+        font-size: 17px !important;
         font-weight: 1000 !important;
+        color: white !important;
+        background: linear-gradient(135deg, #0ea5ff, #1d4ed8) !important;
+        box-shadow:
+          0 14px 30px rgba(14, 165, 255, 0.34),
+          inset 0 2px 0 rgba(255, 255, 255, 0.28) !important;
+      }
+
+      .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 9px !important;
       }
 
       .stat-box {
-        background: linear-gradient(180deg, #162b45, #0c1a2c) !important;
-        border: 1px solid rgba(125, 211, 252, 0.18) !important;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.98),
+          rgba(7, 18, 34, 0.98)
+        ) !important;
+        border: 1px solid rgba(101, 190, 255, 0.23) !important;
         border-radius: 18px !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        padding: 12px 6px !important;
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.07);
       }
 
       .stat-label {
-        color: #99b7d5 !important;
-        font-weight: 900 !important;
+        color: #99b7d8 !important;
+        font-size: 10px !important;
+        font-weight: 1000 !important;
         text-transform: uppercase;
-        letter-spacing: 0.25px;
+        letter-spacing: 0.35px;
       }
 
       .stat-value {
+        color: white !important;
+        font-size: 17px !important;
         font-weight: 1000 !important;
-        color: #fff !important;
+        margin-top: 5px;
       }
 
       .status-line {
-        background: rgba(4, 12, 25, 0.58) !important;
-        border: 1px solid rgba(125, 211, 252, 0.14);
-        border-radius: 16px !important;
-        color: #dbeafe !important;
+        background: rgba(2, 9, 20, 0.54) !important;
+        border: 1px solid rgba(101, 190, 255, 0.18) !important;
+        border-radius: 999px !important;
+        color: #e5f3ff !important;
+        font-weight: 1000 !important;
+        padding: 9px 12px !important;
       }
 
-      .hero-farm {
-        padding: 14px !important;
-        overflow: hidden;
-      }
-
-      .hero-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      .farm-stage {
         position: relative;
-        z-index: 3;
-      }
-
-      .hero-sub {
-        color: var(--farm-muted);
-        font-size: 12px;
-        font-weight: 800;
-        margin-top: -6px;
-      }
-
-      .hero-vip {
-        background: linear-gradient(135deg, #ffca28, #ff7a00);
-        color: #fff;
-        padding: 9px 12px;
-        border-radius: 16px;
-        font-weight: 1000;
-        box-shadow: 0 10px 22px rgba(255, 154, 0, 0.28);
-      }
-
-      .farm-world {
-        position: relative;
-        height: 250px;
+        height: 440px;
+        margin-top: 14px;
         border-radius: 28px;
         overflow: hidden;
-        margin: 12px 0;
+        border: 2px solid rgba(142, 224, 255, 0.28);
         background: linear-gradient(
           180deg,
-          #5ecbff 0%,
-          #9ee7ff 44%,
-          #57c85d 45%,
-          #1e8b3f 100%
+          #53c8ff 0%,
+          #9ee8ff 38%,
+          #59c963 39%,
+          #238d39 100%
         );
         box-shadow:
-          inset 0 2px 0 rgba(255, 255, 255, 0.35),
-          0 18px 38px rgba(0, 0, 0, 0.22);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+          inset 0 3px 0 rgba(255, 255, 255, 0.38),
+          0 18px 40px rgba(0, 0, 0, 0.25);
       }
 
-      .sky-sun {
+      .stage-sky {
         position: absolute;
-        top: 22px;
-        right: 24px;
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        background: radial-gradient(circle, #fff4a3, #ffc107 58%, #ff8a00);
-        box-shadow: 0 0 42px rgba(255, 193, 7, 0.72);
-        animation: sunPulse 3s infinite ease-in-out;
+        inset: 0 0 40% 0;
+        background: linear-gradient(180deg, #5ed0ff, #b5efff);
       }
 
-      @keyframes sunPulse {
-        50% {
-          transform: scale(1.08);
-        }
-      }
-
-      .farm-cloud {
+      .sun-glow {
         position: absolute;
-        top: 38px;
+        top: 34px;
+        right: 40px;
         width: 78px;
-        height: 26px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.78);
-        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
-        animation: cloudMove 7s infinite ease-in-out;
+        height: 78px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff7b2, #ffc928 55%, #ff9500);
+        box-shadow: 0 0 60px rgba(255, 201, 40, 0.75);
       }
 
-      .farm-cloud::before,
-      .farm-cloud::after {
+      .soft-cloud {
+        position: absolute;
+        width: 118px;
+        height: 38px;
+        background: rgba(255, 255, 255, 0.78);
+        border-radius: 999px;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.07));
+      }
+
+      .soft-cloud::before,
+      .soft-cloud::after {
         content: "";
         position: absolute;
         border-radius: 50%;
         background: inherit;
       }
 
-      .farm-cloud::before {
-        width: 36px;
-        height: 36px;
-        left: 12px;
-        top: -17px;
+      .soft-cloud::before {
+        width: 58px;
+        height: 58px;
+        top: -28px;
+        left: 21px;
       }
 
-      .farm-cloud::after {
-        width: 32px;
-        height: 32px;
+      .soft-cloud::after {
+        width: 48px;
+        height: 48px;
+        top: -22px;
+        right: 22px;
+      }
+
+      .cloud-a {
+        top: 78px;
+        left: 46px;
+      }
+
+      .cloud-b {
+        top: 52px;
+        left: 238px;
+        transform: scale(0.86);
+        opacity: 0.72;
+      }
+
+      .mountains {
+        position: absolute;
+        left: -20px;
+        right: -20px;
+        top: 165px;
+        height: 105px;
+        background:
+          radial-gradient(ellipse at 25% 100%, #6fc55e 0 52%, transparent 53%),
+          radial-gradient(ellipse at 72% 100%, #52b957 0 58%, transparent 59%);
+      }
+
+      .field-back {
+        position: absolute;
+        left: -25px;
+        right: -25px;
+        bottom: 0;
+        height: 190px;
+        background:
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.07) 0 12px,
+            rgba(0, 0, 0, 0.02) 12px 24px
+          ),
+          linear-gradient(180deg, #2fba56, #157832);
+      }
+
+      .barn-house {
+        position: absolute;
+        left: 72px;
+        top: 160px;
+        width: 118px;
+        height: 118px;
+        filter: drop-shadow(0 18px 14px rgba(0, 0, 0, 0.25));
+      }
+
+      .barn-roof {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        width: 98px;
+        height: 60px;
+        background: #b91c1c;
+        clip-path: polygon(50% 0, 100% 52%, 100% 100%, 0 100%, 0 52%);
+        border: 4px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .barn-body {
+        position: absolute;
+        left: 17px;
+        top: 48px;
+        width: 84px;
+        height: 70px;
+        border-radius: 7px;
+        background: linear-gradient(180deg, #f5deb8, #d7a568);
+        border: 4px solid #8b4513;
+      }
+
+      .barn-door {
+        position: absolute;
+        left: 30px;
+        bottom: 0;
+        width: 28px;
+        height: 40px;
+        border-radius: 5px 5px 0 0;
+        background: #7c2d12;
+      }
+
+      .barn-window {
+        position: absolute;
         right: 12px;
-        top: -14px;
+        top: 12px;
+        width: 20px;
+        height: 20px;
+        background: #7dd3fc;
+        border: 3px solid #7c2d12;
       }
 
-      .farm-cloud.c1 {
-        left: 24px;
-      }
-
-      .farm-cloud.c2 {
-        left: 160px;
-        top: 24px;
-        width: 62px;
-        opacity: 0.7;
-        animation-delay: 0.6s;
-      }
-
-      @keyframes cloudMove {
-        50% {
-          transform: translateX(16px);
-        }
-      }
-
-      .farm-bg-hill {
+      .windmill-tower {
         position: absolute;
-        left: -40px;
-        right: -40px;
-        bottom: 66px;
-        height: 82px;
-        border-radius: 50% 50% 0 0;
-        background: linear-gradient(180deg, #55b94f, #238b3b);
+        right: 98px;
+        top: 160px;
+        font-size: 58px;
+        filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.2));
+        opacity: 0.88;
       }
 
-      .farm-barn {
+      .farm-path {
         position: absolute;
-        left: 58px;
-        bottom: 76px;
-        font-size: 78px;
-        filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.25));
+        left: 95px;
+        bottom: -20px;
+        width: 145px;
+        height: 180px;
+        background: linear-gradient(
+          180deg,
+          rgba(245, 158, 11, 0.38),
+          rgba(146, 64, 14, 0.28)
+        );
+        clip-path: polygon(40% 0, 65% 0, 100% 100%, 0 100%);
+        opacity: 0.8;
       }
 
-      .farm-windmill {
+      .big-animal {
         position: absolute;
-        right: 76px;
+        filter: drop-shadow(0 18px 12px rgba(0, 0, 0, 0.28));
+        animation: premiumBob 2.8s ease-in-out infinite;
+      }
+
+      .chicken-art {
+        left: 36px;
+        bottom: 74px;
+        font-size: 104px;
+      }
+
+      .cow-art {
+        right: 54px;
         bottom: 100px;
-        font-size: 46px;
-        filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.2));
-      }
-
-      .farm-animal {
-        position: absolute;
-        font-size: 54px;
-        filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.28));
-        animation: animalBounce 2.4s infinite ease-in-out;
-      }
-
-      .farm-animal.chicken {
-        left: 28px;
-        bottom: 25px;
-        font-size: 72px;
-      }
-
-      .farm-animal.sheep {
-        left: 210px;
-        bottom: 22px;
+        font-size: 74px;
         animation-delay: 0.25s;
       }
 
-      .farm-animal.cow {
-        right: 46px;
-        bottom: 38px;
+      .sheep-art {
+        right: 128px;
+        bottom: 62px;
         font-size: 66px;
         animation-delay: 0.5s;
       }
 
-      @keyframes animalBounce {
+      @keyframes premiumBob {
         50% {
-          transform: translateY(-7px);
+          transform: translateY(-8px);
         }
       }
 
-      .coin-pop {
+      .coin-bubble {
+        position: absolute;
+        left: 50%;
+        bottom: 82px;
+        transform: translateX(-50%);
+        padding: 10px 26px;
+        border-radius: 999px;
+        background: rgba(76, 44, 8, 0.58);
+        color: white;
+        font-size: 28px;
+        font-weight: 1000;
+        box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
+      }
+
+      .farm-stage .tap-btn {
         position: absolute;
         left: 50%;
         bottom: 18px;
         transform: translateX(-50%);
-        background: rgba(91, 49, 0, 0.55);
-        color: white;
-        padding: 9px 18px;
-        border-radius: 999px;
-        font-size: 24px;
-        font-weight: 1000;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
       }
 
       .tap-btn {
-        width: 156px !important;
-        height: 156px !important;
-        font-size: 29px !important;
+        width: 126px !important;
+        height: 126px !important;
+        font-size: 25px !important;
+        font-weight: 1000 !important;
+        border-radius: 50% !important;
+        border: 6px solid rgba(255, 255, 255, 0.34) !important;
         background: radial-gradient(
-          circle at 35% 20%,
+          circle at 34% 18%,
           #fff7b5,
-          #ffd23f 38%,
-          #ff9e00 73%,
+          #ffd84d 38%,
+          #ffae13 70%,
           #d97706
         ) !important;
-        border: 6px solid rgba(255, 255, 255, 0.24) !important;
-        color: #fff !important;
-        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.5);
+        color: white !important;
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
         box-shadow:
-          0 18px 42px rgba(255, 158, 0, 0.38),
-          inset 0 6px 16px rgba(255, 255, 255, 0.34),
-          inset 0 -10px 18px rgba(120, 53, 15, 0.24) !important;
+          0 16px 34px rgba(255, 171, 0, 0.44),
+          inset 0 7px 16px rgba(255, 255, 255, 0.34),
+          inset 0 -10px 20px rgba(120, 53, 15, 0.3) !important;
       }
 
-      .tap-btn:active {
-        transform: scale(0.94) !important;
+      .farm-stage .tap-btn:active {
+        transform: translateX(-50%) scale(0.94) !important;
       }
 
       .tap-hint {
         color: #dbeafe !important;
-        font-weight: 900 !important;
+        font-weight: 1000 !important;
+        text-align: center;
+        margin-top: 14px !important;
+      }
+
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(17, 39, 65, 0.96),
+          rgba(8, 21, 38, 0.96)
+        ) !important;
+        border: 1px solid rgba(101, 190, 255, 0.22) !important;
+        border-radius: 28px !important;
+        box-shadow:
+          0 18px 44px rgba(0, 0, 0, 0.36),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
+      }
+
+      .section-title {
+        font-size: 24px !important;
+        font-weight: 1000 !important;
+        color: white !important;
       }
 
       .menu-grid {
-        gap: 11px !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 8px !important;
       }
 
       .menu-btn {
-        background: linear-gradient(180deg, #17314f, #0c1d33) !important;
-        border: 1px solid rgba(125, 211, 252, 0.18) !important;
-        border-radius: 22px !important;
-        min-height: 96px !important;
+        min-height: 76px !important;
+        padding: 7px 4px !important;
+        border-radius: 18px !important;
+        background: linear-gradient(180deg, #173a5f, #0b1c31) !important;
+        border: 1px solid rgba(101, 190, 255, 0.2) !important;
         box-shadow:
-          0 12px 26px rgba(0, 0, 0, 0.25),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          0 10px 20px rgba(0, 0, 0, 0.26),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
+        color: white !important;
+        font-size: 10px !important;
         font-weight: 1000 !important;
       }
 
-      .menu-btn:active {
-        transform: scale(0.97);
-      }
-
       .menu-emoji {
-        font-size: 33px !important;
-        filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.25));
+        font-size: 26px !important;
       }
 
       .main-btn,
       .buy-btn {
-        background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
-        border-radius: 17px !important;
+        border-radius: 16px !important;
         font-weight: 1000 !important;
+        background: linear-gradient(135deg, #10b5ff, #1764ff) !important;
         box-shadow:
-          0 12px 24px rgba(14, 165, 233, 0.24),
-          inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+          0 12px 26px rgba(14, 165, 255, 0.26),
+          inset 0 2px 0 rgba(255, 255, 255, 0.22) !important;
       }
 
       .buy-btn.green {
-        background: linear-gradient(135deg, #16a34a, #4ade80) !important;
+        background: linear-gradient(135deg, #22c55e, #73f052) !important;
       }
 
       .buy-btn.gold {
-        background: linear-gradient(135deg, #f97316, #facc15) !important;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25) !important;
       }
 
       .modal {
-        backdrop-filter: blur(9px);
+        backdrop-filter: blur(8px);
       }
 
       .modal-sheet {
         background:
           radial-gradient(
             circle at top,
-            rgba(14, 165, 233, 0.17),
-            transparent 28%
+            rgba(14, 165, 255, 0.18),
+            transparent 30%
           ),
-          linear-gradient(180deg, #10233b, #081524) !important;
-        border: 1px solid rgba(125, 211, 252, 0.2) !important;
+          linear-gradient(180deg, #112d4d, #071424) !important;
+        border: 1px solid rgba(101, 190, 255, 0.24) !important;
         border-top-left-radius: 30px !important;
         border-top-right-radius: 30px !important;
-        box-shadow: 0 -24px 56px rgba(0, 0, 0, 0.42);
       }
 
       .modal-title {
-        font-weight: 1000 !important;
         font-size: 24px !important;
+        font-weight: 1000 !important;
       }
 
-      .close-btn {
-        background: linear-gradient(180deg, #1f3d60, #10233b) !important;
+      .tile {
         border-radius: 18px !important;
+        background: linear-gradient(180deg, #142f4f, #08182b) !important;
+        border: 1px solid rgba(101, 190, 255, 0.2) !important;
+        box-shadow:
+          0 12px 24px rgba(0, 0, 0, 0.25),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
       }
 
-      .tab-btn,
-      .quest-tab-btn {
-        border-radius: 17px !important;
-        background: #17314f !important;
+      .tile-title {
+        color: #c7ddf4 !important;
+        font-weight: 900 !important;
+      }
+
+      .tile-value {
+        font-size: 22px !important;
+        color: white !important;
         font-weight: 1000 !important;
       }
 
       .tab-btn.active,
       .quest-tab-btn.active {
-        background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
-      }
-
-      .tile {
-        background: linear-gradient(180deg, #17314f, #0d1e34) !important;
-        border: 1px solid rgba(125, 211, 252, 0.17) !important;
-        border-radius: 22px !important;
-        box-shadow:
-          0 12px 24px rgba(0, 0, 0, 0.23),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      }
-
-      .tile-title {
-        color: #bdd7ef !important;
-        font-weight: 900 !important;
-        font-size: 14px !important;
-      }
-
-      .tile-value {
-        font-size: 22px !important;
-        font-weight: 1000 !important;
-        color: #fff !important;
-      }
-
-      .tile-row {
-        color: #cbd5e1 !important;
-        font-weight: 800 !important;
-      }
-
-      .tile-row span:last-child {
-        color: #fff;
-        font-weight: 1000;
-      }
-
-      /* bottom-like navigation feeling */
-      .card:last-of-type {
-        border-color: rgba(14, 165, 233, 0.24) !important;
+        background: linear-gradient(135deg, #10b5ff, #1764ff) !important;
       }
     </style>
   </head>
   <body>
     <div class="app">
-      <div class="card">
-        <div class="top-row">
-          <div>
-            <div class="title">🚜 My Farm Clicker</div>
-            <div class="subtitle">Ферма в Telegram Mini App</div>
+      <div class="game-home">
+        <div class="hud-card">
+          <div class="profile-row">
+            <div class="farmer-avatar">👨‍🌾</div>
+            <div class="profile-title">
+              <div class="title">Farmer</div>
+              <div class="subtitle">My Farm Clicker</div>
+            </div>
+            <div class="level-badge" id="levelBadge">LVL 1</div>
           </div>
-          <div class="level-badge" id="levelBadge">LVL 1</div>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-label">Coins</div>
-            <div class="stat-value" id="coins">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Diamonds</div>
-            <div class="stat-value" id="diamonds">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Points</div>
-            <div class="stat-value" id="points">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">XP</div>
-            <div class="stat-value" id="xp">0</div>
-          </div>
-        </div>
-        <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
-      </div>
-      <div class="hero-farm card">
-        <div class="hero-top">
-          <div>
-            <div class="section-title">🌾 Твоя ферма</div>
-            <div class="hero-sub">
-              Збирай ресурси • розвивай тварин • заробляй
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">Coins</div>
+              <div class="stat-value" id="coins">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Diamonds</div>
+              <div class="stat-value" id="diamonds">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Points</div>
+              <div class="stat-value" id="points">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">XP</div>
+              <div class="stat-value" id="xp">0</div>
             </div>
           </div>
-          <div class="hero-vip">👑 VIP</div>
+
+          <div class="status-line" id="boostStatus">
+            ⚡ OFF | 🤖 OFF | 👑 OFF
+          </div>
         </div>
 
-        <div class="farm-world">
-          <div class="sky-sun"></div>
-          <div class="farm-cloud c1"></div>
-          <div class="farm-cloud c2"></div>
-          <div class="farm-bg-hill"></div>
-          <div class="farm-barn">🏠</div>
-          <div class="farm-windmill">🌾</div>
-          <div class="farm-animal chicken">🐔</div>
-          <div class="farm-animal sheep">🐑</div>
-          <div class="farm-animal cow">🐄</div>
-          <div class="coin-pop">+1 🪙</div>
-        </div>
+        <div class="farm-stage">
+          <div class="stage-sky">
+            <div class="sun-glow"></div>
+            <div class="soft-cloud cloud-a"></div>
+            <div class="soft-cloud cloud-b"></div>
+          </div>
 
-        <div class="tap-wrap">
+          <div class="mountains"></div>
+          <div class="field-back"></div>
+          <div class="barn-house">
+            <div class="barn-roof"></div>
+            <div class="barn-body">
+              <div class="barn-door"></div>
+              <div class="barn-window"></div>
+            </div>
+          </div>
+          <div class="windmill-tower">✦</div>
+          <div class="farm-path"></div>
+
+          <div class="big-animal chicken-art">🐔</div>
+          <div class="big-animal cow-art">🐄</div>
+          <div class="big-animal sheep-art">🐑</div>
+
+          <div class="coin-bubble">+1 🪙</div>
+
           <button class="tap-btn" id="tapBtn">TAP!</button>
-          <div class="tap-hint">1 тап = 1 монета</div>
         </div>
+
+        <div class="tap-hint">1 тап = 1 монета</div>
         <div class="status-line" id="status">ok</div>
       </div>
       <div class="card">
@@ -1047,7 +1152,7 @@
           ><button class="menu-btn" id="wheelBtn">
             <span class="menu-emoji">🎰</span><span>Wheel</span></button
           ><button class="menu-btn" id="shopBtn">
-            <span class="menu-emoji">🛒</span><span>Магазин</span></button
+            <span class="menu-emoji">💎</span><span>Diamonds</span></button
           ><button class="menu-btn" id="boostBtn">
             <span class="menu-emoji">⚡</span><span>Boosters</span></button
           ><button class="menu-btn" id="refsBtn">
@@ -1059,9 +1164,6 @@
             onclick="openLeaderboardModal('referrals')"
           >
             <span class="menu-emoji">🏆</span><span>Топ</span>
-          </button>
-          <button class="menu-btn" id="walletBtn">
-            <span class="menu-emoji">👛</span><span>Гаманець</span>
           </button>
           <button class="menu-btn" id="refreshBtn">
             <span class="menu-emoji">🔄</span><span>Оновити</span>
@@ -1457,8 +1559,8 @@
                                 <div class="tile-title">🐑 Вівці</div>
                                 <div class="tile-value">${animals.sheep ?? 0}</div>
                                 <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
                                 <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
@@ -1596,7 +1698,7 @@
           setResult(res.data);
 
           if (res.ok) {
-            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
+            if (!handleXpResult(res.data?.levelUpData)) {
               showToast(
                 `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
               );
@@ -1614,45 +1716,7 @@
         const feed = currentState?.feedStock || {};
         modalTitle.textContent = "🌾 Корм";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👑 VIP Auto</div>
-              <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">🌾 Feed All</div>
-              <div class="tile-value">+10 / +10 / +10</div>
-              <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
-              <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐔 Корм для курки</div>
-              <div class="tile-value">${feed.chicken ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
-              <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐑 Корм для вівці</div>
-              <div class="tile-value">${feed.sheep ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
-              <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐄 Корм для корови</div>
-              <div class="tile-value">${feed.cow ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
-              <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
-            </div>
-          </div>
-        `;
+        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
         showModal();
         modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1660,9 +1724,7 @@
             const res = await apiPost("/shop/buy", { code });
             setResult(res.data);
             if (res.ok) {
-              showToast(
-                code === "feed_all_10" ? "🌾 Усі нагодовані" : "Корм куплено",
-              );
+              showToast("Корм куплено");
               await loadState();
               openFeedModal();
             } else {
@@ -1674,73 +1736,7 @@
       function openBoostersModal() {
         modalTitle.textContent = "⚡ Boosters";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `
-  <div class="modal-grid">
-
-    <div class="tile">
-      <div class="tile-title">⚡ Boost x2</div>
-      <div class="tile-value">
-        ${currentState?.boost?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
-        id="buyBoostBtn"
-      >
-        ${currentState?.boost?.active ? "ON" : "Купити"}
-      </button>
-    </div>
-
-    <div class="tile">
-      <div class="tile-title">💰 Auto Sell</div>
-      <div class="tile-value">
-        ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
-        id="buyAutoBtn"
-      >
-        ${currentState?.autoCollect?.active ? "ON" : "Купити"}
-      </button>
-    </div>
-
-    <div class="tile">
-      <div class="tile-title">👑 VIP 24h</div>
-      <div class="tile-value">
-        ${currentState?.vip?.active ? "ON" : "150 diamonds"}
-      </div>
-      <div class="tile-row">
-        <span>Auto Feed</span><span>ON</span>
-      </div>
-      <div class="tile-row">
-        <span>Auto Sell</span><span>ON</span>
-      </div>
-      <button
-        class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
-        id="buyVip1dBtn"
-      >
-        ${currentState?.vip?.active ? "ON" : "Купити"}
-      </button>
-    </div>
-
-    <div class="tile">
-      <div class="tile-title">👑 VIP 7d</div>
-      <div class="tile-value">800 diamonds</div>
-      <div class="tile-row">
-        <span>VIP Premium</span><span>7 днів</span>
-      </div>
-      <div class="tile-row">
-        <span>Економія</span><span>вигідніше</span>
-      </div>
-      <button
-        class="buy-btn gold"
-        id="buyVip7dBtn"
-      >
-        Купити
-      </button>
-    </div>
-
-  </div>
-`;
+        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">${currentState?.boost?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.boost?.active ? "green" : ""}" id="buyBoostBtn">${currentState?.boost?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">🤖 Auto Collect</div><div class="tile-value">${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}</div><button class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}" id="buyAutoBtn">${currentState?.autoCollect?.active ? "ON" : "Купити"}</button></div><div class="tile"><div class="tile-title">👑 VIP</div><div class="tile-value">${currentState?.vip?.active ? "ON" : "50 diamonds"}</div><button class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}" id="buyVipBtn">${currentState?.vip?.active ? "ON" : "Купити"}</button></div></div>`;
         showModal();
         document.getElementById("buyBoostBtn").onclick = async () => {
           if (currentState?.boost?.active) return;
@@ -2235,70 +2231,27 @@
       }
 
       async function openShopModal() {
-        modalTitle.textContent = "🛒 Магазин";
+        modalTitle.textContent = "💎 Diamonds за Stars";
         modalTabs.style.display = "none";
-
-        const walletRes = await apiGet("/wallet");
-        const wallet = walletRes.ok ? walletRes.data || {} : {};
-
         modalBody.innerHTML = `
           <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👛 TON Баланс</div>
-              <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">⭐ Telegram Stars</div>
-              <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
-            </div>
-
             <div class="tile">
               <div class="tile-title">Малий пакет</div>
               <div class="tile-value">50 💎</div>
               <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
             </div>
-
             <div class="tile">
               <div class="tile-title">Середній пакет</div>
               <div class="tile-value">120 💎</div>
               <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
             </div>
-
-            <div class="tile full">
+            <div class="tile">
               <div class="tile-title">Великий пакет</div>
               <div class="tile-value">300 💎</div>
               <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
               <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">💎 Diamonds за TON</div>
-              <div class="note">Покупка йде з TON балансу у гаманці</div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Small</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Medium</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">TON Large</div>
-              <div class="tile-value">700 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
-              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
             </div>
           </div>
         `;
@@ -2331,107 +2284,7 @@
             }
           };
         });
-
-        modalBody.querySelectorAll("[data-wallet-buy]").forEach((btn) => {
-          btn.onclick = async () => {
-            const pkg = btn.getAttribute("data-wallet-buy");
-
-            const resp = await apiPost("/wallet/buy-diamonds", {
-              package: pkg,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast(`💎 +${resp.data?.diamondsReceived ?? 0}`);
-              await loadState();
-              await openShopModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
-            }
-          };
-        });
       }
-      async function openWalletModal() {
-        modalTitle.textContent = "👛 Гаманець";
-        modalTabs.style.display = "none";
-
-        const res = await apiGet("/wallet");
-        const data = res.data || {};
-
-        if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
-          showModal();
-          return;
-        }
-
-        const points = data.points ?? currentState?.points ?? 0;
-        const availableTon = Math.floor(points / 100000);
-        const receiveTon =
-          availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">💰 TON Баланс</div>
-              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Points</span><span>${points}</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">📥 Поповнення TON</div>
-              <div class="note">Надішли TON на адресу:</div>
-              <input class="code-box" value="${data.depositWallet}" readonly />
-              <div class="note" style="margin-top:8px;">
-                Коментар платежу: USER_${getMyTelegramId()}
-              </div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">⭐ Points → TON</div>
-              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
-              <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-              <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
-              <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
-              <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
-            </div>
-          </div>
-        `;
-
-        showModal();
-
-        const withdrawBtn = document.getElementById("requestWithdrawBtn");
-        if (withdrawBtn) {
-          withdrawBtn.onclick = async () => {
-            const tonAddress =
-              document.getElementById("withdrawTonAddress").value;
-            const pointsAmount = Number(
-              document.getElementById("withdrawPointsAmount").value,
-            );
-
-            const resp = await apiPost("/wallet/request-withdraw", {
-              tonAddress,
-              pointsAmount,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast("✅ Заявку створено");
-              await loadState();
-              await openWalletModal();
-            } else {
-              showToast(
-                resp.data?.error || "Потрібно підключити backend withdraw",
-              );
-            }
-          };
-        }
-      }
-
       async function openRefsModal() {
         modalTitle.textContent = "👥 Referrals";
         modalTabs.style.display = "none";
@@ -2644,9 +2497,6 @@
       document
         .getElementById("shopBtn")
         .addEventListener("click", openShopModal);
-      document
-        .getElementById("walletBtn")
-        .addEventListener("click", openWalletModal);
       document
         .getElementById("refsBtn")
         .addEventListener("click", openRefsModal);
