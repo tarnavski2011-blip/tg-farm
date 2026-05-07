@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 190">
+<defs><filter id="s"><feDropShadow dx="0" dy="12" stdDeviation="8" flood-opacity=".3"/></filter></defs>
+<g filter="url(#s)"><circle cx="78" cy="100" r="36" fill="#e5e7eb"/><circle cx="110" cy="82" r="42" fill="#f8fafc"/><circle cx="145" cy="102" r="44" fill="#e5e7eb"/><circle cx="116" cy="119" r="42" fill="#f8fafc"/><ellipse cx="70" cy="104" rx="30" ry="34" fill="#334155"/><circle cx="61" cy="98" r="5" fill="#fff"/><circle cx="78" cy="98" r="5" fill="#fff"/><path d="M44 86 L25 72 M94 84 L112 68" stroke="#334155" stroke-width="10" stroke-linecap="round"/><path d="M92 145 L86 178 M142 144 L146 178" stroke="#334155" stroke-width="9" stroke-linecap="round"/></g></svg>
