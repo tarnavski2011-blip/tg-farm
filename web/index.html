@@ -22,14 +22,14 @@
         setTimeout(()=>el.remove(),850);
       }
 
-      const __oldCollectV25 = typeof collect === "function" ? collect : null;
+      var __oldCollectV25 = typeof collect === "function" ? collect : null;
       async function collect(){
         showTapEffect();
         const r = await apiPost("/tap");
         if (r.ok) setState(r.data);
       }
 
-      const __oldSetStateV25 = typeof setState === "function" ? setState : null;
+      var __oldSetStateV25 = typeof setState === "function" ? setState : null;
       function setState(s){
         currentState=s||{};
         const coins=document.getElementById("coins");
@@ -974,6 +974,32 @@
           top: 428px;
         }
       }
+
+      /* BUTTON ROUTES FIX + TOAST */
+      .toast-fix {
+        position: fixed;
+        left: 50%;
+        bottom: 130px;
+        transform: translateX(-50%);
+        z-index: 30000;
+        max-width: 86%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        background: rgba(2, 8, 18, 0.92);
+        border: 1px solid rgba(125, 211, 252, 0.25);
+        color: #fff;
+        font-weight: 900;
+        font-size: 14px;
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.2s ease;
+      }
+      .toast-fix.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-8px);
+      }
     </style>
   </head>
   <body>
@@ -1348,6 +1374,45 @@
         setTimeout(() => el.remove(), 850);
       }
 
+      var __oldCollectV25 = typeof collect === "function" ? collect : null;
+      async function collect() {
+        showTapEffect();
+        const r = await apiPost("/tap");
+        if (r.ok) setState(r.data);
+      }
+
+      var __oldSetStateV25 = typeof setState === "function" ? setState : null;
+      function setState(s) {
+        currentState = s || {};
+        const coins = document.getElementById("coins");
+        const diamonds = document.getElementById("diamonds");
+        const levelBadge = document.getElementById("levelBadge");
+        const xpBar = document.getElementById("xpBar");
+        const boostStatus = document.getElementById("boostStatus");
+        const whCap = document.getElementById("warehouseCap");
+        const whBar = document.getElementById("warehouseProgressBar");
+
+        if (coins) coins.textContent = currentState.coins ?? 0;
+        if (diamonds) diamonds.textContent = currentState.diamonds ?? 0;
+        if (levelBadge)
+          levelBadge.textContent = `LVL ${currentState.level ?? 1}`;
+
+        const xp = Number(currentState.xp ?? 0),
+          need = Number(currentState.xpNeeded ?? 1);
+        if (xpBar)
+          xpBar.style.width = `${Math.max(0, Math.min(100, Math.floor((xp / Math.max(1, need)) * 100)))}%`;
+
+        if (boostStatus)
+          boostStatus.textContent = `⚡ ${currentState.boost?.active ? "ON" : "OFF"} | 🤖 ${currentState.autoCollect?.active ? "ON" : "OFF"} | 👑 ${currentState.vip?.active ? "ON" : "OFF"}`;
+
+        const st = currentState.storage || {};
+        const total = (st.eggs ?? 0) + (st.wool ?? 0) + (st.milk ?? 0);
+        const cap = st.capacity ?? currentState.warehouseCapacity ?? 1000;
+        if (whCap) whCap.textContent = `${total} / ${cap}`;
+        if (whBar)
+          whBar.style.width = `${Math.max(0, Math.min(100, Math.floor((total / Math.max(1, cap)) * 100)))}%`;
+      }
+
       function openDailyModal() {
         modalTitle.textContent = "🎁 Daily Rewards";
         modalTabs.style.display = "none";
@@ -1476,6 +1541,280 @@
       }
       window.addEventListener("load", bindV25);
       setTimeout(bindV25, 300);
+
+      /* BUTTON ROUTES FIX FINAL */
+      (function () {
+        function ensureToastBox() {
+          let box = document.getElementById("toastFix");
+          if (!box) {
+            box = document.createElement("div");
+            box.id = "toastFix";
+            box.className = "toast-fix";
+            document.body.appendChild(box);
+          }
+          return box;
+        }
+
+        window.showToast = function (text) {
+          const box = ensureToastBox();
+          box.textContent = text || "ok";
+          box.classList.add("show");
+          clearTimeout(window.__toastFixTimer);
+          window.__toastFixTimer = setTimeout(
+            () => box.classList.remove("show"),
+            2600,
+          );
+        };
+
+        async function apiPostTry(paths, body = {}) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiPost(path, body);
+              last = res;
+              if (res && res.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        async function apiGetTry(paths) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiGet(path);
+              last = res;
+              if (res && res.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        function applyStateFromResponse(res) {
+          if (!res || !res.ok) return false;
+          if (res.data?.user) setState(res.data.user);
+          else setState(res.data);
+          return true;
+        }
+
+        window.collect = async function () {
+          try {
+            if (typeof showTapEffect === "function") showTapEffect();
+            const res = await apiPostTry(
+              ["/tap", "/collect", "/state/tap"],
+              {},
+            );
+            if (applyStateFromResponse(res)) {
+              showToast("+1 coin");
+            } else {
+              showToast(res?.data?.error || "Tap route не працює");
+            }
+          } catch (e) {
+            showToast("Tap error: " + (e?.message || e));
+          }
+        };
+
+        window.claimDaily = async function () {
+          try {
+            const res = await apiPostTry(
+              ["/daily/claim", "/daily", "/daily/claimReward"],
+              {},
+            );
+            if (applyStateFromResponse(res)) {
+              showToast("🎁 Daily reward claimed");
+              if (typeof openDailyModal === "function") openDailyModal();
+            } else {
+              showToast(
+                res?.data?.error || "Daily ще не готовий або route інший",
+              );
+            }
+          } catch (e) {
+            showToast("Daily error: " + (e?.message || e));
+          }
+        };
+
+        window.spinWheel = async function () {
+          try {
+            const res = await apiPostTry(
+              ["/wheel/spin", "/wheel", "/wheel/spinDaily"],
+              {},
+            );
+            if (applyStateFromResponse(res)) {
+              showToast("🎰 Wheel reward!");
+              if (typeof openWheelModal === "function") openWheelModal();
+            } else {
+              showToast(res?.data?.error || "Wheel route ще не підключений");
+            }
+          } catch (e) {
+            showToast("Wheel error: " + (e?.message || e));
+          }
+        };
+
+        window.buyShop = async function (code) {
+          try {
+            const res = await apiPostTry(["/shop/buy", "/shop", "/boost"], {
+              code,
+              productId: code,
+              type: code,
+            });
+            if (applyStateFromResponse(res)) {
+              showToast("✅ Куплено");
+            } else {
+              showToast(
+                res?.data?.error ||
+                  "Недостатньо монет/діамантів або route інший",
+              );
+            }
+          } catch (e) {
+            showToast("Buy error: " + (e?.message || e));
+          }
+        };
+
+        window.buyStars = async function (productId) {
+          try {
+            const res = await apiPostTry(
+              [
+                "/shopStars/createInvoice",
+                "/shop/stars/createInvoice",
+                "/stars/createInvoice",
+              ],
+              { productId },
+            );
+            if (res.ok && (res.data?.url || res.data?.invoiceLink)) {
+              const url = res.data.url || res.data.invoiceLink;
+              if (window.Telegram?.WebApp?.openInvoice)
+                window.Telegram.WebApp.openInvoice(url);
+              else location.href = url;
+            } else {
+              showToast(res?.data?.error || "Stars invoice ще не підключений");
+            }
+          } catch (e) {
+            showToast("Stars error: " + (e?.message || e));
+          }
+        };
+
+        window.loadState = async function () {
+          try {
+            const res = await apiGetTry(["/state", "/user/state"]);
+            if (applyStateFromResponse(res)) return;
+            showToast(res?.data?.error || "State route не працює");
+          } catch (e) {
+            showToast("State error: " + (e?.message || e));
+          }
+        };
+
+        function bindButtonsFinal() {
+          const bind = (id, fn) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fn();
+            };
+          };
+
+          bind("tapBtn", window.collect);
+          bind("navTapBtn", window.collect);
+          bind(
+            "dailyBtn",
+            typeof openDailyModal === "function"
+              ? openDailyModal
+              : () => showToast("Daily modal missing"),
+          );
+          bind(
+            "heroDailyBtn",
+            typeof openDailyModal === "function"
+              ? openDailyModal
+              : () => showToast("Daily modal missing"),
+          );
+          bind(
+            "wheelBtn",
+            typeof openWheelModal === "function"
+              ? openWheelModal
+              : () => showToast("Wheel modal missing"),
+          );
+          bind(
+            "topBtn",
+            typeof openTopModal === "function"
+              ? openTopModal
+              : () => showToast("Top modal missing"),
+          );
+          bind(
+            "shopBtn",
+            typeof openShopModal === "function"
+              ? openShopModal
+              : () => showToast("Shop modal missing"),
+          );
+          bind(
+            "walletBtn",
+            typeof openWalletModal === "function"
+              ? openWalletModal
+              : () => showToast("Wallet modal missing"),
+          );
+          bind(
+            "boostBtn",
+            typeof openBoostersModal === "function"
+              ? openBoostersModal
+              : () => showToast("Boosters modal missing"),
+          );
+          bind(
+            "vipBtn",
+            typeof openBoostersModal === "function"
+              ? openBoostersModal
+              : () => showToast("VIP modal missing"),
+          );
+          bind(
+            "refsBtn",
+            typeof openRefsModal === "function"
+              ? openRefsModal
+              : () => showToast("Refs modal missing"),
+          );
+          bind(
+            "questsBtn",
+            typeof openQuestsModal === "function"
+              ? openQuestsModal
+              : () => showToast("Quests modal missing"),
+          );
+          bind(
+            "animalsBtn",
+            typeof openAnimalsModal === "function"
+              ? openAnimalsModal
+              : () => showToast("Animals modal missing"),
+          );
+          bind(
+            "profileBtn",
+            typeof openProfileModal === "function"
+              ? openProfileModal
+              : () => showToast("Profile modal missing"),
+          );
+          bind(
+            "warehouseBtn",
+            typeof openStorageModal === "function"
+              ? openStorageModal
+              : () => showToast("Storage modal missing"),
+          );
+          bind("farmBtn", window.loadState);
+
+          const closeBtn = document.getElementById("closeModalBtn");
+          if (closeBtn) {
+            closeBtn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (typeof closeModal === "function") closeModal();
+            };
+          }
+        }
+
+        window.addEventListener("load", bindButtonsFinal);
+        setTimeout(bindButtonsFinal, 300);
+        setTimeout(bindButtonsFinal, 1200);
+        setTimeout(() => window.loadState?.(), 400);
+      })();
     </script>
   </body>
 </html>
