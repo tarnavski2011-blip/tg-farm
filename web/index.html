@@ -28,6 +28,47 @@
 
       window.addEventListener("load", bindFinalCloseFix);
       setTimeout(bindFinalCloseFix, 500);
+
+
+      function forceCleanMainScreen() {
+        document.querySelectorAll("#status").forEach((el) => {
+          el.style.display = "none";
+          el.textContent = "";
+        });
+
+        document.querySelectorAll(".ref-main-tap").forEach((el) => {
+          el.style.display = "none";
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        });
+
+        document.querySelectorAll(".tap-wrap, .coin-popup").forEach((el) => {
+          el.style.display = "none";
+        });
+
+        const navTap = document.getElementById("navTapBtn");
+        if (navTap) {
+          navTap.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            collect();
+          };
+        }
+
+        const animalsBtn = document.getElementById("navAnimalsBtn");
+        if (animalsBtn) {
+          animalsBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAnimalsModal();
+          };
+        }
+      }
+
+      window.addEventListener("load", forceCleanMainScreen);
+      setTimeout(forceCleanMainScreen, 300);
+      setTimeout(forceCleanMainScreen, 1000);
+      setInterval(forceCleanMainScreen, 2500);
     </script>
     <style>
       * {
@@ -2331,6 +2372,265 @@
           bottom: 138px !important;
         }
       }
+
+      /* FINAL MAIN + ANIMALS FIX */
+      #status,
+      .ref-status#status {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+      }
+
+      .ref-main-tap {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .ref-bottom-nav {
+        height: 88px !important;
+        grid-template-columns: 1fr 1fr 92px 1fr 1fr !important;
+        overflow: visible !important;
+        z-index: 50 !important;
+      }
+
+      .ref-nav {
+        height: 68px !important;
+        min-height: 68px !important;
+      }
+
+      .ref-nav-tap {
+        width: 92px !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        margin-bottom: 4px !important;
+        z-index: 55 !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 150px !important;
+        transform: translateX(-50%) scale(0.92) !important;
+      }
+
+      .fixed-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(14, 165, 255, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d) !important;
+      }
+
+      .fixed-summary-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 1000;
+        white-space: nowrap;
+      }
+
+      .fixed-summary-pill.on {
+        color: #fff;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .fixed-animal-card {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px !important;
+      }
+
+      .fixed-animal-left {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+      }
+
+      .fixed-animal-img {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+      }
+
+      .fixed-level-chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .fixed-animal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .fixed-animal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .fixed-animal-count {
+        margin-top: 3px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .fixed-income {
+        text-align: right;
+        min-width: 88px;
+      }
+
+      .fixed-income span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .fixed-income b {
+        display: block;
+        color: #fff;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .fixed-bars {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .fixed-bar-row {
+        display: flex;
+        justify-content: space-between;
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .fixed-bar-row b {
+        color: #fff;
+      }
+
+      .fixed-bar {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.72);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+
+      .fixed-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .fixed-bar.power span {
+        background: linear-gradient(90deg, #0ea5ff, #a3e635);
+      }
+
+      .fixed-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .fixed-mini-grid div {
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: rgba(2, 8, 18, 0.36);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        text-align: center;
+      }
+
+      .fixed-mini-grid span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+      }
+
+      .fixed-mini-grid b {
+        display: block;
+        color: #fff;
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .fixed-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .fixed-actions .buy-btn {
+        margin-top: 0 !important;
+        padding: 11px 8px !important;
+        font-size: 12px !important;
+      }
+
+      .fixed-vip-panel {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      @media (max-width: 390px) {
+        .fixed-animal-card {
+          grid-template-columns: 82px 1fr;
+          gap: 10px;
+        }
+
+        .fixed-animal-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .fixed-mini-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .fixed-animal-head {
+          flex-direction: column;
+        }
+
+        .fixed-income {
+          text-align: left;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2656,6 +2956,31 @@
         }
       }
 
+      function fixedAnimalImgSrc(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function fixedBar(value, cls = "") {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="fixed-bar ${cls}"><span style="width:${v}%"></span></div>`;
+      }
+
+      async function fixedHealAnimals(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          fixedRenderAnimalsOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
+      }
+
       function showLevelUpPopup(xpData) {
         if (!xpData || !levelUpModal) return;
 
@@ -2774,6 +3099,113 @@
           showToast(res.data?.error || "Помилка");
         }
       }
+      function fixedRenderAnimalsOwned() {
+        const s = currentState || {};
+        const animals = s.animals || {};
+        const feed = s.feed || {};
+        const ready = s.ready || {};
+
+        function animalCard(
+          type,
+          emoji,
+          title,
+          count,
+          level,
+          life,
+          efficiency,
+          readyValue,
+          feedValue,
+          healPrice,
+        ) {
+          const hasAnimals = count > 0;
+          const lifeValue = hasAnimals ? (life ?? 100) : 0;
+          const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
+          const perHour = productionPerHour(type, level, count);
+          const cycle = productionText(type, level);
+          const points = pointsText(type, level);
+
+          return `
+                  <div class="tile full fixed-animal-card">
+                    <div class="fixed-animal-left">
+                      <img class="fixed-animal-img" src="${fixedAnimalImgSrc(type)}" alt="${title}" />
+                      <div class="fixed-level-chip">LVL ${level}</div>
+                    </div>
+
+                    <div class="fixed-animal-main">
+                      <div class="fixed-animal-head">
+                        <div>
+                          <div class="fixed-animal-title">${emoji} ${title}</div>
+                          <div class="fixed-animal-count">${count} animals</div>
+                        </div>
+                        <div class="fixed-income">
+                          <span>Coins / hour</span>
+                          <b>${perHour}</b>
+                        </div>
+                      </div>
+
+                      <div class="fixed-bars">
+                        <div>
+                          <div class="fixed-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                          ${hasAnimals ? fixedBar(lifeValue, "life") : ""}
+                        </div>
+                        <div>
+                          <div class="fixed-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                          ${hasAnimals ? fixedBar(efficiencyValue, "power") : ""}
+                        </div>
+                      </div>
+
+                      <div class="fixed-mini-grid">
+                        <div><span>Ready</span><b>${readyValue}</b></div>
+                        <div><span>Feed</span><b>${feedValue}</b></div>
+                        <div><span>Cycle</span><b>${cycle}</b></div>
+                        <div><span>Points</span><b>${points}</b></div>
+                      </div>
+
+                      <div class="fixed-actions">
+                        <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                        <button class="buy-btn gold" data-fixed-heal="${type}" ${hasAnimals ? "" : "disabled"}>
+                          ❤️ Heal ${hasAnimals ? `${count * healPrice}` : ""}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+        }
+
+        modalBody.innerHTML = `
+                <div class="modal-grid">
+                  <div class="tile full fixed-summary">
+                    <div>
+                      <div class="tile-title">🐾 My Animals</div>
+                      <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+                    </div>
+                    <div class="fixed-summary-pill ${s.vip?.active ? "on" : ""}">
+                      👑 ${s.vip?.active ? "VIP ON" : "VIP OFF"}
+                    </div>
+                  </div>
+
+                  ${animalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+                  ${animalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+                  ${animalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+
+                  <div class="tile full fixed-vip-panel">
+                    <div class="tile-title">👑 Premium Status</div>
+                    <div class="tile-value">${s.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+                    <div class="tile-row"><span>Boost</span><span>${s.boost?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Sell</span><span>${s.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Feed</span><span>${s.vip?.active ? "ON" : "VIP only"}</span></div>
+                    <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+                  </div>
+                </div>
+              `;
+
+        modalBody.querySelectorAll("[data-fixed-heal]").forEach((btn) => {
+          btn.onclick = async () => {
+            await fixedHealAnimals(btn.getAttribute("data-fixed-heal"));
+          };
+        });
+      }
+
       function renderAnimalsBuy() {
         tabBuyBtn.classList.add("active");
         tabOwnedBtn.classList.remove("active");
@@ -3004,14 +3436,31 @@
 
       function openAnimalsModal() {
         modalTitle.textContent = "🐾 Тварини";
-        modalTabs.style.display = "block";
-        tabBuyBtn.style.display = "";
-        tabOwnedBtn.style.display = "";
-        tabUpgradeBtn.style.display = "none";
-        tabBuyBtn.textContent = "Купити";
-        tabOwnedBtn.textContent = "Мої";
-        renderAnimalsBuy();
+        modalTabs.style.display = "grid";
+
+        modalTabs.innerHTML = `
+                <button class="tab-btn" id="animalsBuyTab">Купити</button>
+                <button class="tab-btn active" id="animalsMineTab">Мої</button>
+              `;
+
         showModal();
+
+        const buyTab = document.getElementById("animalsBuyTab");
+        const mineTab = document.getElementById("animalsMineTab");
+
+        buyTab.onclick = () => {
+          buyTab.classList.add("active");
+          mineTab.classList.remove("active");
+          renderAnimalsBuy();
+        };
+
+        mineTab.onclick = () => {
+          mineTab.classList.add("active");
+          buyTab.classList.remove("active");
+          fixedRenderAnimalsOwned();
+        };
+
+        fixedRenderAnimalsOwned();
       }
 
       async function openStorageModal() {
@@ -4496,6 +4945,46 @@
 
       window.addEventListener("load", bindFinalCloseFix);
       setTimeout(bindFinalCloseFix, 500);
+
+      function forceCleanMainScreen() {
+        document.querySelectorAll("#status").forEach((el) => {
+          el.style.display = "none";
+          el.textContent = "";
+        });
+
+        document.querySelectorAll(".ref-main-tap").forEach((el) => {
+          el.style.display = "none";
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        });
+
+        document.querySelectorAll(".tap-wrap, .coin-popup").forEach((el) => {
+          el.style.display = "none";
+        });
+
+        const navTap = document.getElementById("navTapBtn");
+        if (navTap) {
+          navTap.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            collect();
+          };
+        }
+
+        const animalsBtn = document.getElementById("navAnimalsBtn");
+        if (animalsBtn) {
+          animalsBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAnimalsModal();
+          };
+        }
+      }
+
+      window.addEventListener("load", forceCleanMainScreen);
+      setTimeout(forceCleanMainScreen, 300);
+      setTimeout(forceCleanMainScreen, 1000);
+      setInterval(forceCleanMainScreen, 2500);
     </script>
   </body>
 </html>
