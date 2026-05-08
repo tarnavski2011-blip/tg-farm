@@ -7,7 +7,160 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>My Farm Clicker</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js">
+      /* V2.5 PREMIUM LOGIC */
+      function showTapEffect(){
+        const btn=document.getElementById("tapBtn");
+        if(!btn)return;
+        const r=btn.getBoundingClientRect();
+        const el=document.createElement("div");
+        el.className="floating-coin";
+        el.textContent="+1 🪙";
+        el.style.left=(r.left+r.width/2)+"px";
+        el.style.top=(r.top-8)+"px";
+        document.body.appendChild(el);
+        setTimeout(()=>el.remove(),850);
+      }
+
+      const __oldCollectV25 = typeof collect === "function" ? collect : null;
+      async function collect(){
+        showTapEffect();
+        const r = await apiPost("/tap");
+        if (r.ok) setState(r.data);
+      }
+
+      const __oldSetStateV25 = typeof setState === "function" ? setState : null;
+      function setState(s){
+        currentState=s||{};
+        const coins=document.getElementById("coins");
+        const diamonds=document.getElementById("diamonds");
+        const levelBadge=document.getElementById("levelBadge");
+        const xpBar=document.getElementById("xpBar");
+        const boostStatus=document.getElementById("boostStatus");
+        const whCap=document.getElementById("warehouseCap");
+        const whBar=document.getElementById("warehouseProgressBar");
+
+        if(coins) coins.textContent=currentState.coins??0;
+        if(diamonds) diamonds.textContent=currentState.diamonds??0;
+        if(levelBadge) levelBadge.textContent=`LVL ${currentState.level??1}`;
+
+        const xp=Number(currentState.xp??0), need=Number(currentState.xpNeeded??1);
+        if(xpBar) xpBar.style.width=`${Math.max(0,Math.min(100,Math.floor((xp/Math.max(1,need))*100)))}%`;
+
+        if(boostStatus) boostStatus.textContent=`⚡ ${currentState.boost?.active?"ON":"OFF"} | 🤖 ${currentState.autoCollect?.active?"ON":"OFF"} | 👑 ${currentState.vip?.active?"ON":"OFF"}`;
+
+        const st=currentState.storage||{};
+        const total=(st.eggs??0)+(st.wool??0)+(st.milk??0);
+        const cap=st.capacity??currentState.warehouseCapacity??1000;
+        if(whCap) whCap.textContent=`${total} / ${cap}`;
+        if(whBar) whBar.style.width=`${Math.max(0,Math.min(100,Math.floor((total/Math.max(1,cap))*100)))}%`;
+      }
+
+      function openDailyModal(){
+        modalTitle.textContent="🎁 Daily Rewards";
+        modalTabs.style.display="none";
+        const streak=currentState?.dailyStreak??0;
+        modalBody.innerHTML=`<div class="grid">
+          <div class="tile full"><div class="tile-title">Daily Streak</div><div class="tile-value">${streak} days</div></div>
+          <div class="tile full"><div class="daily-calendar">
+            ${[1,2,3,4,5,6,7,8].map(d=>`<div class="daily-day ${d===streak+1?'active':''}"><div>Day ${d}</div><div>${d*25} 🪙</div></div>`).join("")}
+          </div><button class="btn green" onclick="claimDaily()">Claim Daily</button></div>
+        </div>`;
+        showModal();
+      }
+
+      async function claimDaily(){
+        const r=await apiPost("/daily");
+        if(r.ok){setState(r.data);openDailyModal()}else showToast(r.data?.error||"Daily not ready");
+      }
+
+      function openWheelModal(){
+        modalTitle.textContent="🎰 Wheel";
+        modalTabs.style.display="none";
+        modalBody.innerHTML=`<div class="grid">
+          <div class="tile full"><div class="tile-title">Prize Wheel</div><div class="tile-value">1 spin / day</div></div>
+          <div class="tile full"><div class="wheel">🎁</div><button class="btn gold" onclick="spinWheel()">SPIN</button></div>
+          <div class="tile"><div class="tile-title">Top prize</div><div class="tile-value">💎 50</div></div>
+          <div class="tile"><div class="tile-title">Common</div><div class="tile-value">🪙 100</div></div>
+        </div>`;
+        showModal();
+      }
+
+      async function spinWheel(){
+        const r=await apiPost("/wheel/spin");
+        if(r.ok){setState(r.data);showToast("Wheel reward!");openWheelModal()}else showToast(r.data?.error||"Spin not ready");
+      }
+
+      function openTopModal(){
+        modalTitle.textContent="🏆 Top Players";
+        modalTabs.style.display="none";
+        const me=currentState||{};
+        modalBody.innerHTML=`<div class="grid">
+          <div class="tile full"><div class="tile-title">Leaderboard</div><div class="tile-value">Top Farmers</div></div>
+          <div class="tile full"><div class="row"><span>🥇 Farmer</span><span>${me.points??0} ⭐</span></div><div class="row"><span>🥈 Player</span><span>Coming</span></div><div class="row"><span>🥉 Player</span><span>Coming</span></div></div>
+        </div>`;
+        showModal();
+      }
+
+      function openWalletModal(){
+        modalTitle.textContent="👛 Wallet";
+        modalTabs.style.display="none";
+        const d=currentState?.diamonds??0, p=currentState?.points??0, c=currentState?.coins??0;
+        const usdt=(Number(p)/10000).toFixed(2);
+        modalBody.innerHTML=`<div class="grid">
+          <div class="tile"><div class="tile-title">Diamonds</div><div class="tile-value">${d} 💎</div></div>
+          <div class="tile"><div class="tile-title">Points</div><div class="tile-value">${p} ⭐</div></div>
+          <div class="tile full"><div class="tile-title">USDT Estimate</div><div class="tile-value wallet-usdt">${usdt} USDT</div><div class="row"><span>Coins</span><span>${c}</span></div><button class="btn gold" onclick="showToast('Withdraw soon')">Withdraw Soon</button></div>
+          <div class="tile full"><div class="tile-title">Status</div><div class="tile-value">Testing economy</div></div>
+        </div>`;
+        showModal();
+      }
+
+      function openShopModal(){
+        modalTitle.textContent="🛒 Premium Shop";
+        modalTabs.style.display="grid";
+        modalTabs.innerHTML=`<button class="tab active" id="shopPremium">Premium</button><button class="tab" id="shopStars">Stars</button>`;
+        showModal();
+        const renderPremium=()=>{
+          modalBody.innerHTML=`<div class="grid">
+            <div class="tile full"><div class="tile-title">Premium</div><div class="tile-value">Boosts / VIP / Stars</div></div>
+            <div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('boost_x2')">Купити</button></div>
+            <div class="tile"><div class="tile-title">💰 Auto Sell</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('auto_collect')">Купити</button></div>
+            <div class="tile"><div class="tile-title">👑 VIP 24h</div><div class="tile-value">150 💎</div><button class="btn gold" onclick="buyShop('vip_1d')">Купити</button></div>
+            <div class="tile stars-card"><div class="tile-title">⭐ Stars Pack</div><div class="tile-value">Soon</div><button class="btn gold" onclick="buyStars('diamonds_100')">Buy with Stars</button></div>
+          </div>`;
+        };
+        const renderStars=()=>{
+          modalBody.innerHTML=`<div class="grid">
+            <div class="tile full stars-card"><div class="tile-title">Telegram Stars</div><div class="tile-value">Buy Diamonds</div></div>
+            <div class="tile"><div class="tile-title">💎 100 Diamonds</div><div class="tile-value">50 ⭐</div><button class="btn" onclick="buyStars('diamonds_100')">Buy</button></div>
+            <div class="tile"><div class="tile-title">💎 500 Diamonds</div><div class="tile-value">220 ⭐</div><button class="btn" onclick="buyStars('diamonds_500')">Buy</button></div>
+          </div>`;
+        };
+        document.getElementById("shopPremium").onclick=()=>{document.getElementById("shopPremium").classList.add("active");document.getElementById("shopStars").classList.remove("active");renderPremium()};
+        document.getElementById("shopStars").onclick=()=>{document.getElementById("shopStars").classList.add("active");document.getElementById("shopPremium").classList.remove("active");renderStars()};
+        renderPremium();
+      }
+
+      async function buyStars(productId){
+        const r=await apiPost("/shopStars/createInvoice",{productId});
+        if(r.ok && r.data?.url){
+          if(window.Telegram?.WebApp?.openInvoice) window.Telegram.WebApp.openInvoice(r.data.url);
+          else location.href=r.data.url;
+        }else showToast(r.data?.error||"Stars invoice soon");
+      }
+
+      function bindV25(){
+        const top=document.getElementById("topBtn"); if(top) top.onclick=openTopModal;
+        const wheel=document.getElementById("wheelBtn"); if(wheel) wheel.onclick=openWheelModal;
+        const tap=document.getElementById("tapBtn"); if(tap) tap.onclick=collect;
+        const shop=document.getElementById("shopBtn"); if(shop) shop.onclick=openShopModal;
+        const wallet=document.getElementById("walletBtn"); if(wallet) wallet.onclick=openWalletModal;
+        const daily=document.getElementById("dailyBtn"); if(daily) daily.onclick=openDailyModal;
+      }
+      window.addEventListener("load",bindV25);
+      setTimeout(bindV25,300);
+    </script>
     <style>
       * {
         box-sizing: border-box;
@@ -616,6 +769,211 @@
           text-align: left;
         }
       }
+
+      /* V2.5 PREMIUM POLISHING */
+      .hud {
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(56, 189, 248, 0.18),
+            transparent 35%
+          ),
+          linear-gradient(180deg, rgba(7, 24, 45, 0.98), rgba(2, 8, 18, 0.96)) !important;
+        border-radius: 0 0 22px 22px !important;
+        box-shadow:
+          0 14px 32px rgba(0, 0, 0, 0.38),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08) !important;
+      }
+      .resource,
+      .warehouse,
+      .side,
+      .nav,
+      .tile {
+        box-shadow:
+          0 14px 28px rgba(0, 0, 0, 0.3),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08) !important;
+      }
+      .resource:active,
+      .side:active,
+      .nav:active,
+      .upgrade:active,
+      .btn:active {
+        transform: scale(0.96);
+      }
+      .xpbar,
+      .wh-bar,
+      .bar {
+        box-shadow:
+          inset 0 3px 7px rgba(0, 0, 0, 0.48),
+          0 0 12px rgba(34, 197, 94, 0.18) !important;
+      }
+      .xpbar span,
+      .wh-bar span,
+      .bar span {
+        background: linear-gradient(
+          90deg,
+          #22c55e,
+          #a3e635,
+          #facc15
+        ) !important;
+        box-shadow: 0 0 16px rgba(163, 230, 53, 0.55) !important;
+      }
+      .upgrade,
+      .btn.green {
+        box-shadow:
+          0 0 22px rgba(34, 197, 94, 0.42),
+          inset 0 2px 0 rgba(255, 255, 255, 0.25) !important;
+      }
+      .btn,
+      .nav.active {
+        box-shadow:
+          0 0 22px rgba(14, 165, 255, 0.38),
+          inset 0 2px 0 rgba(255, 255, 255, 0.18) !important;
+      }
+      .btn.gold {
+        box-shadow:
+          0 0 24px rgba(250, 204, 21, 0.45),
+          inset 0 2px 0 rgba(255, 255, 255, 0.22) !important;
+      }
+      .tap-animated {
+        animation: tapPulse 1.15s infinite ease-in-out;
+        position: relative;
+        overflow: visible !important;
+      }
+      .tap-animated span {
+        display: block;
+        font-size: 23px;
+        line-height: 0.9;
+      }
+      .tap-animated small {
+        display: block;
+        font-size: 18px;
+        margin-top: 2px;
+      }
+      .tap-animated:before {
+        content: "";
+        position: absolute;
+        inset: -10px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(250, 204, 21, 0.35),
+          transparent 62%
+        );
+        z-index: -1;
+        animation: tapGlow 1.15s infinite ease-in-out;
+      }
+      @keyframes tapPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.08);
+        }
+      }
+      @keyframes tapGlow {
+        0%,
+        100% {
+          opacity: 0.35;
+          transform: scale(0.95);
+        }
+        50% {
+          opacity: 0.9;
+          transform: scale(1.18);
+        }
+      }
+      .floating-coin {
+        position: fixed;
+        z-index: 20000;
+        pointer-events: none;
+        color: #fff;
+        font-weight: 1000;
+        font-size: 28px;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+        animation: coinFloat 0.8s ease-out forwards;
+      }
+      @keyframes coinFloat {
+        from {
+          opacity: 1;
+          transform: translate(-50%, 0) scale(0.9);
+        }
+        to {
+          opacity: 0;
+          transform: translate(-50%, -75px) scale(1.15);
+        }
+      }
+      .daily-calendar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .daily-day {
+        padding: 12px 8px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #143052, #07182b);
+        border: 1px solid rgba(125, 211, 252, 0.2);
+        text-align: center;
+        font-weight: 1000;
+      }
+      .daily-day.active {
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        box-shadow: 0 0 18px rgba(14, 165, 255, 0.36);
+      }
+      .wheel {
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        margin: 10px auto;
+        background: conic-gradient(
+          #22c55e 0 45deg,
+          #0ea5ff 45deg 90deg,
+          #f59e0b 90deg 135deg,
+          #a855f7 135deg 180deg,
+          #ef4444 180deg 225deg,
+          #14b8a6 225deg 270deg,
+          #facc15 270deg 315deg,
+          #1764ff 315deg 360deg
+        );
+        border: 8px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+          0 20px 40px rgba(0, 0, 0, 0.4),
+          0 0 30px rgba(14, 165, 255, 0.25);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 34px;
+        font-weight: 1000;
+      }
+      .topbtn {
+        top: 460px;
+        left: 10px;
+      }
+      .wheelbtn {
+        top: 460px;
+        right: 10px;
+      }
+      .wallet-usdt {
+        font-size: 32px !important;
+        color: #22c55e !important;
+      }
+      .stars-card {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(59, 130, 246, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #172554, #070b20) !important;
+      }
+      @media (max-height: 760px) {
+        .topbtn {
+          top: 428px;
+        }
+        .wheelbtn {
+          top: 428px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -669,20 +1027,25 @@
           <span class="side-emoji">📋</span><span>Tasks</span></button
         ><button class="side refs" id="refsBtn">
           <span class="side-emoji">👥</span><span>Refs</span></button
+        ><button class="side topbtn" id="topBtn">
+          <span class="side-emoji">🏆</span><span>Top</span></button
         ><button class="side vip" id="vipBtn">
           <span class="side-emoji">👑</span><span>VIP</span></button
         ><button class="side boosts" id="boostBtn">
           <b class="badge">2</b><span class="side-emoji">🚀</span
           ><span>Boosts</span></button
         ><button class="side wallet" id="walletBtn">
-          <span class="side-emoji">👛</span><span>Wallet</span>
+          <span class="side-emoji">👛</span><span>Wallet</span></button
+        ><button class="side wheelbtn" id="wheelBtn">
+          <span class="side-emoji">🎰</span><span>Wheel</span>
         </button>
         <div class="bottom">
           <button class="nav active" id="farmBtn">
             <span>🏠</span><b>Farm</b></button
           ><button class="nav" id="animalsBtn">
             <span>🐾</span><b>Animals</b></button
-          ><button class="nav-tap" id="tapBtn">TAP!</button
+          ><button class="nav-tap tap-animated" id="tapBtn">
+            <span>TAP!</span><small>👆</small></button
           ><button class="nav" id="shopBtn"><span>🛒</span><b>Shop</b></button
           ><button class="nav" id="profileBtn">
             <span>👤</span><b>Profile</b>
@@ -962,12 +1325,157 @@
       $("vipBtn").onclick = openBoostersModal;
       $("boostBtn").onclick = openBoostersModal;
       $("walletBtn").onclick = openWalletModal;
+      if ($("topBtn")) $("topBtn").onclick = openTopModal;
+      if ($("wheelBtn")) $("wheelBtn").onclick = openWheelModal;
       $("farmBtn").onclick = loadState;
       $("closeModalBtn").onclick = closeModal;
       modal.onclick = (e) => {
         if (e.target === modal) closeModal();
       };
       loadState();
+
+      /* V2.5 PREMIUM LOGIC */
+      function showTapEffect() {
+        const btn = document.getElementById("tapBtn");
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        const el = document.createElement("div");
+        el.className = "floating-coin";
+        el.textContent = "+1 🪙";
+        el.style.left = r.left + r.width / 2 + "px";
+        el.style.top = r.top - 8 + "px";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 850);
+      }
+
+      function openDailyModal() {
+        modalTitle.textContent = "🎁 Daily Rewards";
+        modalTabs.style.display = "none";
+        const streak = currentState?.dailyStreak ?? 0;
+        modalBody.innerHTML = `<div class="grid">
+    <div class="tile full"><div class="tile-title">Daily Streak</div><div class="tile-value">${streak} days</div></div>
+    <div class="tile full"><div class="daily-calendar">
+      ${[1, 2, 3, 4, 5, 6, 7, 8].map((d) => `<div class="daily-day ${d === streak + 1 ? "active" : ""}"><div>Day ${d}</div><div>${d * 25} 🪙</div></div>`).join("")}
+    </div><button class="btn green" onclick="claimDaily()">Claim Daily</button></div>
+  </div>`;
+        showModal();
+      }
+
+      async function claimDaily() {
+        const r = await apiPost("/daily");
+        if (r.ok) {
+          setState(r.data);
+          openDailyModal();
+        } else showToast(r.data?.error || "Daily not ready");
+      }
+
+      function openWheelModal() {
+        modalTitle.textContent = "🎰 Wheel";
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `<div class="grid">
+    <div class="tile full"><div class="tile-title">Prize Wheel</div><div class="tile-value">1 spin / day</div></div>
+    <div class="tile full"><div class="wheel">🎁</div><button class="btn gold" onclick="spinWheel()">SPIN</button></div>
+    <div class="tile"><div class="tile-title">Top prize</div><div class="tile-value">💎 50</div></div>
+    <div class="tile"><div class="tile-title">Common</div><div class="tile-value">🪙 100</div></div>
+  </div>`;
+        showModal();
+      }
+
+      async function spinWheel() {
+        const r = await apiPost("/wheel/spin");
+        if (r.ok) {
+          setState(r.data);
+          showToast("Wheel reward!");
+          openWheelModal();
+        } else showToast(r.data?.error || "Spin not ready");
+      }
+
+      function openTopModal() {
+        modalTitle.textContent = "🏆 Top Players";
+        modalTabs.style.display = "none";
+        const me = currentState || {};
+        modalBody.innerHTML = `<div class="grid">
+    <div class="tile full"><div class="tile-title">Leaderboard</div><div class="tile-value">Top Farmers</div></div>
+    <div class="tile full"><div class="row"><span>🥇 Farmer</span><span>${me.points ?? 0} ⭐</span></div><div class="row"><span>🥈 Player</span><span>Coming</span></div><div class="row"><span>🥉 Player</span><span>Coming</span></div></div>
+  </div>`;
+        showModal();
+      }
+
+      function openWalletModal() {
+        modalTitle.textContent = "👛 Wallet";
+        modalTabs.style.display = "none";
+        const d = currentState?.diamonds ?? 0,
+          p = currentState?.points ?? 0,
+          c = currentState?.coins ?? 0;
+        const usdt = (Number(p) / 10000).toFixed(2);
+        modalBody.innerHTML = `<div class="grid">
+    <div class="tile"><div class="tile-title">Diamonds</div><div class="tile-value">${d} 💎</div></div>
+    <div class="tile"><div class="tile-title">Points</div><div class="tile-value">${p} ⭐</div></div>
+    <div class="tile full"><div class="tile-title">USDT Estimate</div><div class="tile-value wallet-usdt">${usdt} USDT</div><div class="row"><span>Coins</span><span>${c}</span></div><button class="btn gold" onclick="showToast('Withdraw soon')">Withdraw Soon</button></div>
+    <div class="tile full"><div class="tile-title">Status</div><div class="tile-value">Testing economy</div></div>
+  </div>`;
+        showModal();
+      }
+
+      function openShopModal() {
+        modalTitle.textContent = "🛒 Premium Shop";
+        modalTabs.style.display = "grid";
+        modalTabs.innerHTML = `<button class="tab active" id="shopPremium">Premium</button><button class="tab" id="shopStars">Stars</button>`;
+        showModal();
+        const renderPremium = () => {
+          modalBody.innerHTML = `<div class="grid">
+      <div class="tile full"><div class="tile-title">Premium</div><div class="tile-value">Boosts / VIP / Stars</div></div>
+      <div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('boost_x2')">Купити</button></div>
+      <div class="tile"><div class="tile-title">💰 Auto Sell</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('auto_collect')">Купити</button></div>
+      <div class="tile"><div class="tile-title">👑 VIP 24h</div><div class="tile-value">150 💎</div><button class="btn gold" onclick="buyShop('vip_1d')">Купити</button></div>
+      <div class="tile stars-card"><div class="tile-title">⭐ Stars Pack</div><div class="tile-value">Soon</div><button class="btn gold" onclick="buyStars('diamonds_100')">Buy with Stars</button></div>
+    </div>`;
+        };
+        const renderStars = () => {
+          modalBody.innerHTML = `<div class="grid">
+      <div class="tile full stars-card"><div class="tile-title">Telegram Stars</div><div class="tile-value">Buy Diamonds</div></div>
+      <div class="tile"><div class="tile-title">💎 100 Diamonds</div><div class="tile-value">50 ⭐</div><button class="btn" onclick="buyStars('diamonds_100')">Buy</button></div>
+      <div class="tile"><div class="tile-title">💎 500 Diamonds</div><div class="tile-value">220 ⭐</div><button class="btn" onclick="buyStars('diamonds_500')">Buy</button></div>
+    </div>`;
+        };
+        document.getElementById("shopPremium").onclick = () => {
+          document.getElementById("shopPremium").classList.add("active");
+          document.getElementById("shopStars").classList.remove("active");
+          renderPremium();
+        };
+        document.getElementById("shopStars").onclick = () => {
+          document.getElementById("shopStars").classList.add("active");
+          document.getElementById("shopPremium").classList.remove("active");
+          renderStars();
+        };
+        renderPremium();
+      }
+
+      async function buyStars(productId) {
+        const r = await apiPost("/shopStars/createInvoice", { productId });
+        if (r.ok && r.data?.url) {
+          if (window.Telegram?.WebApp?.openInvoice)
+            window.Telegram.WebApp.openInvoice(r.data.url);
+          else location.href = r.data.url;
+        } else showToast(r.data?.error || "Stars invoice soon");
+      }
+
+      function bindV25() {
+        const top = document.getElementById("topBtn");
+        if (top) top.onclick = openTopModal;
+        const wheel = document.getElementById("wheelBtn");
+        if (wheel) wheel.onclick = openWheelModal;
+        const tap = document.getElementById("tapBtn");
+        if (tap) tap.onclick = collect;
+        const shop = document.getElementById("shopBtn");
+        if (shop) shop.onclick = openShopModal;
+        const wallet = document.getElementById("walletBtn");
+        if (wallet) wallet.onclick = openWalletModal;
+        const daily = document.getElementById("dailyBtn");
+        if (daily) daily.onclick = openDailyModal;
+      }
+      window.addEventListener("load", bindV25);
+      setTimeout(bindV25, 300);
     </script>
   </body>
 </html>
