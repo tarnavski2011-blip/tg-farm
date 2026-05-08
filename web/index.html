@@ -3167,7 +3167,7 @@
                   <div class="tile full v4-wallet-hero">
                     <div class="v4-hero-title">👛 Wallet</div>
                     <div class="v4-hero-sub">
-                      Тут буде баланс, diamonds, points і майбутній withdraw. Зараз це UI-підготовка до tap-to-earn економіки.
+                      Баланс гравця, diamonds, points і майбутній withdraw.
                     </div>
 
                     <div class="v4-wallet-balance">
@@ -3215,7 +3215,7 @@
                   <div class="tile full">
                     <div class="tile-title">⚠️ Important</div>
                     <div class="note">
-                      Поки гра в тесті, withdraw краще показувати як Coming Soon. Так ти не обіцяєш виплати до готової економіки.
+                      Поки гра в тесті, withdraw краще показувати як Coming Soon.
                     </div>
                   </div>
                 </div>
@@ -3359,6 +3359,9 @@
       tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
+      document
+        .getElementById("walletBtn")
+        ?.addEventListener("click", openWalletModal);
       loadState();
     </script>
   </body>
