@@ -2220,6 +2220,117 @@
           bottom: 205px !important;
         }
       }
+
+      /* FINAL CLEAN MAIN SCREEN PATCH */
+      #status,
+      .ref-status#status {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+      }
+
+      .ref-main-tap {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 150px !important;
+        z-index: 18 !important;
+        transform: translateX(-50%) scale(0.92) !important;
+      }
+
+      .ref-bottom-nav {
+        position: absolute !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        height: 88px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 92px 1fr 1fr !important;
+        align-items: end !important;
+        gap: 7px !important;
+        padding: 7px !important;
+        border-radius: 24px !important;
+        background: rgba(4, 12, 24, 0.88) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42) !important;
+        z-index: 40 !important;
+        overflow: visible !important;
+      }
+
+      .ref-nav {
+        height: 68px !important;
+        min-height: 68px !important;
+        border-radius: 17px !important;
+      }
+
+      .ref-nav span {
+        font-size: 28px !important;
+        line-height: 1 !important;
+      }
+
+      .ref-nav b {
+        font-size: 12px !important;
+        margin-top: 4px !important;
+      }
+
+      .ref-nav-tap {
+        width: 92px !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        border-radius: 50% !important;
+        margin-bottom: 4px !important;
+        font-size: 21px !important;
+        font-weight: 1000 !important;
+        align-self: end !important;
+        justify-self: center !important;
+        z-index: 45 !important;
+      }
+
+      .ref-farm {
+        bottom: 0 !important;
+      }
+
+      .tap-wrap,
+      .coin-popup,
+      .farm-stage .tap-btn:not(.ref-main-tap),
+      .premium-farm .tap-btn:not(.ref-main-tap) {
+        display: none !important;
+      }
+
+      #resultBox {
+        display: none !important;
+      }
+
+      @media (max-height: 760px) {
+        .ref-bottom-nav {
+          height: 82px !important;
+          bottom: 10px !important;
+        }
+
+        .ref-nav {
+          height: 62px !important;
+          min-height: 62px !important;
+        }
+
+        .ref-nav-tap {
+          width: 84px !important;
+          height: 84px !important;
+          min-height: 84px !important;
+        }
+
+        .ref-coin-popup {
+          bottom: 138px !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2675,52 +2786,52 @@
           const unlocked = level >= unlockLevel;
 
           return `
-                  <div class="tile">
-                    <div class="tile-title">${emoji} ${title}</div>
-                    <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
-                    <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
-                    <div class="tile-row">
-                      <span>Прогрес</span>
-                      <span class="unlock-progress">${Math.min(level, unlockLevel)} / ${unlockLevel}</span>
-                    </div>
-                    <div class="tile-row"><span>Відкривається</span><span>LVL ${unlockLevel}</span></div>
-                    ${
-                      unlocked
-                        ? `<button class="buy-btn" data-animal="${type}">Купити</button>`
-                        : `<button class="buy-btn gold" disabled>Потрібен LVL ${unlockLevel}</button>`
-                    }
-                  </div>
-                `;
+                        <div class="tile">
+                          <div class="tile-title">${emoji} ${title}</div>
+                          <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
+                          <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
+                          <div class="tile-row">
+                            <span>Прогрес</span>
+                            <span class="unlock-progress">${Math.min(level, unlockLevel)} / ${unlockLevel}</span>
+                          </div>
+                          <div class="tile-row"><span>Відкривається</span><span>LVL ${unlockLevel}</span></div>
+                          ${
+                            unlocked
+                              ? `<button class="buy-btn" data-animal="${type}">Купити</button>`
+                              : `<button class="buy-btn gold" disabled>Потрібен LVL ${unlockLevel}</button>`
+                          }
+                        </div>
+                      `;
         }
 
         modalBody.innerHTML = `
-                <div class="modal-grid">
-                  ${animalBuyCard({
-                    emoji: "🐔",
-                    title: "Курка",
-                    price: 100,
-                    resource: "Яйця",
-                    type: "CHICKEN",
-                    unlockLevel: 1,
-                  })}
-                  ${animalBuyCard({
-                    emoji: "🐑",
-                    title: "Вівця",
-                    price: 500,
-                    resource: "Шерсть",
-                    type: "SHEEP",
-                    unlockLevel: 5,
-                  })}
-                  ${animalBuyCard({
-                    emoji: "🐄",
-                    title: "Корова",
-                    price: 1000,
-                    resource: "Молоко",
-                    type: "COW",
-                    unlockLevel: 10,
-                  })}
-                </div>
-              `;
+                      <div class="modal-grid">
+                        ${animalBuyCard({
+                          emoji: "🐔",
+                          title: "Курка",
+                          price: 100,
+                          resource: "Яйця",
+                          type: "CHICKEN",
+                          unlockLevel: 1,
+                        })}
+                        ${animalBuyCard({
+                          emoji: "🐑",
+                          title: "Вівця",
+                          price: 500,
+                          resource: "Шерсть",
+                          type: "SHEEP",
+                          unlockLevel: 5,
+                        })}
+                        ${animalBuyCard({
+                          emoji: "🐄",
+                          title: "Корова",
+                          price: 1000,
+                          resource: "Молоко",
+                          type: "COW",
+                          unlockLevel: 10,
+                        })}
+                      </div>
+                    `;
 
         modalBody.querySelectorAll("[data-animal]").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -2807,79 +2918,79 @@
           const points = pointsText(type, level);
 
           return `
-            <div class="tile full v4-animal-card">
-              <div class="v4-animal-left">
-                <img class="v4-animal-img" src="${v4AnimalImgSrc(type)}" alt="${title}" />
-                <div class="v4-level-chip">LVL ${level}</div>
-              </div>
+                  <div class="tile full v4-animal-card">
+                    <div class="v4-animal-left">
+                      <img class="v4-animal-img" src="${v4AnimalImgSrc(type)}" alt="${title}" />
+                      <div class="v4-level-chip">LVL ${level}</div>
+                    </div>
 
-              <div class="v4-animal-main">
-                <div class="v4-animal-head">
-                  <div>
-                    <div class="v4-animal-title">${emoji} ${title}</div>
-                    <div class="v4-animal-count">${count} animals</div>
-                  </div>
-                  <div class="v4-income">
-                    <span>Coins / hour</span>
-                    <b>${perHour}</b>
-                  </div>
-                </div>
+                    <div class="v4-animal-main">
+                      <div class="v4-animal-head">
+                        <div>
+                          <div class="v4-animal-title">${emoji} ${title}</div>
+                          <div class="v4-animal-count">${count} animals</div>
+                        </div>
+                        <div class="v4-income">
+                          <span>Coins / hour</span>
+                          <b>${perHour}</b>
+                        </div>
+                      </div>
 
-                <div class="v4-bars">
-                  <div>
-                    <div class="v4-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
-                    ${hasAnimals ? v4Bar(lifeValue, "life") : ""}
-                  </div>
-                  <div>
-                    <div class="v4-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
-                    ${hasAnimals ? v4Bar(efficiencyValue, "power") : ""}
-                  </div>
-                </div>
+                      <div class="v4-bars">
+                        <div>
+                          <div class="v4-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                          ${hasAnimals ? v4Bar(lifeValue, "life") : ""}
+                        </div>
+                        <div>
+                          <div class="v4-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                          ${hasAnimals ? v4Bar(efficiencyValue, "power") : ""}
+                        </div>
+                      </div>
 
-                <div class="v4-mini-grid">
-                  <div><span>Ready</span><b>${readyValue}</b></div>
-                  <div><span>Feed</span><b>${feedValue}</b></div>
-                  <div><span>Cycle</span><b>${perCycle}</b></div>
-                  <div><span>Points</span><b>${points}</b></div>
-                </div>
+                      <div class="v4-mini-grid">
+                        <div><span>Ready</span><b>${readyValue}</b></div>
+                        <div><span>Feed</span><b>${feedValue}</b></div>
+                        <div><span>Cycle</span><b>${perCycle}</b></div>
+                        <div><span>Points</span><b>${points}</b></div>
+                      </div>
 
-                <div class="v4-actions">
-                  <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
-                  <button class="buy-btn gold" data-heal="${type}" ${hasAnimals ? "" : "disabled"}>❤️ Heal ${hasAnimals ? `${count * priceHeal}` : ""}</button>
-                </div>
-              </div>
-            </div>
-          `;
+                      <div class="v4-actions">
+                        <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                        <button class="buy-btn gold" data-heal="${type}" ${hasAnimals ? "" : "disabled"}>❤️ Heal ${hasAnimals ? `${count * priceHeal}` : ""}</button>
+                      </div>
+                    </div>
+                  </div>
+                `;
         }
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-summary">
-              <div>
-                <div class="tile-title">🐾 My Animals</div>
-                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
-              </div>
-              <div>
-                <div class="v4-summary-pill ${currentState?.vip?.active ? "on" : ""}">
-                  👑 ${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}
+                <div class="modal-grid">
+                  <div class="tile full v4-summary">
+                    <div>
+                      <div class="tile-title">🐾 My Animals</div>
+                      <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+                    </div>
+                    <div>
+                      <div class="v4-summary-pill ${currentState?.vip?.active ? "on" : ""}">
+                        👑 ${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}
+                      </div>
+                    </div>
+                  </div>
+
+                  ${v4AnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+                  ${v4AnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+                  ${v4AnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+
+                  <div class="tile full v4-vip-panel">
+                    <div class="tile-title">👑 Premium Status</div>
+                    <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+                    <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+                    <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            ${v4AnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
-            ${v4AnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
-            ${v4AnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
-
-            <div class="tile full v4-vip-panel">
-              <div class="tile-title">👑 Premium Status</div>
-              <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
-              <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
-            </div>
-          </div>
-        `;
+              `;
 
         modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
           btn.onclick = async () => {
@@ -2932,61 +3043,62 @@
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">📊 Заповнення</div>
-                                <div class="tile-value">${total} / ${capacity}</div>
-                                <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
-                                ${warning}
-                              </div>
+                                  <div class="modal-grid">
+                                    <div class="tile full">
+                                      <div class="tile-title">📊 Заповнення</div>
+                                      <div class="tile-value">${total} / ${capacity}</div>
+                                      <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
+                                      ${warning}
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🥚 Яйця</div>
-                                <div class="tile-value">${eggs}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🥚 Яйця</div>
+                                      <div class="tile-value">${eggs}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🧶 Шерсть</div>
-                                <div class="tile-value">${wool}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🧶 Шерсть</div>
+                                      <div class="tile-value">${wool}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🥛 Молоко</div>
-                                <div class="tile-value">${milk}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🥛 Молоко</div>
+                                      <div class="tile-value">${milk}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
+                                    </div>
 
-                              <div class="tile full">
-                                <div class="tile-title">💰 Продаж</div>
-                                <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
-                               <span>+${totalCoins} coins 💰</span>
-                               <span>+${
-                                 (currentState?.animals?.chickenLevel >= 4
-                                   ? eggs *
-                                     (currentState.animals.chickenLevel >= 5
-                                       ? 3
-                                       : 1)
-                                   : 0) +
-                                 (currentState?.animals?.sheepLevel >= 4
-                                   ? wool *
-                                     (currentState.animals.sheepLevel >= 5
-                                       ? 8
-                                       : 3)
-                                   : 0) +
-                                 (currentState?.animals?.cowLevel >= 4
-                                   ? milk *
-                                     (currentState.animals.cowLevel >= 5
-                                       ? 20
-                                       : 8)
-                                   : 0)
-                               } points ⭐</span>
-                               </div>
-                                <button class="buy-btn green" id="sellAllBtn">Продати все</button>
-                              </div>
-                            </div>
-                          `;
+                                    <div class="tile full">
+                                      <div class="tile-title">💰 Продаж</div>
+                                      <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
+                                     <span>+${totalCoins} coins 💰</span>
+                                     <span>+${
+                                       (currentState?.animals?.chickenLevel >= 4
+                                         ? eggs *
+                                           (currentState.animals.chickenLevel >=
+                                           5
+                                             ? 3
+                                             : 1)
+                                         : 0) +
+                                       (currentState?.animals?.sheepLevel >= 4
+                                         ? wool *
+                                           (currentState.animals.sheepLevel >= 5
+                                             ? 8
+                                             : 3)
+                                         : 0) +
+                                       (currentState?.animals?.cowLevel >= 4
+                                         ? milk *
+                                           (currentState.animals.cowLevel >= 5
+                                             ? 20
+                                             : 8)
+                                         : 0)
+                                     } points ⭐</span>
+                                     </div>
+                                      <button class="buy-btn green" id="sellAllBtn">Продати все</button>
+                                    </div>
+                                  </div>
+                                `;
 
         showModal();
 
@@ -3039,62 +3151,62 @@
         const vipOn = !!currentState?.vip?.active;
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-boost-hero">
-              <div class="v4-hero-title">⚡ Boost Center</div>
-              <div class="v4-hero-sub">Активуй бустери, Auto Sell і VIP, щоб ферма працювала швидше.</div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full v4-boost-hero">
+                    <div class="v4-hero-title">⚡ Boost Center</div>
+                    <div class="v4-hero-sub">Активуй бустери, Auto Sell і VIP, щоб ферма працювала швидше.</div>
+                  </div>
 
-            <div class="tile full v4-boost-card">
-              <div class="v4-boost-icon">⚡</div>
-              <div>
-                <div class="v4-boost-title">Boost x2</div>
-                <div class="v4-boost-desc">Подвоює ефект на короткий час.</div>
-                <div class="v4-boost-status ${boostOn ? "on" : ""}">${boostOn ? "ACTIVE" : "OFF"}</div>
-              </div>
-              <button class="buy-btn ${boostOn ? "green" : ""}" id="buyBoostBtn">${boostOn ? "ON" : "10 💎"}</button>
-            </div>
+                  <div class="tile full v4-boost-card">
+                    <div class="v4-boost-icon">⚡</div>
+                    <div>
+                      <div class="v4-boost-title">Boost x2</div>
+                      <div class="v4-boost-desc">Подвоює ефект на короткий час.</div>
+                      <div class="v4-boost-status ${boostOn ? "on" : ""}">${boostOn ? "ACTIVE" : "OFF"}</div>
+                    </div>
+                    <button class="buy-btn ${boostOn ? "green" : ""}" id="buyBoostBtn">${boostOn ? "ON" : "10 💎"}</button>
+                  </div>
 
-            <div class="tile full v4-boost-card">
-              <div class="v4-boost-icon">💰</div>
-              <div>
-                <div class="v4-boost-title">Auto Sell</div>
-                <div class="v4-boost-desc">Автоматично продає склад, коли він заповнюється.</div>
-                <div class="v4-boost-status ${autoOn ? "on" : ""}">${autoOn ? "ACTIVE" : "OFF"}</div>
-              </div>
-              <button class="buy-btn ${autoOn ? "green" : ""}" id="buyAutoBtn">${autoOn ? "ON" : "10 💎"}</button>
-            </div>
+                  <div class="tile full v4-boost-card">
+                    <div class="v4-boost-icon">💰</div>
+                    <div>
+                      <div class="v4-boost-title">Auto Sell</div>
+                      <div class="v4-boost-desc">Автоматично продає склад, коли він заповнюється.</div>
+                      <div class="v4-boost-status ${autoOn ? "on" : ""}">${autoOn ? "ACTIVE" : "OFF"}</div>
+                    </div>
+                    <button class="buy-btn ${autoOn ? "green" : ""}" id="buyAutoBtn">${autoOn ? "ON" : "10 💎"}</button>
+                  </div>
 
-            <div class="tile full v4-vip-hero">
-              <div class="v4-hero-title">👑 VIP Membership</div>
-              <div class="v4-hero-sub">${vipOn ? "VIP активний. Ферма працює в premium режимі." : "Увімкни VIP, щоб отримати Auto Feed, Auto Sell і premium переваги."}</div>
+                  <div class="tile full v4-vip-hero">
+                    <div class="v4-hero-title">👑 VIP Membership</div>
+                    <div class="v4-hero-sub">${vipOn ? "VIP активний. Ферма працює в premium режимі." : "Увімкни VIP, щоб отримати Auto Feed, Auto Sell і premium переваги."}</div>
 
-              <div class="v4-vip-list">
-                <div class="v4-vip-item"><span>✓</span> Auto Feed</div>
-                <div class="v4-vip-item"><span>✓</span> Auto Sell</div>
-                <div class="v4-vip-item"><span>✓</span> Better premium gameplay</div>
-                <div class="v4-vip-item"><span>✓</span> Підходить для донату через Stars</div>
-              </div>
+                    <div class="v4-vip-list">
+                      <div class="v4-vip-item"><span>✓</span> Auto Feed</div>
+                      <div class="v4-vip-item"><span>✓</span> Auto Sell</div>
+                      <div class="v4-vip-item"><span>✓</span> Better premium gameplay</div>
+                      <div class="v4-vip-item"><span>✓</span> Підходить для донату через Stars</div>
+                    </div>
 
-              <div class="v4-vip-plans">
-                <div class="v4-vip-plan">
-                  <div class="v4-plan-title">VIP 24h</div>
-                  <div class="v4-plan-price">${vipOn ? "ON" : "150 💎"}</div>
-                  <div class="v4-plan-note">Для швидкої перевірки</div>
-                  <button class="buy-btn gold" id="buyVip1dBtn">${vipOn ? "ON" : "Купити"}</button>
+                    <div class="v4-vip-plans">
+                      <div class="v4-vip-plan">
+                        <div class="v4-plan-title">VIP 24h</div>
+                        <div class="v4-plan-price">${vipOn ? "ON" : "150 💎"}</div>
+                        <div class="v4-plan-note">Для швидкої перевірки</div>
+                        <button class="buy-btn gold" id="buyVip1dBtn">${vipOn ? "ON" : "Купити"}</button>
+                      </div>
+
+                      <div class="v4-vip-plan best">
+                        <div class="v4-product-badge gold">BEST</div>
+                        <div class="v4-plan-title">VIP 7d</div>
+                        <div class="v4-plan-price">800 💎</div>
+                        <div class="v4-plan-note">Вигідніше на довше</div>
+                        <button class="buy-btn gold" id="buyVip7dBtn">Купити</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-
-                <div class="v4-vip-plan best">
-                  <div class="v4-product-badge gold">BEST</div>
-                  <div class="v4-plan-title">VIP 7d</div>
-                  <div class="v4-plan-price">800 💎</div>
-                  <div class="v4-plan-note">Вигідніше на довше</div>
-                  <button class="buy-btn gold" id="buyVip7dBtn">Купити</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
+              `;
 
         showModal();
 
@@ -3161,11 +3273,11 @@
 
         if (!res.ok) {
           modalBody.innerHTML = `
-                              <div class="tile full">
-                                <div class="tile-title">Лабораторія</div>
-                                <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
-                              </div>
-                            `;
+                                    <div class="tile full">
+                                      <div class="tile-title">Лабораторія</div>
+                                      <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
+                                    </div>
+                                  `;
           showModal();
           return;
         }
@@ -3182,98 +3294,98 @@
         function animalCard(title, emoji, item, type) {
           if (!item || item.owned <= 0) {
             return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">0 шт</div>
-                                  <div class="warn">Спочатку купи тварин</div>
-                                </div>
-                              `;
+                                      <div class="tile">
+                                        <div class="tile-title">${emoji} ${title}</div>
+                                        <div class="tile-value">0 шт</div>
+                                        <div class="warn">Спочатку купи тварин</div>
+                                      </div>
+                                    `;
           }
 
           if (item.maxed) {
             return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">LVL ${item.currentLevel}</div>
-                                  <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
+                                      <div class="tile">
+                                        <div class="tile-title">${emoji} ${title}</div>
+                                        <div class="tile-value">LVL ${item.currentLevel}</div>
+                                        <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                                        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                                        <button class="buy-btn green" disabled>MAX</button>
+                                      </div>
+                                    `;
           }
 
           const chance = item.successChance ?? 0;
           const fails = item.upgradeFails ?? 0;
 
           return `
-                              <div class="tile">
-                                <div class="tile-title">${emoji} ${title}</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
+                                    <div class="tile">
+                                      <div class="tile-title">${emoji} ${title}</div>
+                                      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                                      <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                                      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                                      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                                      <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                                      <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+                                      ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
+                                      ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+                                      <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
+                                        ${item.canUpgrade ? "Покращити" : "Не вистачає"}
+                                      </button>
+                                    </div>
+                                  `;
         }
 
         function storageCard(item) {
           if (!item || item.maxed) {
             return `
-                                <div class="tile full">
-                                  <div class="tile-title">📦 Склад</div>
-                                  <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
-                                  <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? 0}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
+                                      <div class="tile full">
+                                        <div class="tile-title">📦 Склад</div>
+                                        <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
+                                        <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? 0}</span></div>
+                                        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                                        <button class="buy-btn green" disabled>MAX</button>
+                                      </div>
+                                    `;
           }
 
           const chance = item.successChance ?? 0;
           const fails = item.upgradeFails ?? 0;
 
           return `
-                              <div class="tile full">
-                                <div class="tile-title">📦 Склад</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
+                                    <div class="tile full">
+                                      <div class="tile-title">📦 Склад</div>
+                                      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                                      <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
+                                      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                                      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                                      <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                                      <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+                                      ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+                                      <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
+                                        ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
+                                      </button>
+                                    </div>
+                                  `;
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">🐾 Upgrade тварин</div>
-                                <div class="note">
-                                  ⭐ Points відкриваються з LVL 4 тварин.<br>
-                                  Чим вищий рівень тварини — тим більше Points вона дає.<br>
-                                  У майбутньому Points можна буде обмінювати на TON.
-                                </div>
-                              </div>
+                                  <div class="modal-grid">
+                                    <div class="tile full">
+                                      <div class="tile-title">🐾 Upgrade тварин</div>
+                                      <div class="note">
+                                        ⭐ Points відкриваються з LVL 4 тварин.<br>
+                                        Чим вищий рівень тварини — тим більше Points вона дає.<br>
+                                        У майбутньому Points можна буде обмінювати на TON.
+                                      </div>
+                                    </div>
 
-                              ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
-                              ${animalCard("Вівці", "🐑", animals.sheep, "SHEEP")}
-                              ${animalCard("Корови", "🐄", animals.cow, "COW")}
+                                    ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
+                                    ${animalCard("Вівці", "🐑", animals.sheep, "SHEEP")}
+                                    ${animalCard("Корови", "🐄", animals.cow, "COW")}
 
-                              ${storageCard(storage)}
-                            </div>
-                          `;
+                                    ${storageCard(storage)}
+                                  </div>
+                                `;
 
         showModal();
 
@@ -3364,35 +3476,35 @@
         ];
 
         modalBody.innerHTML = `
-                      <div class="daily-grid">
-                        ${rewards
-                          .map((r, i) => {
-                            const d = i + 1;
+                            <div class="daily-grid">
+                              ${rewards
+                                .map((r, i) => {
+                                  const d = i + 1;
 
-                            let text = "";
-                            if (r.coins) text += `💰 ${r.coins}`;
-                            if (r.diamonds) text += `💎 ${r.diamonds}`;
+                                  let text = "";
+                                  if (r.coins) text += `💰 ${r.coins}`;
+                                  if (r.diamonds) text += `💎 ${r.diamonds}`;
 
-                            let cls = "daily-item";
+                                  let cls = "daily-item";
 
-                            if (d < day) cls += " done";
-                            if (d === day) cls += " active";
-                            if (claimed && d === day) cls += " done";
+                                  if (d < day) cls += " done";
+                                  if (d === day) cls += " active";
+                                  if (claimed && d === day) cls += " done";
 
-                            return `
-                            <div class="${cls}">
-                              <div class="day">Day ${d}</div>
-                              <div class="reward">${text}</div>
+                                  return `
+                                  <div class="${cls}">
+                                    <div class="day">Day ${d}</div>
+                                    <div class="reward">${text}</div>
+                                  </div>
+                                `;
+                                })
+                                .join("")}
                             </div>
-                          `;
-                          })
-                          .join("")}
-                      </div>
 
-                      <button class="buy-btn" id="dailyBtn" ${claimed ? "disabled" : ""}>
-                        ${claimed ? "Вже забрано" : "Забрати"}
-                      </button>
-                    `;
+                            <button class="buy-btn" id="dailyBtn" ${claimed ? "disabled" : ""}>
+                              ${claimed ? "Вже забрано" : "Забрати"}
+                            </button>
+                          `;
 
         showModal();
 
@@ -3446,16 +3558,16 @@
               : "";
 
           return `
-            <div class="tile">
-              <div class="tile-title">${q.title}</div>
-              <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
-              ${progress}
-              <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
-              <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
-                ${q.claimed ? "Забрано" : "Забрати"}
-              </button>
-            </div>
-          `;
+                  <div class="tile">
+                    <div class="tile-title">${q.title}</div>
+                    <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
+                    ${progress}
+                    <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
+                    <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
+                      ${q.claimed ? "Забрано" : "Забрати"}
+                    </button>
+                  </div>
+                `;
         }
 
         function renderGroup(groupKey) {
@@ -3467,15 +3579,15 @@
         }
 
         modalBody.innerHTML = `
-          <div class="quest-tabs">
-            <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
-            <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
-            <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
-          </div>
-          <div class="modal-grid">
-            ${renderGroup(activeGroup)}
-          </div>
-        `;
+                <div class="quest-tabs">
+                  <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
+                  <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
+                  <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
+                </div>
+                <div class="modal-grid">
+                  ${renderGroup(activeGroup)}
+                </div>
+              `;
 
         showModal();
 
@@ -3516,45 +3628,45 @@
         }
 
         modalBody.innerHTML = `
-                                  <div class="wheel-wrap">
-                                    <div class="wheel-pointer"></div>
+                                        <div class="wheel-wrap">
+                                          <div class="wheel-pointer"></div>
 
-                                    <div style="display:flex; justify-content:center;">
-                                      <svg width="260" height="260" viewBox="0 0 260 260">
+                                          <div style="display:flex; justify-content:center;">
+                                            <svg width="260" height="260" viewBox="0 0 260 260">
 
-                                        <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
+                                              <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
 
-                                          <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
-                                          <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
-                                          <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
-                                          <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
-                                          <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
-                                          <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
-                                          <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
-                                          <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
+                                                <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
+                                                <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
+                                                <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
+                                                <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
+                                                <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
+                                                <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
+                                                <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
+                                                <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
 
-                                          <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
-                                          <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
-                                          <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
-                                          <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
-                                          <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
-                                          <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
-                                          <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
-                                          <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
+                                                <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
+                                                <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
+                                                <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
+                                                <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
+                                                <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
+                                                <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
+                                                <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
+                                                <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
 
-                                        </g>
+                                              </g>
 
-                                        <circle cx="130" cy="130" r="40" fill="#0f172a"/>
-                                        <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
+                                              <circle cx="130" cy="130" r="40" fill="#0f172a"/>
+                                              <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
 
-                                      </svg>
-                                    </div>
+                                            </svg>
+                                          </div>
 
-                                    <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
-                                      ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
-                                    </button>
-                                  </div>
-                                `;
+                                          <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
+                                            ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
+                                          </button>
+                                        </div>
+                                      `;
 
         showModal();
 
@@ -3609,32 +3721,32 @@
         modalTabs.style.display = "none";
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-shop-hero">
-              <div class="v4-hero-title">🛒 Premium Shop</div>
-              <div class="v4-hero-sub">
-                Тут тільки premium-покупки: Boosters, VIP, Diamonds / Telegram Stars.
-                Тварини залишаються у вкладці "Тварини", корм — у вкладці "Корм".
-              </div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full v4-shop-hero">
+                    <div class="v4-hero-title">🛒 Premium Shop</div>
+                    <div class="v4-hero-sub">
+                      Тут тільки premium-покупки: Boosters, VIP, Diamonds / Telegram Stars.
+                      Тварини залишаються у вкладці "Тварини", корм — у вкладці "Корм".
+                    </div>
+                  </div>
 
-            <div class="tile full v5-info-card">
-              🐾 Тварини купуються в меню <b>Тварини</b><br>
-              🌾 Корм купується в меню <b>Корм</b><br>
-              👑 Premium покупки — тут
-            </div>
+                  <div class="tile full v5-info-card">
+                    🐾 Тварини купуються в меню <b>Тварини</b><br>
+                    🌾 Корм купується в меню <b>Корм</b><br>
+                    👑 Premium покупки — тут
+                  </div>
 
-            <div class="tile full">
-              <div class="v4-shop-tabs">
-                <button class="v4-shop-tab active" data-shop-tab="premium">💎 Premium</button>
-                <button class="v4-shop-tab" data-shop-tab="boosts">🚀 Boosts</button>
-                <button class="v4-shop-tab" data-shop-tab="vip">👑 VIP</button>
-                <button class="v4-shop-tab" data-shop-tab="stars">⭐ Stars</button>
-              </div>
-              <div id="v4ShopContent"></div>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <div class="v4-shop-tabs">
+                      <button class="v4-shop-tab active" data-shop-tab="premium">💎 Premium</button>
+                      <button class="v4-shop-tab" data-shop-tab="boosts">🚀 Boosts</button>
+                      <button class="v4-shop-tab" data-shop-tab="vip">👑 VIP</button>
+                      <button class="v4-shop-tab" data-shop-tab="stars">⭐ Stars</button>
+                    </div>
+                    <div id="v4ShopContent"></div>
+                  </div>
+                </div>
+              `;
 
         function premiumCard({
           icon,
@@ -3646,17 +3758,17 @@
           badge = "",
         }) {
           return `
-            <div class="tile v5-premium-card ${cls}">
-              ${badge ? `<div class="v5-badge ${badge === "BEST" ? "gold" : ""}">${badge}</div>` : ""}
-              <div class="v5-premium-icon">${icon}</div>
-              <div class="v5-card-title">${title}</div>
-              <div class="v5-card-desc">${desc}</div>
-              <div class="v5-card-price">${price}</div>
-              <button class="buy-btn ${cls === "vip" ? "gold" : "green"}" data-premium-buy="${code}">
-                Купити
-              </button>
-            </div>
-          `;
+                  <div class="tile v5-premium-card ${cls}">
+                    ${badge ? `<div class="v5-badge ${badge === "BEST" ? "gold" : ""}">${badge}</div>` : ""}
+                    <div class="v5-premium-icon">${icon}</div>
+                    <div class="v5-card-title">${title}</div>
+                    <div class="v5-card-desc">${desc}</div>
+                    <div class="v5-card-price">${price}</div>
+                    <button class="buy-btn ${cls === "vip" ? "gold" : "green"}" data-premium-buy="${code}">
+                      Купити
+                    </button>
+                  </div>
+                `;
         }
 
         function renderShopTab(tab) {
@@ -3665,106 +3777,110 @@
 
           if (tab === "boosts") {
             box.innerHTML = `
-              <div class="v5-premium-grid">
-                ${premiumCard({
-                  icon: "⚡",
-                  title: "Boost x2",
-                  desc: "Подвійна сила для швидшого прогресу.",
-                  price: currentState?.boost?.active ? "ON" : "10 💎",
-                  code: "boost_x2",
-                  badge: currentState?.boost?.active ? "ON" : "",
-                })}
-                ${premiumCard({
-                  icon: "💰",
-                  title: "Auto Sell",
-                  desc: "Автоматичний продаж складу, коли він заповнюється.",
-                  price: currentState?.autoCollect?.active ? "ON" : "10 💎",
-                  code: "auto_collect",
-                  badge: currentState?.autoCollect?.active ? "ON" : "",
-                })}
-              </div>
-            `;
+                    <div class="v5-premium-grid">
+                      ${premiumCard({
+                        icon: "⚡",
+                        title: "Boost x2",
+                        desc: "Подвійна сила для швидшого прогресу.",
+                        price: currentState?.boost?.active ? "ON" : "10 💎",
+                        code: "boost_x2",
+                        badge: currentState?.boost?.active ? "ON" : "",
+                      })}
+                      ${premiumCard({
+                        icon: "💰",
+                        title: "Auto Sell",
+                        desc: "Автоматичний продаж складу, коли він заповнюється.",
+                        price: currentState?.autoCollect?.active
+                          ? "ON"
+                          : "10 💎",
+                        code: "auto_collect",
+                        badge: currentState?.autoCollect?.active ? "ON" : "",
+                      })}
+                    </div>
+                  `;
           } else if (tab === "vip") {
             box.innerHTML = `
-              <div class="v5-premium-grid">
-                ${premiumCard({
-                  icon: "👑",
-                  title: "VIP 24h",
-                  desc: "Auto Feed + Auto Sell на 24 години.",
-                  price: currentState?.vip?.active ? "ON" : "150 💎",
-                  code: "vip_1d",
-                  cls: "vip",
-                })}
-                ${premiumCard({
-                  icon: "👑",
-                  title: "VIP 7d",
-                  desc: "Premium режим на 7 днів. Вигідніше.",
-                  price: "800 💎",
-                  code: "vip_7d",
-                  cls: "vip",
-                  badge: "BEST",
-                })}
-              </div>
-            `;
+                    <div class="v5-premium-grid">
+                      ${premiumCard({
+                        icon: "👑",
+                        title: "VIP 24h",
+                        desc: "Auto Feed + Auto Sell на 24 години.",
+                        price: currentState?.vip?.active ? "ON" : "150 💎",
+                        code: "vip_1d",
+                        cls: "vip",
+                      })}
+                      ${premiumCard({
+                        icon: "👑",
+                        title: "VIP 7d",
+                        desc: "Premium режим на 7 днів. Вигідніше.",
+                        price: "800 💎",
+                        code: "vip_7d",
+                        cls: "vip",
+                        badge: "BEST",
+                      })}
+                    </div>
+                  `;
           } else if (tab === "stars") {
             box.innerHTML = `
-              <div class="v5-premium-grid">
-                ${premiumCard({
-                  icon: "⭐",
-                  title: "Telegram Stars",
-                  desc: "Покупки через Telegram Stars. Підготовлено для донату.",
-                  price: "Soon",
-                  code: "stars_soon",
-                  cls: "stars",
-                  badge: "SOON",
-                })}
-                ${premiumCard({
-                  icon: "💎",
-                  title: "Diamonds Pack",
-                  desc: "Пакет діамантів для VIP та бустерів.",
-                  price: "Soon",
-                  code: "diamonds_soon",
-                  cls: "stars",
-                  badge: "SOON",
-                })}
-              </div>
-            `;
+                    <div class="v5-premium-grid">
+                      ${premiumCard({
+                        icon: "⭐",
+                        title: "Telegram Stars",
+                        desc: "Покупки через Telegram Stars. Підготовлено для донату.",
+                        price: "Soon",
+                        code: "stars_soon",
+                        cls: "stars",
+                        badge: "SOON",
+                      })}
+                      ${premiumCard({
+                        icon: "💎",
+                        title: "Diamonds Pack",
+                        desc: "Пакет діамантів для VIP та бустерів.",
+                        price: "Soon",
+                        code: "diamonds_soon",
+                        cls: "stars",
+                        badge: "SOON",
+                      })}
+                    </div>
+                  `;
           } else {
             box.innerHTML = `
-              <div class="v5-premium-grid">
-                ${premiumCard({
-                  icon: "💎",
-                  title: "Diamonds",
-                  desc: "Premium валюта для VIP і бустерів.",
-                  price: "Soon",
-                  code: "diamonds_soon",
-                  badge: "SOON",
-                })}
-                ${premiumCard({
-                  icon: "⚡",
-                  title: "Boost x2",
-                  desc: "Швидкий бустер для активного фарму.",
-                  price: currentState?.boost?.active ? "ON" : "10 💎",
-                  code: "boost_x2",
-                })}
-                ${premiumCard({
-                  icon: "💰",
-                  title: "Auto Sell",
-                  desc: "Автоматично продає склад.",
-                  price: currentState?.autoCollect?.active ? "ON" : "10 💎",
-                  code: "auto_collect",
-                })}
-                ${premiumCard({
-                  icon: "👑",
-                  title: "VIP",
-                  desc: "Auto Feed + Auto Sell + premium режим.",
-                  price: currentState?.vip?.active ? "ON" : "від 150 💎",
-                  code: "vip_open",
-                  cls: "vip",
-                  badge: "BEST",
-                })}
-              </div>
-            `;
+                    <div class="v5-premium-grid">
+                      ${premiumCard({
+                        icon: "💎",
+                        title: "Diamonds",
+                        desc: "Premium валюта для VIP і бустерів.",
+                        price: "Soon",
+                        code: "diamonds_soon",
+                        badge: "SOON",
+                      })}
+                      ${premiumCard({
+                        icon: "⚡",
+                        title: "Boost x2",
+                        desc: "Швидкий бустер для активного фарму.",
+                        price: currentState?.boost?.active ? "ON" : "10 💎",
+                        code: "boost_x2",
+                      })}
+                      ${premiumCard({
+                        icon: "💰",
+                        title: "Auto Sell",
+                        desc: "Автоматично продає склад.",
+                        price: currentState?.autoCollect?.active
+                          ? "ON"
+                          : "10 💎",
+                        code: "auto_collect",
+                      })}
+                      ${premiumCard({
+                        icon: "👑",
+                        title: "VIP",
+                        desc: "Auto Feed + Auto Sell + premium режим.",
+                        price: currentState?.vip?.active ? "ON" : "від 150 💎",
+                        code: "vip_open",
+                        cls: "vip",
+                        badge: "BEST",
+                      })}
+                    </div>
+                  `;
           }
 
           box.querySelectorAll("[data-premium-buy]").forEach((btn) => {
@@ -3834,55 +3950,55 @@
           0;
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-ref-hero">
-              <div class="v4-hero-title">👥 Referral Program</div>
-              <div class="v4-hero-sub">
-                Запрошуй друзів і отримуй бонуси. Новий гравець отримує стартовий бонус, а ти отримуєш coins + points.
-              </div>
+                <div class="modal-grid">
+                  <div class="tile full v4-ref-hero">
+                    <div class="v4-hero-title">👥 Referral Program</div>
+                    <div class="v4-hero-sub">
+                      Запрошуй друзів і отримуй бонуси. Новий гравець отримує стартовий бонус, а ти отримуєш coins + points.
+                    </div>
 
-              <div class="v4-ref-link-box">
-                <div class="v4-ref-link" id="refLinkText">${link}</div>
-                <button class="v4-copy-btn" id="copyRefBtn">Copy</button>
-              </div>
-            </div>
+                    <div class="v4-ref-link-box">
+                      <div class="v4-ref-link" id="refLinkText">${link}</div>
+                      <button class="v4-copy-btn" id="copyRefBtn">Copy</button>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="v4-stat-grid">
-                <div class="v4-big-stat">
-                  <span>Invited</span>
-                  <b>${count}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Coins earned</span>
-                  <b>${coinsEarned}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Points earned</span>
-                  <b>${pointsEarned}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Bonus</span>
-                  <b>+50 / ref</b>
-                </div>
-              </div>
-            </div>
+                  <div class="tile full">
+                    <div class="v4-stat-grid">
+                      <div class="v4-big-stat">
+                        <span>Invited</span>
+                        <b>${count}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Coins earned</span>
+                        <b>${coinsEarned}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Points earned</span>
+                        <b>${pointsEarned}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Bonus</span>
+                        <b>+50 / ref</b>
+                      </div>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">🎁 Referral rewards</div>
-              <div class="v4-info-list">
-                <div class="v4-info-item"><span>1</span> Новий гравець отримує +100 coins</div>
-                <div class="v4-info-item"><span>2</span> Ти отримуєш +50 coins за реферала</div>
-                <div class="v4-info-item"><span>3</span> Points з рефералів показуються окремо</div>
-                <div class="v4-info-item"><span>4</span> Кращі реферали можуть бути в leaderboard</div>
-              </div>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">🎁 Referral rewards</div>
+                    <div class="v4-info-list">
+                      <div class="v4-info-item"><span>1</span> Новий гравець отримує +100 coins</div>
+                      <div class="v4-info-item"><span>2</span> Ти отримуєш +50 coins за реферала</div>
+                      <div class="v4-info-item"><span>3</span> Points з рефералів показуються окремо</div>
+                      <div class="v4-info-item"><span>4</span> Кращі реферали можуть бути в leaderboard</div>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <button class="buy-btn green" id="shareRefBtn">📤 Поділитися</button>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <button class="buy-btn green" id="shareRefBtn">📤 Поділитися</button>
+                  </div>
+                </div>
+              `;
 
         showModal();
 
@@ -3923,21 +4039,21 @@
         modalTabs.style.display = "none";
 
         modalBody.innerHTML = `
-                <div class="quest-tabs">
-                  ${tabs
-                    .map(
-                      (t) => `
-                        <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                          ${t.label}
-                        </button>
-                      `,
-                    )
-                    .join("")}
-                </div>
-                <div class="tile full">
-                  <div class="note">Завантаження рейтингу...</div>
-                </div>
-              `;
+                      <div class="quest-tabs">
+                        ${tabs
+                          .map(
+                            (t) => `
+                              <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                ${t.label}
+                              </button>
+                            `,
+                          )
+                          .join("")}
+                      </div>
+                      <div class="tile full">
+                        <div class="note">Завантаження рейтингу...</div>
+                      </div>
+                    `;
 
         showModal();
 
@@ -3951,19 +4067,19 @@
 
           if (!data.ok) {
             modalBody.innerHTML = `
-                    <div class="quest-tabs">
-                      ${tabs
-                        .map(
-                          (t) => `
-                            <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                              ${t.label}
-                            </button>
-                          `,
-                        )
-                        .join("")}
-                    </div>
-                    <div class="warn">Помилка завантаження топу</div>
-                  `;
+                          <div class="quest-tabs">
+                            ${tabs
+                              .map(
+                                (t) => `
+                                  <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                    ${t.label}
+                                  </button>
+                                `,
+                              )
+                              .join("")}
+                          </div>
+                          <div class="warn">Помилка завантаження топу</div>
+                        `;
 
             modalBody
               .querySelectorAll("[data-leaderboard-tab]")
@@ -3990,35 +4106,35 @@
           const rows = (data.leaderboard || [])
             .map(
               (user) => `
-                      <div class="tile full">
-                        <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
-                        ${valueLine(user)}
-                        <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
-                        <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
-                        <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
-                        <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
-                      </div>
-                    `,
+                            <div class="tile full">
+                              <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
+                              ${valueLine(user)}
+                              <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
+                              <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
+                              <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
+                              <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
+                            </div>
+                          `,
             )
             .join("");
 
           modalBody.innerHTML = `
-                  <div class="quest-tabs">
-                    ${tabs
-                      .map(
-                        (t) => `
-                          <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                            ${t.label}
-                          </button>
-                        `,
-                      )
-                      .join("")}
-                  </div>
+                        <div class="quest-tabs">
+                          ${tabs
+                            .map(
+                              (t) => `
+                                <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                  ${t.label}
+                                </button>
+                              `,
+                            )
+                            .join("")}
+                        </div>
 
-                  <div class="modal-grid">
-                    ${rows || `<div class="tile full"><div class="note">Поки немає даних</div></div>`}
-                  </div>
-                `;
+                        <div class="modal-grid">
+                          ${rows || `<div class="tile full"><div class="note">Поки немає даних</div></div>`}
+                        </div>
+                      `;
 
           modalBody
             .querySelectorAll("[data-leaderboard-tab]")
@@ -4028,19 +4144,19 @@
             });
         } catch (e) {
           modalBody.innerHTML = `
-                  <div class="quest-tabs">
-                    ${tabs
-                      .map(
-                        (t) => `
-                          <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                            ${t.label}
-                          </button>
-                        `,
-                      )
-                      .join("")}
-                  </div>
-                  <div class="warn">Помилка завантаження топу</div>
-                `;
+                        <div class="quest-tabs">
+                          ${tabs
+                            .map(
+                              (t) => `
+                                <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                  ${t.label}
+                                </button>
+                              `,
+                            )
+                            .join("")}
+                        </div>
+                        <div class="warn">Помилка завантаження топу</div>
+                      `;
 
           modalBody
             .querySelectorAll("[data-leaderboard-tab]")
@@ -4060,63 +4176,63 @@
         const coins = currentState?.coins ?? 0;
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-wallet-hero">
-              <div class="v4-hero-title">👛 Wallet</div>
-              <div class="v4-hero-sub">
-                Баланс гравця, diamonds, points і майбутній withdraw.
-              </div>
+                <div class="modal-grid">
+                  <div class="tile full v4-wallet-hero">
+                    <div class="v4-hero-title">👛 Wallet</div>
+                    <div class="v4-hero-sub">
+                      Баланс гравця, diamonds, points і майбутній withdraw.
+                    </div>
 
-              <div class="v4-wallet-balance">
-                <div class="v4-wallet-card">
-                  <span>Diamonds</span>
-                  <b>${diamonds} 💎</b>
-                </div>
-                <div class="v4-wallet-card gold">
-                  <span>Points</span>
-                  <b>${points} ⭐</b>
-                </div>
-              </div>
-            </div>
+                    <div class="v4-wallet-balance">
+                      <div class="v4-wallet-card">
+                        <span>Diamonds</span>
+                        <b>${diamonds} 💎</b>
+                      </div>
+                      <div class="v4-wallet-card gold">
+                        <span>Points</span>
+                        <b>${points} ⭐</b>
+                      </div>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="v4-stat-grid">
-                <div class="v4-big-stat">
-                  <span>Coins</span>
-                  <b>${coins}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>USDT estimate</span>
-                  <b>Soon</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Withdraw</span>
-                  <b>Locked</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Status</span>
-                  <b>Testing</b>
-                </div>
-              </div>
-            </div>
+                  <div class="tile full">
+                    <div class="v4-stat-grid">
+                      <div class="v4-big-stat">
+                        <span>Coins</span>
+                        <b>${coins}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>USDT estimate</span>
+                        <b>Soon</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Withdraw</span>
+                        <b>Locked</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Status</span>
+                        <b>Testing</b>
+                      </div>
+                    </div>
+                  </div>
 
-            <div class="tile full v4-withdraw-card">
-              <div class="tile-title">💸 Withdraw</div>
-              <div class="tile-value">Coming soon</div>
-              <div class="tile-row"><span>Points → USDT</span><span>Soon</span></div>
-              <div class="tile-row"><span>Diamonds → Bonus</span><span>Soon</span></div>
-              <div class="v4-soon-badge">Withdraw буде після запуску економіки</div>
-              <button class="buy-btn gold" id="withdrawSoonBtn">Withdraw Soon</button>
-            </div>
+                  <div class="tile full v4-withdraw-card">
+                    <div class="tile-title">💸 Withdraw</div>
+                    <div class="tile-value">Coming soon</div>
+                    <div class="tile-row"><span>Points → USDT</span><span>Soon</span></div>
+                    <div class="tile-row"><span>Diamonds → Bonus</span><span>Soon</span></div>
+                    <div class="v4-soon-badge">Withdraw буде після запуску економіки</div>
+                    <button class="buy-btn gold" id="withdrawSoonBtn">Withdraw Soon</button>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">⚠️ Important</div>
-              <div class="note">
-                Поки гра в тесті, withdraw краще показувати як Coming Soon.
-              </div>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <div class="tile-title">⚠️ Important</div>
+                    <div class="note">
+                      Поки гра в тесті, withdraw краще показувати як Coming Soon.
+                    </div>
+                  </div>
+                </div>
+              `;
 
         showModal();
 
@@ -4140,65 +4256,65 @@
         const link = makeReferralLink();
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-profile-hero">
-              <div class="v4-profile-top">
-                <div class="v4-profile-avatar">👨‍🌾</div>
-                <div>
-                  <div class="v4-profile-name">Farmer</div>
-                  <div class="v4-profile-sub">My Farm Clicker player</div>
-                </div>
-                <div class="v4-id-pill">ID: ${telegramId}</div>
-              </div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full v4-profile-hero">
+                    <div class="v4-profile-top">
+                      <div class="v4-profile-avatar">👨‍🌾</div>
+                      <div>
+                        <div class="v4-profile-name">Farmer</div>
+                        <div class="v4-profile-sub">My Farm Clicker player</div>
+                      </div>
+                      <div class="v4-id-pill">ID: ${telegramId}</div>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="v4-stat-grid">
-                <div class="v4-big-stat">
-                  <span>Level</span>
-                  <b>${level}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>XP</span>
-                  <b>${xp}/${xpNeeded}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Coins</span>
-                  <b>${coins}</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Diamonds</span>
-                  <b>${diamonds} 💎</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>Points</span>
-                  <b>${points} ⭐</b>
-                </div>
-                <div class="v4-big-stat">
-                  <span>VIP</span>
-                  <b>${vip}</b>
-                </div>
-              </div>
-            </div>
+                  <div class="tile full">
+                    <div class="v4-stat-grid">
+                      <div class="v4-big-stat">
+                        <span>Level</span>
+                        <b>${level}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>XP</span>
+                        <b>${xp}/${xpNeeded}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Coins</span>
+                        <b>${coins}</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Diamonds</span>
+                        <b>${diamonds} 💎</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>Points</span>
+                        <b>${points} ⭐</b>
+                      </div>
+                      <div class="v4-big-stat">
+                        <span>VIP</span>
+                        <b>${vip}</b>
+                      </div>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">🔗 Referral link</div>
-              <div class="v4-ref-link-box">
-                <div class="v4-ref-link">${link}</div>
-                <button class="v4-copy-btn" id="copyProfileRefBtn">Copy</button>
-              </div>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">🔗 Referral link</div>
+                    <div class="v4-ref-link-box">
+                      <div class="v4-ref-link">${link}</div>
+                      <button class="v4-copy-btn" id="copyProfileRefBtn">Copy</button>
+                    </div>
+                  </div>
 
-            <div class="tile full">
-              <div class="v4-info-list">
-                <div class="v4-info-item"><span>👛</span> Wallet для diamonds / points / withdraw</div>
-                <div class="v4-info-item"><span>👥</span> Referrals для запрошень</div>
-                <div class="v4-info-item"><span>🏆</span> Leaderboard для топ-гравців</div>
-                <div class="v4-info-item"><span>👑</span> VIP для premium automation</div>
-              </div>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <div class="v4-info-list">
+                      <div class="v4-info-item"><span>👛</span> Wallet для diamonds / points / withdraw</div>
+                      <div class="v4-info-item"><span>👥</span> Referrals для запрошень</div>
+                      <div class="v4-info-item"><span>🏆</span> Leaderboard для топ-гравців</div>
+                      <div class="v4-info-item"><span>👑</span> VIP для premium automation</div>
+                    </div>
+                  </div>
+                </div>
+              `;
 
         showModal();
 
