@@ -534,253 +534,311 @@
         line-height: 1.4;
       }
 
-      /* ANIMALS V4 PRO */
-      .v4-shop-card {
+      /* SHOP + BOOSTERS + VIP V4 PRO */
+      .v4-shop-hero,
+      .v4-boost-hero,
+      .v4-vip-hero {
         position: relative;
-        min-height: 330px;
-      }
-
-      .v4-shop-img-wrap {
-        position: relative;
-        height: 130px;
-        display: grid;
-        place-items: center;
-        margin-bottom: 8px;
-      }
-
-      .v4-shop-img-wrap .animal-card-img {
-        width: 120px !important;
-        height: 120px !important;
-      }
-
-      .v4-unlock-badge {
-        position: absolute;
-        right: 0;
-        top: 0;
-        padding: 6px 9px;
-        border-radius: 999px;
-        color: white;
-        font-size: 10px;
-        font-weight: 1000;
-        background: linear-gradient(135deg, #0ea5ff, #1764ff);
-        box-shadow: 0 8px 18px rgba(14, 165, 255, 0.22);
-      }
-
-      .v4-summary {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
+        overflow: hidden;
+        border-radius: 22px;
+        padding: 16px;
         background:
           radial-gradient(
-            circle at top left,
+            circle at top right,
             rgba(14, 165, 255, 0.22),
-            transparent 36%
+            transparent 34%
           ),
-          linear-gradient(180deg, #173a5f, #08192d) !important;
+          linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 12px 26px rgba(0, 0, 0, 0.24);
       }
 
-      .v4-summary-pill {
-        padding: 10px 12px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.72);
-        color: #cbd5e1;
-        font-weight: 1000;
-        white-space: nowrap;
+      .v4-vip-hero {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.35),
+            transparent 38%
+          ),
+          linear-gradient(180deg, #4a3104, #0b0803);
+        border-color: rgba(250, 204, 21, 0.35);
       }
 
-      .v4-summary-pill.on {
+      .v4-hero-title {
         color: #fff;
-        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+        font-size: 24px;
+        font-weight: 1000;
       }
 
-      .v4-animal-card {
+      .v4-hero-sub {
+        margin-top: 6px;
+        color: #c7ddf4;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.35;
+      }
+
+      .v4-shop-tabs {
         display: grid;
-        grid-template-columns: 96px 1fr;
-        gap: 12px;
-        align-items: center;
-        padding: 14px !important;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin: 12px 0;
       }
 
-      .v4-animal-left {
+      .v4-shop-tab {
+        border: none;
+        border-radius: 15px;
+        padding: 11px 8px;
+        color: #dbeafe;
+        font-weight: 1000;
+        background: linear-gradient(180deg, #173a5f, #07182c);
+        border: 1px solid rgba(125, 211, 252, 0.16);
+      }
+
+      .v4-shop-tab.active {
+        color: #fff;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        box-shadow: 0 10px 22px rgba(14, 165, 255, 0.24);
+      }
+
+      .v4-product-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 210px;
+      }
+
+      .v4-product-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .v4-product-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
         display: grid;
         place-items: center;
-        gap: 8px;
+        font-size: 42px;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.98),
+          rgba(6, 17, 32, 0.98)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 10px 20px rgba(0, 0, 0, 0.22);
       }
 
-      .v4-animal-img {
-        width: 94px;
-        height: 94px;
-        object-fit: contain;
-        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
-      }
-
-      .v4-level-chip {
-        padding: 7px 10px;
-        border-radius: 999px;
-        color: #fff;
-        font-size: 11px;
-        font-weight: 1000;
-        background: linear-gradient(135deg, #0ea5ff, #1764ff);
-      }
-
-      .v4-animal-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 10px;
-      }
-
-      .v4-animal-title {
+      .v4-product-name {
         color: #fff;
         font-size: 18px;
         font-weight: 1000;
       }
 
-      .v4-animal-count {
-        margin-top: 3px;
+      .v4-product-desc {
+        margin-top: 5px;
         color: #b8cbe3;
         font-size: 12px;
-        font-weight: 900;
+        font-weight: 800;
+        line-height: 1.35;
       }
 
-      .v4-income {
-        text-align: right;
-        min-width: 88px;
+      .v4-price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.38);
+        border: 1px solid rgba(125, 211, 252, 0.12);
       }
 
-      .v4-income span {
-        display: block;
+      .v4-price-label {
         color: #9db7d4;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 1000;
         text-transform: uppercase;
       }
 
-      .v4-income b {
-        display: block;
+      .v4-price-value {
         color: #fff;
-        font-size: 20px;
-        margin-top: 4px;
+        font-size: 18px;
+        font-weight: 1000;
       }
 
-      .v4-bars {
-        display: grid;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .v4-bar-row {
-        display: flex;
-        justify-content: space-between;
-        color: #dbeafe;
-        font-size: 13px;
-        font-weight: 900;
-        margin-bottom: 4px;
-      }
-
-      .v4-bar-row b {
-        color: #fff;
-      }
-
-      .v4-bar {
-        height: 12px;
-        overflow: hidden;
+      .v4-product-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 9px;
         border-radius: 999px;
-        background: rgba(2, 8, 18, 0.72);
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
       }
 
-      .v4-bar span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, #22c55e, #84cc16);
+      .v4-product-badge.gold {
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
       }
 
-      .v4-bar.life span {
-        background: linear-gradient(90deg, #22c55e, #84cc16);
+      .v4-product-badge.blue {
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
       }
 
-      .v4-bar.power span {
-        background: linear-gradient(90deg, #0ea5ff, #a3e635);
-      }
-
-      .v4-mini-grid {
+      .v4-boost-card {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 7px;
+        grid-template-columns: 72px 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .v4-boost-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        font-size: 40px;
+        background: linear-gradient(180deg, #173a5f, #07182c);
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .v4-boost-title {
+        color: #fff;
+        font-size: 17px;
+        font-weight: 1000;
+      }
+
+      .v4-boost-desc {
+        margin-top: 4px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .v4-boost-status {
+        margin-top: 8px;
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.5);
+        color: #cbd5e1;
+        font-size: 11px;
+        font-weight: 1000;
+      }
+
+      .v4-boost-status.on {
+        color: #fff;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+      }
+
+      .v4-vip-list {
+        display: grid;
+        gap: 10px;
         margin-top: 12px;
       }
 
-      .v4-mini-grid div {
-        padding: 8px 6px;
-        border-radius: 12px;
-        background: rgba(2, 8, 18, 0.36);
-        border: 1px solid rgba(125, 211, 252, 0.12);
-        text-align: center;
-      }
-
-      .v4-mini-grid span {
-        display: block;
-        color: #9db7d4;
-        font-size: 10px;
-        font-weight: 1000;
-      }
-
-      .v4-mini-grid b {
-        display: block;
+      .v4-vip-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.35);
+        border: 1px solid rgba(250, 204, 21, 0.14);
         color: #fff;
-        margin-top: 4px;
-        font-size: 12px;
-        font-weight: 1000;
+        font-weight: 900;
       }
 
-      .v4-actions {
+      .v4-vip-item span {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+        font-size: 13px;
+      }
+
+      .v4-vip-plans {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-top: 10px;
+        gap: 12px;
+        margin-top: 12px;
       }
 
-      .v4-actions .buy-btn {
-        margin-top: 0 !important;
-        padding: 11px 8px !important;
-        font-size: 12px !important;
-      }
-
-      .v4-vip-panel {
+      .v4-vip-plan {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        padding: 14px;
         background:
           radial-gradient(
             circle at top,
-            rgba(250, 204, 21, 0.28),
-            transparent 36%
+            rgba(250, 204, 21, 0.18),
+            transparent 34%
           ),
-          linear-gradient(180deg, #3b2703, #090806) !important;
-        border-color: rgba(250, 204, 21, 0.34) !important;
+          linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(250, 204, 21, 0.22);
+      }
+
+      .v4-vip-plan.best {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.32),
+            transparent 38%
+          ),
+          linear-gradient(180deg, #4a3104, #0b0803);
+      }
+
+      .v4-plan-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 1000;
+      }
+
+      .v4-plan-price {
+        margin-top: 8px;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 1000;
+      }
+
+      .v4-plan-note {
+        margin-top: 6px;
+        color: #cbd5e1;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .v4-diamond {
+        color: #67e8f9;
+      }
+
+      .v4-compact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
       }
 
       @media (max-width: 390px) {
-        .v4-animal-card {
-          grid-template-columns: 82px 1fr;
-          gap: 10px;
+        .v4-boost-card {
+          grid-template-columns: 60px 1fr;
         }
-
-        .v4-animal-img {
-          width: 80px;
-          height: 80px;
+        .v4-boost-card .buy-btn {
+          grid-column: 1 / -1;
         }
-
-        .v4-mini-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .v4-animal-head {
-          flex-direction: column;
-        }
-
-        .v4-income {
-          text-align: left;
+        .v4-vip-plans {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -841,7 +899,7 @@
           ><button class="menu-btn" id="wheelBtn">
             <span class="menu-emoji">🎰</span><span>Wheel</span></button
           ><button class="menu-btn" id="shopBtn">
-            <span class="menu-emoji">🛒</span><span>Магазин</span></button
+            <span class="menu-emoji">💎</span><span>Diamonds</span></button
           ><button class="menu-btn" id="boostBtn">
             <span class="menu-emoji">⚡</span><span>Boosters</span></button
           ><button class="menu-btn" id="refsBtn">
@@ -853,9 +911,6 @@
             onclick="openLeaderboardModal('referrals')"
           >
             <span class="menu-emoji">🏆</span><span>Топ</span>
-          </button>
-          <button class="menu-btn" id="walletBtn">
-            <span class="menu-emoji">👛</span><span>Гаманець</span>
           </button>
           <button class="menu-btn" id="refreshBtn">
             <span class="menu-emoji">🔄</span><span>Оновити</span>
@@ -988,31 +1043,6 @@
       }
       function showToast(text) {
         spawnFloatingText(text);
-      }
-
-      function v4AnimalImgSrc(type) {
-        if (type === "CHICKEN") return "/assets/chicken.svg";
-        if (type === "SHEEP") return "/assets/sheep.svg";
-        if (type === "COW") return "/assets/cow.svg";
-        return "/assets/chicken.svg";
-      }
-
-      function v4Bar(value, cls = "") {
-        const v = Math.max(0, Math.min(100, Number(value || 0)));
-        return `<div class="v4-bar ${cls}"><span style="width:${v}%"></span></div>`;
-      }
-
-      async function healAnimals(type) {
-        const res = await apiPost("/heal", { type });
-        setResult(res.data);
-
-        if (res.ok) {
-          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка лікування");
-        }
       }
 
       function showLevelUpPopup(xpData) {
@@ -1257,105 +1287,55 @@
           return Math.floor(perHourOne * count);
         }
 
-        function v4AnimalCard(
-          type,
-          emoji,
-          title,
-          count,
-          level,
-          life,
-          efficiency,
-          readyValue,
-          feedValue,
-          priceHeal,
-        ) {
-          const hasAnimals = count > 0;
-          const lifeValue = hasAnimals ? (life ?? 100) : 0;
-          const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
-          const perHour = productionPerHour(type, level, count);
-          const perCycle = productionText(type, level);
-          const points = pointsText(type, level);
-
-          return `
-            <div class="tile full v4-animal-card">
-              <div class="v4-animal-left">
-                <img class="v4-animal-img" src="${v4AnimalImgSrc(type)}" alt="${title}" />
-                <div class="v4-level-chip">LVL ${level}</div>
-              </div>
-
-              <div class="v4-animal-main">
-                <div class="v4-animal-head">
-                  <div>
-                    <div class="v4-animal-title">${emoji} ${title}</div>
-                    <div class="v4-animal-count">${count} animals</div>
-                  </div>
-                  <div class="v4-income">
-                    <span>Coins / hour</span>
-                    <b>${perHour}</b>
-                  </div>
-                </div>
-
-                <div class="v4-bars">
-                  <div>
-                    <div class="v4-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
-                    ${hasAnimals ? v4Bar(lifeValue, "life") : ""}
-                  </div>
-                  <div>
-                    <div class="v4-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
-                    ${hasAnimals ? v4Bar(efficiencyValue, "power") : ""}
-                  </div>
-                </div>
-
-                <div class="v4-mini-grid">
-                  <div><span>Ready</span><b>${readyValue}</b></div>
-                  <div><span>Feed</span><b>${feedValue}</b></div>
-                  <div><span>Cycle</span><b>${perCycle}</b></div>
-                  <div><span>Points</span><b>${points}</b></div>
-                </div>
-
-                <div class="v4-actions">
-                  <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
-                  <button class="buy-btn gold" data-heal="${type}" ${hasAnimals ? "" : "disabled"}>❤️ Heal ${hasAnimals ? `${count * priceHeal}` : ""}</button>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full v4-summary">
-              <div>
-                <div class="tile-title">🐾 My Animals</div>
-                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
-              </div>
-              <div>
-                <div class="v4-summary-pill ${currentState?.vip?.active ? "on" : ""}">
-                  👑 ${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}
-                </div>
-              </div>
-            </div>
+                            <div class="modal-grid">
+                              <div class="tile">
+                                <div class="tile-title">🐔 Курки</div>
+                                <div class="tile-value">${animals.chicken ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.chicken ?? 0)}
+                              </div>
 
-            ${v4AnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
-            ${v4AnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
-            ${v4AnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+                              <div class="tile">
+                                <div class="tile-title">🐑 Вівці</div>
+                                <div class="tile-value">${animals.sheep ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.sheep ?? 0)}
+                              </div>
 
-            <div class="tile full v4-vip-panel">
-              <div class="tile-title">👑 Premium Status</div>
-              <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
-              <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
-            </div>
-          </div>
-        `;
+                              <div class="tile">
+                                <div class="tile-title">🐄 Корови</div>
+                                <div class="tile-value">${animals.cow ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.cow ?? 0)}
+                              </div>
 
-        modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
-          btn.onclick = async () => {
-            await healAnimals(btn.getAttribute("data-heal"));
-          };
-        });
+                              <div class="tile">
+                                <div class="tile-title">⚙ Статус</div>
+                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                              </div>
+                            </div>
+                          `;
       }
       function renderAnimalsUpgrade() {
         openLabModal();
@@ -1465,7 +1445,7 @@
           setResult(res.data);
 
           if (res.ok) {
-            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
+            if (!handleXpResult(res.data?.levelUpData)) {
               showToast(
                 `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
               );
@@ -1483,45 +1463,7 @@
         const feed = currentState?.feedStock || {};
         modalTitle.textContent = "🌾 Корм";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👑 VIP Auto</div>
-              <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">🌾 Feed All</div>
-              <div class="tile-value">+10 / +10 / +10</div>
-              <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
-              <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐔 Корм для курки</div>
-              <div class="tile-value">${feed.chicken ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
-              <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐑 Корм для вівці</div>
-              <div class="tile-value">${feed.sheep ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
-              <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐄 Корм для корови</div>
-              <div class="tile-value">${feed.cow ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
-              <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
-            </div>
-          </div>
-        `;
+        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
         showModal();
         modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1529,9 +1471,7 @@
             const res = await apiPost("/shop/buy", { code });
             setResult(res.data);
             if (res.ok) {
-              showToast(
-                code === "feed_all_10" ? "🌾 Усі нагодовані" : "Корм куплено",
-              );
+              showToast("Корм куплено");
               await loadState();
               openFeedModal();
             } else {
@@ -1543,104 +1483,115 @@
       function openBoostersModal() {
         modalTitle.textContent = "⚡ Boosters";
         modalTabs.style.display = "none";
+
+        const boostOn = !!currentState?.boost?.active;
+        const autoOn = !!currentState?.autoCollect?.active;
+        const vipOn = !!currentState?.vip?.active;
+
         modalBody.innerHTML = `
-  <div class="modal-grid">
+          <div class="modal-grid">
+            <div class="tile full v4-boost-hero">
+              <div class="v4-hero-title">⚡ Boost Center</div>
+              <div class="v4-hero-sub">Активуй бустери, Auto Sell і VIP, щоб ферма працювала швидше.</div>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">⚡ Boost x2</div>
-      <div class="tile-value">
-        ${currentState?.boost?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
-        id="buyBoostBtn"
-      >
-        ${currentState?.boost?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-boost-card">
+              <div class="v4-boost-icon">⚡</div>
+              <div>
+                <div class="v4-boost-title">Boost x2</div>
+                <div class="v4-boost-desc">Подвоює ефект на короткий час.</div>
+                <div class="v4-boost-status ${boostOn ? "on" : ""}">${boostOn ? "ACTIVE" : "OFF"}</div>
+              </div>
+              <button class="buy-btn ${boostOn ? "green" : ""}" id="buyBoostBtn">${boostOn ? "ON" : "10 💎"}</button>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">💰 Auto Sell</div>
-      <div class="tile-value">
-        ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
-        id="buyAutoBtn"
-      >
-        ${currentState?.autoCollect?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-boost-card">
+              <div class="v4-boost-icon">💰</div>
+              <div>
+                <div class="v4-boost-title">Auto Sell</div>
+                <div class="v4-boost-desc">Автоматично продає склад, коли він заповнюється.</div>
+                <div class="v4-boost-status ${autoOn ? "on" : ""}">${autoOn ? "ACTIVE" : "OFF"}</div>
+              </div>
+              <button class="buy-btn ${autoOn ? "green" : ""}" id="buyAutoBtn">${autoOn ? "ON" : "10 💎"}</button>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 24h</div>
-      <div class="tile-value">
-        ${currentState?.vip?.active ? "ON" : "150 diamonds"}
-      </div>
-      <div class="tile-row">
-        <span>Auto Feed</span><span>ON</span>
-      </div>
-      <div class="tile-row">
-        <span>Auto Sell</span><span>ON</span>
-      </div>
-      <button
-        class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
-        id="buyVip1dBtn"
-      >
-        ${currentState?.vip?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-vip-hero">
+              <div class="v4-hero-title">👑 VIP Membership</div>
+              <div class="v4-hero-sub">${vipOn ? "VIP активний. Ферма працює в premium режимі." : "Увімкни VIP, щоб отримати Auto Feed, Auto Sell і premium переваги."}</div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 7d</div>
-      <div class="tile-value">800 diamonds</div>
-      <div class="tile-row">
-        <span>VIP Premium</span><span>7 днів</span>
-      </div>
-      <div class="tile-row">
-        <span>Економія</span><span>вигідніше</span>
-      </div>
-      <button
-        class="buy-btn gold"
-        id="buyVip7dBtn"
-      >
-        Купити
-      </button>
-    </div>
+              <div class="v4-vip-list">
+                <div class="v4-vip-item"><span>✓</span> Auto Feed</div>
+                <div class="v4-vip-item"><span>✓</span> Auto Sell</div>
+                <div class="v4-vip-item"><span>✓</span> Better premium gameplay</div>
+                <div class="v4-vip-item"><span>✓</span> Підходить для донату через Stars</div>
+              </div>
 
-  </div>
-`;
+              <div class="v4-vip-plans">
+                <div class="v4-vip-plan">
+                  <div class="v4-plan-title">VIP 24h</div>
+                  <div class="v4-plan-price">${vipOn ? "ON" : "150 💎"}</div>
+                  <div class="v4-plan-note">Для швидкої перевірки</div>
+                  <button class="buy-btn gold" id="buyVip1dBtn">${vipOn ? "ON" : "Купити"}</button>
+                </div>
+
+                <div class="v4-vip-plan best">
+                  <div class="v4-product-badge gold">BEST</div>
+                  <div class="v4-plan-title">VIP 7d</div>
+                  <div class="v4-plan-price">800 💎</div>
+                  <div class="v4-plan-note">Вигідніше на довше</div>
+                  <button class="buy-btn gold" id="buyVip7dBtn">Купити</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
         showModal();
+
         document.getElementById("buyBoostBtn").onclick = async () => {
-          if (currentState?.boost?.active) return;
-          const res = await apiPost("/shop/buy", { code: "boost_1h" });
+          if (boostOn) return;
+          const res = await apiPost("/shop/buy", { code: "boost_x2" });
           setResult(res.data);
           if (res.ok) {
-            showToast("Boost куплено");
+            showToast("Boost ON");
             await loadState();
             openBoostersModal();
           } else {
             showToast(res.data?.error || "Помилка");
           }
         };
+
         document.getElementById("buyAutoBtn").onclick = async () => {
-          if (currentState?.autoCollect?.active) return;
-          const res = await apiPost("/shop/buy", { code: "auto_1h" });
+          if (autoOn) return;
+          const res = await apiPost("/shop/buy", { code: "auto_collect" });
           setResult(res.data);
           if (res.ok) {
-            showToast("Auto куплено");
+            showToast("Auto Sell ON");
             await loadState();
             openBoostersModal();
           } else {
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVipBtn").onclick = async () => {
-          if (currentState?.vip?.active) return;
+
+        document.getElementById("buyVip1dBtn").onclick = async () => {
+          if (vipOn) return;
           const res = await apiPost("/shop/buy", { code: "vip_1d" });
           setResult(res.data);
           if (res.ok) {
-            showToast("VIP куплено");
+            showToast("VIP 24h ON");
+            await loadState();
+            openBoostersModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
+          }
+        };
+
+        document.getElementById("buyVip7dBtn").onclick = async () => {
+          const res = await apiPost("/shop/buy", { code: "vip_7d" });
+          setResult(res.data);
+          if (res.ok) {
+            showToast("VIP 7d ON");
             await loadState();
             openBoostersModal();
           } else {
@@ -2104,203 +2055,141 @@
       }
 
       async function openShopModal() {
-        modalTitle.textContent = "🛒 Магазин";
+        modalTitle.textContent = "🛒 Shop";
         modalTabs.style.display = "none";
-
-        const walletRes = await apiGet("/wallet");
-        const wallet = walletRes.ok ? walletRes.data || {} : {};
 
         modalBody.innerHTML = `
           <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👛 TON Баланс</div>
-              <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
+            <div class="tile full v4-shop-hero">
+              <div class="v4-hero-title">🛒 Premium Shop</div>
+              <div class="v4-hero-sub">Купуй корм, бустери, VIP та готуй гру до Telegram Stars монетизації.</div>
             </div>
 
             <div class="tile full">
-              <div class="tile-title">⭐ Telegram Stars</div>
-              <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">Малий пакет</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">Середній пакет</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">Великий пакет</div>
-              <div class="tile-value">300 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">💎 Diamonds за TON</div>
-              <div class="note">Покупка йде з TON балансу у гаманці</div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Small</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Medium</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">TON Large</div>
-              <div class="tile-value">700 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
-              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
-            </div>
-          </div>
-        `;
-
-        showModal();
-
-        modalBody.querySelectorAll("[data-stars-product]").forEach((btn) => {
-          btn.onclick = async () => {
-            const productCode = btn.getAttribute("data-stars-product");
-            const res = await apiPost("/payments/create-invoice", {
-              productCode,
-            });
-            setResult(res.data);
-
-            if (!res.ok) {
-              showToast(res.data?.error || "Помилка");
-              return;
-            }
-
-            const link = res.data?.invoiceLink;
-            if (!link) {
-              showToast("Не вдалося створити invoice");
-              return;
-            }
-
-            if (tg?.openTelegramLink) {
-              tg.openTelegramLink(link);
-            } else {
-              window.open(link, "_blank");
-            }
-          };
-        });
-
-        modalBody.querySelectorAll("[data-wallet-buy]").forEach((btn) => {
-          btn.onclick = async () => {
-            const pkg = btn.getAttribute("data-wallet-buy");
-
-            const resp = await apiPost("/wallet/buy-diamonds", {
-              package: pkg,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast(`💎 +${resp.data?.diamondsReceived ?? 0}`);
-              await loadState();
-              await openShopModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
-            }
-          };
-        });
-      }
-      async function openWalletModal() {
-        modalTitle.textContent = "👛 Гаманець";
-        modalTabs.style.display = "none";
-
-        const res = await apiGet("/wallet");
-        const data = res.data || {};
-
-        if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
-          showModal();
-          return;
-        }
-
-        const points = data.points ?? currentState?.points ?? 0;
-        const availableTon = Math.floor(points / 100000);
-        const receiveTon =
-          availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">💰 TON Баланс</div>
-              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Points</span><span>${points}</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">📥 Поповнення TON</div>
-              <div class="note">Надішли TON на адресу:</div>
-              <input class="code-box" value="${data.depositWallet}" readonly />
-              <div class="note" style="margin-top:8px;">
-                Коментар платежу: USER_${getMyTelegramId()}
+              <div class="v4-shop-tabs">
+                <button class="v4-shop-tab active" data-shop-tab="animals">🐾 Animals</button>
+                <button class="v4-shop-tab" data-shop-tab="feed">🌾 Feed</button>
+                <button class="v4-shop-tab" data-shop-tab="boosts">🚀 Boosts</button>
+                <button class="v4-shop-tab" data-shop-tab="vip">👑 VIP</button>
               </div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">⭐ Points → TON</div>
-              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
-              <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-              <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
-              <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
-              <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
+              <div id="v4ShopContent"></div>
             </div>
           </div>
         `;
 
-        showModal();
-
-        const withdrawBtn = document.getElementById("requestWithdrawBtn");
-        if (withdrawBtn) {
-          withdrawBtn.onclick = async () => {
-            const tonAddress =
-              document.getElementById("withdrawTonAddress").value;
-            const pointsAmount = Number(
-              document.getElementById("withdrawPointsAmount").value,
-            );
-
-            const resp = await apiPost("/wallet/request-withdraw", {
-              tonAddress,
-              pointsAmount,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast("✅ Заявку створено");
-              await loadState();
-              await openWalletModal();
-            } else {
-              showToast(
-                resp.data?.error || "Потрібно підключити backend withdraw",
-              );
-            }
-          };
+        function productCard({
+          icon,
+          name,
+          desc,
+          price,
+          code,
+          badge = "",
+          badgeClass = "blue",
+        }) {
+          return `
+            <div class="tile v4-product-card">
+              ${badge ? `<div class="v4-product-badge ${badgeClass}">${badge}</div>` : ""}
+              <div class="v4-product-top">
+                <div class="v4-product-icon">${icon}</div>
+                <div>
+                  <div class="v4-product-name">${name}</div>
+                  <div class="v4-product-desc">${desc}</div>
+                </div>
+              </div>
+              <div class="v4-price-row">
+                <div>
+                  <div class="v4-price-label">Price</div>
+                  <div class="v4-price-value">${price}</div>
+                </div>
+              </div>
+              <button class="buy-btn green" data-shop-buy="${code}">Купити</button>
+            </div>
+          `;
         }
-      }
 
+        function renderShopTab(tab) {
+          const box = document.getElementById("v4ShopContent");
+          if (!box) return;
+
+          if (tab === "feed") {
+            box.innerHTML = `
+              <div class="v4-compact-grid">
+                ${productCard({ icon: "🐔", name: "Chicken Feed x10", desc: "Корм для курок", price: "50 coins", code: "chicken_feed_10" })}
+                ${productCard({ icon: "🐑", name: "Sheep Feed x10", desc: "Корм для овець", price: "120 coins", code: "sheep_feed_10" })}
+                ${productCard({ icon: "🐄", name: "Cow Feed x10", desc: "Корм для корів", price: "250 coins", code: "cow_feed_10" })}
+                ${productCard({ icon: "🌾", name: "Feed All x10", desc: "Одразу для всіх тварин", price: "420 coins", code: "feed_all_10", badge: "BEST", badgeClass: "gold" })}
+              </div>
+            `;
+          } else if (tab === "boosts") {
+            box.innerHTML = `
+              <div class="v4-compact-grid">
+                ${productCard({ icon: "⚡", name: "Boost x2", desc: "Подвійна сила на короткий час", price: "10 diamonds", code: "boost_x2", badge: currentState?.boost?.active ? "ON" : "" })}
+                ${productCard({ icon: "💰", name: "Auto Sell", desc: "Автоматично продає склад", price: "10 diamonds", code: "auto_collect", badge: currentState?.autoCollect?.active ? "ON" : "" })}
+              </div>
+            `;
+          } else if (tab === "vip") {
+            box.innerHTML = `
+              <div class="v4-vip-plans">
+                <div class="v4-vip-plan">
+                  <div class="v4-plan-title">👑 VIP 24h</div>
+                  <div class="v4-plan-price">150 <span class="v4-diamond">💎</span></div>
+                  <div class="v4-plan-note">Auto Feed + Auto Sell</div>
+                  <button class="buy-btn gold" data-shop-buy="vip_1d">Купити</button>
+                </div>
+                <div class="v4-vip-plan best">
+                  <div class="v4-product-badge gold">BEST</div>
+                  <div class="v4-plan-title">👑 VIP 7d</div>
+                  <div class="v4-plan-price">800 <span class="v4-diamond">💎</span></div>
+                  <div class="v4-plan-note">Вигідніше на довше</div>
+                  <button class="buy-btn gold" data-shop-buy="vip_7d">Купити</button>
+                </div>
+              </div>
+            `;
+          } else {
+            box.innerHTML = `
+              <div class="v4-compact-grid">
+                ${productCard({ icon: "🐔", name: "Chicken", desc: "Стартова тварина для яєць", price: "100 coins", code: "animal_chicken", badge: "LVL 1" })}
+                ${productCard({ icon: "🐑", name: "Sheep", desc: "Середній прибуток", price: "500 coins", code: "animal_sheep", badge: "LVL 5" })}
+                ${productCard({ icon: "🐄", name: "Cow", desc: "Найкращий прибуток", price: "1000 coins", code: "animal_cow", badge: "LVL 10", badgeClass: "gold" })}
+              </div>
+            `;
+          }
+
+          box.querySelectorAll("[data-shop-buy]").forEach((btn) => {
+            btn.onclick = async () => {
+              const code = btn.getAttribute("data-shop-buy");
+
+              if (code === "animal_chicken") return buyAnimal("CHICKEN");
+              if (code === "animal_sheep") return buyAnimal("SHEEP");
+              if (code === "animal_cow") return buyAnimal("COW");
+
+              const res = await apiPost("/shop/buy", { code });
+              setResult(res.data);
+
+              if (res.ok) {
+                showToast("Куплено");
+                await loadState();
+                openShopModal();
+              } else {
+                showToast(res.data?.error || "Помилка");
+              }
+            };
+          });
+        }
+
+        modalBody.querySelectorAll("[data-shop-tab]").forEach((btn) => {
+          btn.onclick = () => {
+            modalBody
+              .querySelectorAll("[data-shop-tab]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderShopTab(btn.getAttribute("data-shop-tab"));
+          };
+        });
+
+        renderShopTab("animals");
+        showModal();
+      }
       async function openRefsModal() {
         modalTitle.textContent = "👥 Referrals";
         modalTabs.style.display = "none";
@@ -2513,9 +2402,6 @@
       document
         .getElementById("shopBtn")
         .addEventListener("click", openShopModal);
-      document
-        .getElementById("walletBtn")
-        .addEventListener("click", openWalletModal);
       document
         .getElementById("refsBtn")
         .addEventListener("click", openRefsModal);
