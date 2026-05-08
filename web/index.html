@@ -1964,6 +1964,21 @@
           font-size: 10px;
         }
       }
+
+      /* MAIN SCREEN BUTTONS FIX */
+      .ref-legacy-buttons {
+        display: none !important;
+        pointer-events: none !important;
+      }
+
+      .ref-side,
+      .ref-nav,
+      .ref-nav-tap,
+      .ref-main-tap,
+      .ref-upgrade-btn {
+        pointer-events: auto !important;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -2012,7 +2027,11 @@
             </div>
             <div class="ref-warehouse-cap" id="refWarehouseCap">0 / 0</div>
           </div>
-          <button class="ref-upgrade-btn" id="quickStorageBtn">
+          <button
+            class="ref-upgrade-btn"
+            id="quickStorageBtn"
+            onclick="openLabModal()"
+          >
             <b>UPGRADE</b>
             <span>🪙 2,500</span>
           </button>
@@ -2029,23 +2048,39 @@
             alt="farm"
           />
 
-          <button class="ref-side ref-daily" id="heroDailyBtn">
+          <button
+            class="ref-side ref-daily"
+            id="heroDailyBtn"
+            onclick="openDailyModal()"
+          >
             <b class="ref-badge">3</b>
             <span class="ref-side-emoji">📅</span>
             <span>Daily</span>
           </button>
 
-          <button class="ref-side ref-tasks" id="heroTasksBtn">
+          <button
+            class="ref-side ref-tasks"
+            id="heroTasksBtn"
+            onclick="openQuestsModal()"
+          >
             <span class="ref-side-emoji">📋</span>
             <span>Tasks</span>
           </button>
 
-          <button class="ref-side ref-vip" id="heroVipBtn">
+          <button
+            class="ref-side ref-vip"
+            id="heroVipBtn"
+            onclick="openBoostersModal()"
+          >
             <span class="ref-side-emoji">👑</span>
             <span>VIP</span>
           </button>
 
-          <button class="ref-side ref-boosts" id="heroBoostBtn">
+          <button
+            class="ref-side ref-boosts"
+            id="heroBoostBtn"
+            onclick="openBoostersModal()"
+          >
             <b class="ref-badge">2</b>
             <span class="ref-side-emoji">🚀</span>
             <span>Boosts</span>
@@ -2056,7 +2091,7 @@
             <span>🪙</span>
           </div>
 
-          <button class="tap-btn ref-main-tap" id="tapBtn">
+          <button class="tap-btn ref-main-tap" id="tapBtn" onclick="collect()">
             <span>TAP!</span>
             <small>👆</small>
           </button>
@@ -2065,20 +2100,30 @@
         <div class="status-line ref-status" id="status">ok</div>
 
         <div class="ref-bottom-nav">
-          <button class="ref-nav active" id="navFarmBtn">
+          <button class="ref-nav active" id="navFarmBtn" onclick="loadState()">
             <span>🏠</span>
             <b>Farm</b>
           </button>
-          <button class="ref-nav" id="navAnimalsBtn">
+          <button
+            class="ref-nav"
+            id="navAnimalsBtn"
+            onclick="openAnimalsModal()"
+          >
             <span>🐾</span>
             <b>Animals</b>
           </button>
-          <button class="ref-nav-tap" id="navTapBtn">TAP!</button>
-          <button class="ref-nav" id="navShopBtn">
+          <button class="ref-nav-tap" id="navTapBtn" onclick="collect()">
+            TAP!
+          </button>
+          <button class="ref-nav" id="navShopBtn" onclick="openShopModal()">
             <span>🛒</span>
             <b>Shop</b>
           </button>
-          <button class="ref-nav" id="navWalletBtn">
+          <button
+            class="ref-nav"
+            id="navWalletBtn"
+            onclick="openProfileModal()"
+          >
             <span>👤</span>
             <b>Profile</b>
           </button>
@@ -2086,19 +2131,19 @@
       </div>
 
       <div class="ref-legacy-buttons" aria-hidden="true">
-        <button id="animalsBtn"></button>
-        <button id="storageBtn"></button>
-        <button id="feedBtn"></button>
-        <button id="labBtn"></button>
-        <button id="dailyBtn"></button>
-        <button id="questsBtn"></button>
-        <button id="wheelBtn"></button>
-        <button id="shopBtn"></button>
-        <button id="boostBtn"></button>
-        <button id="refsBtn"></button>
-        <button id="walletBtn"></button>
-        <button id="refreshBtn"></button>
-        <button id="loadStateBtn"></button>
+        <button id="animalsBtn" onclick="openAnimalsModal()"></button>
+        <button id="storageBtn" onclick="openStorageModal()"></button>
+        <button id="feedBtn" onclick="openFeedModal()"></button>
+        <button id="labBtn" onclick="openLabModal()"></button>
+        <button id="dailyBtn" onclick="openDailyModal()"></button>
+        <button id="questsBtn" onclick="openQuestsModal()"></button>
+        <button id="wheelBtn" onclick="openWheelModal()"></button>
+        <button id="shopBtn" onclick="openShopModal()"></button>
+        <button id="boostBtn" onclick="openBoostersModal()"></button>
+        <button id="refsBtn" onclick="openRefsModal()"></button>
+        <button id="walletBtn" onclick="openWalletModal()"></button>
+        <button id="refreshBtn" onclick="loadState()"></button>
+        <button id="loadStateBtn" onclick="loadState()"></button>
       </div>
       <div id="resultBox">ще нічого</div>
     </div>
@@ -3999,6 +4044,53 @@
         .getElementById("navWalletBtn")
         ?.addEventListener("click", openProfileModal);
       loadState();
+
+      function bindMainScreenButtonsFix() {
+        const safeBind = (id, fn) => {
+          const el = document.getElementById(id);
+          if (!el || !fn) return;
+          el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fn();
+          };
+        };
+
+        safeBind("quickStorageBtn", () => openLabModal());
+        safeBind("heroDailyBtn", () => openDailyModal());
+        safeBind("heroTasksBtn", () => openQuestsModal());
+        safeBind("heroVipBtn", () => openBoostersModal());
+        safeBind("heroBoostBtn", () => openBoostersModal());
+        safeBind("tapBtn", () => collect());
+        safeBind("navFarmBtn", () => loadState());
+        safeBind("navAnimalsBtn", () => openAnimalsModal());
+        safeBind("navTapBtn", () => collect());
+        safeBind("navShopBtn", () => openShopModal());
+
+        if (typeof openProfileModal === "function") {
+          safeBind("navWalletBtn", () => openProfileModal());
+        } else {
+          safeBind("navWalletBtn", () => openWalletModal());
+        }
+
+        safeBind("animalsBtn", () => openAnimalsModal());
+        safeBind("storageBtn", () => openStorageModal());
+        safeBind("feedBtn", () => openFeedModal());
+        safeBind("labBtn", () => openLabModal());
+        safeBind("dailyBtn", () => openDailyModal());
+        safeBind("questsBtn", () => openQuestsModal());
+        safeBind("wheelBtn", () => openWheelModal());
+        safeBind("shopBtn", () => openShopModal());
+        safeBind("boostBtn", () => openBoostersModal());
+        safeBind("refsBtn", () => openRefsModal());
+        safeBind("walletBtn", () => openWalletModal());
+        safeBind("refreshBtn", () => loadState());
+        safeBind("loadStateBtn", () => loadState());
+      }
+
+      window.addEventListener("load", bindMainScreenButtonsFix);
+      setTimeout(bindMainScreenButtonsFix, 300);
+      setTimeout(bindMainScreenButtonsFix, 1200);
     </script>
   </body>
 </html>
