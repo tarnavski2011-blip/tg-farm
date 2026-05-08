@@ -2,7 +2,10 @@
 <html lang="uk">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>My Farm Clicker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -1414,85 +1417,688 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* MAIN SCREEN REFERENCE V5 */
+      :root {
+        --ref-bg: #06111f;
+        --ref-panel: rgba(5, 17, 31, 0.94);
+        --ref-panel2: rgba(10, 31, 54, 0.96);
+        --ref-blue: #0ea5ff;
+        --ref-blue2: #1764ff;
+        --ref-green: #4ade20;
+        --ref-gold: #ffc21c;
+        --ref-line: rgba(125, 211, 252, 0.28);
+      }
+
+      body {
+        touch-action: manipulation;
+        overscroll-behavior: none;
+        background:
+          radial-gradient(
+            circle at 50% -8%,
+            rgba(14, 165, 255, 0.32),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #06111f 0%, #0a1b2d 48%, #06111f 100%) !important;
+      }
+
+      .app {
+        max-width: 480px !important;
+        padding: 8px 6px 10px !important;
+      }
+
+      .ref-game {
+        position: relative;
+        min-height: calc(100vh - 20px);
+        overflow: hidden;
+        border-radius: 28px;
+        background: #06111f;
+        border: 1px solid rgba(125, 211, 252, 0.26);
+        box-shadow:
+          0 22px 60px rgba(0, 0, 0, 0.5),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .ref-game::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(4, 12, 24, 0.65) 0%,
+            transparent 18%,
+            transparent 76%,
+            rgba(4, 12, 24, 0.85) 100%
+          ),
+          radial-gradient(
+            circle at top,
+            rgba(14, 165, 255, 0.2),
+            transparent 35%
+          );
+        z-index: 2;
+      }
+
+      .ref-hud {
+        position: relative;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 8px;
+        padding: 10px;
+        background: linear-gradient(
+          180deg,
+          rgba(6, 18, 34, 0.96),
+          rgba(3, 10, 20, 0.96)
+        );
+        border-bottom: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+      }
+
+      .ref-player {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .ref-avatar {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-size: 30px;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        border: 2px solid rgba(255, 255, 255, 0.24);
+        box-shadow: 0 8px 18px rgba(14, 165, 255, 0.3);
+      }
+
+      .ref-player-info {
+        min-width: 0;
+      }
+
+      .ref-name {
+        color: #fff;
+        font-size: 17px;
+        font-weight: 1000;
+        line-height: 1;
+      }
+
+      .ref-level-line {
+        color: #b8cbe3;
+        font-size: 11px;
+        font-weight: 900;
+        margin-top: 5px;
+      }
+
+      .ref-xp-bar {
+        height: 10px;
+        margin-top: 5px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .ref-xp-bar span {
+        display: block;
+        width: 48%;
+        height: 100%;
+        background: linear-gradient(90deg, #43e329, #a3e635);
+        border-radius: inherit;
+      }
+
+      .ref-resource {
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 8px;
+        align-items: center;
+        padding: 9px;
+        border-radius: 16px;
+        background: linear-gradient(
+          180deg,
+          rgba(14, 35, 59, 0.94),
+          rgba(4, 13, 25, 0.94)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .ref-resource-icon {
+        font-size: 30px;
+        filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.25));
+      }
+
+      .ref-resource-value {
+        color: #fff;
+        font-size: 19px;
+        font-weight: 1000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .ref-resource-sub {
+        color: #b8cbe3;
+        font-size: 11px;
+        font-weight: 900;
+        margin-top: 2px;
+      }
+
+      .ref-hidden-stats {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
+      .ref-warehouse {
+        position: relative;
+        z-index: 10;
+        margin: 8px 10px 0;
+        display: grid;
+        grid-template-columns: 78px 1fr 112px;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border-radius: 20px;
+        background: linear-gradient(
+          180deg,
+          rgba(13, 81, 159, 0.9),
+          rgba(5, 27, 62, 0.95)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.28);
+        box-shadow:
+          0 12px 26px rgba(0, 0, 0, 0.28),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .ref-warehouse-icon {
+        font-size: 48px;
+        filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.28));
+      }
+
+      .ref-warehouse-title {
+        color: #fff;
+        font-size: 17px;
+        font-weight: 1000;
+      }
+
+      .ref-warehouse-bar {
+        height: 18px;
+        margin-top: 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.62);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .ref-warehouse-bar span {
+        display: block;
+        width: 64%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ffdf3d, #ff9f0a);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
+      }
+
+      .ref-warehouse-cap {
+        color: #dbeafe;
+        text-align: center;
+        margin-top: 5px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .ref-upgrade-btn {
+        border: none;
+        border-radius: 16px;
+        padding: 12px 8px;
+        color: #fff;
+        background: linear-gradient(180deg, #7cff32, #129909);
+        box-shadow:
+          0 8px 18px rgba(34, 197, 94, 0.28),
+          inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .ref-upgrade-btn b {
+        display: block;
+        font-size: 15px;
+        font-weight: 1000;
+      }
+
+      .ref-upgrade-btn span {
+        display: block;
+        font-size: 12px;
+        font-weight: 1000;
+        margin-top: 3px;
+      }
+
+      .ref-status {
+        position: relative;
+        z-index: 10;
+        margin: 8px 10px 0 !important;
+        background: rgba(2, 8, 18, 0.58) !important;
+        border: 1px solid rgba(125, 211, 252, 0.16) !important;
+        border-radius: 999px !important;
+        font-weight: 1000 !important;
+      }
+
+      .ref-farm {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      .ref-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .ref-side {
+        position: absolute;
+        z-index: 11;
+        width: 64px;
+        min-height: 70px;
+        border: none;
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: #fff;
+        font-weight: 1000;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.96),
+          rgba(4, 13, 25, 0.96)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.28);
+        box-shadow:
+          0 10px 22px rgba(0, 0, 0, 0.34),
+          inset 0 2px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .ref-side-emoji {
+        font-size: 31px;
+        filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.28));
+      }
+
+      .ref-side span:last-child {
+        font-size: 12px;
+      }
+
+      .ref-daily {
+        top: 220px;
+        left: 10px;
+      }
+
+      .ref-tasks {
+        top: 300px;
+        left: 10px;
+      }
+
+      .ref-vip {
+        top: 220px;
+        right: 10px;
+      }
+
+      .ref-boosts {
+        top: 300px;
+        right: 10px;
+      }
+
+      .ref-badge {
+        position: absolute;
+        top: -9px;
+        right: -9px;
+        min-width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #ef2323;
+        color: #fff;
+        font-size: 13px;
+        border: 2px solid rgba(255, 255, 255, 0.28);
+      }
+
+      .ref-coin-popup {
+        position: absolute;
+        z-index: 12;
+        left: 50%;
+        bottom: 132px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 26px;
+        border-radius: 999px;
+        background: rgba(75, 45, 7, 0.65);
+        color: #fff;
+        font-size: 34px;
+        font-weight: 1000;
+        text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+      }
+
+      .ref-main-tap {
+        position: absolute !important;
+        z-index: 15 !important;
+        left: 50% !important;
+        bottom: 36px !important;
+        transform: translateX(-50%) !important;
+      }
+
+      .tap-btn {
+        width: 104px !important;
+        height: 104px !important;
+        border-radius: 50% !important;
+        border: 5px solid rgba(255, 255, 255, 0.36) !important;
+        background: radial-gradient(
+          circle at 34% 18%,
+          #fff9b7,
+          #ffd84d 38%,
+          #ffae13 70%,
+          #d97706
+        ) !important;
+        color: #fff !important;
+        font-size: 23px !important;
+        font-weight: 1000 !important;
+        line-height: 0.9 !important;
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
+        box-shadow:
+          0 14px 30px rgba(255, 171, 0, 0.45),
+          inset 0 7px 16px rgba(255, 255, 255, 0.34),
+          inset 0 -10px 20px rgba(120, 53, 15, 0.3) !important;
+      }
+
+      .tap-btn small {
+        display: block;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .ref-main-tap:active {
+        transform: translateX(-50%) scale(0.94) !important;
+      }
+
+      .ref-bottom-nav {
+        position: absolute;
+        z-index: 20;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 96px 1fr 1fr;
+        gap: 5px;
+        align-items: end;
+        padding: 5px;
+        border-radius: 18px;
+        background: rgba(4, 12, 24, 0.84);
+        border: 1px solid rgba(125, 211, 252, 0.2);
+        box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.4);
+      }
+
+      .ref-nav,
+      .ref-nav-tap {
+        border: none;
+        color: #fff;
+        font-weight: 1000;
+        border-radius: 13px;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.96),
+          rgba(4, 13, 25, 0.96)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .ref-nav {
+        min-height: 63px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ref-nav.active {
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .ref-nav span {
+        font-size: 28px;
+      }
+
+      .ref-nav b {
+        font-size: 12px;
+        margin-top: 2px;
+      }
+
+      .ref-nav-tap {
+        min-height: 86px;
+        border-radius: 50%;
+        font-size: 20px;
+        background: radial-gradient(
+          circle at 34% 18%,
+          #fff9b7,
+          #ffd84d 38%,
+          #ffae13 70%,
+          #d97706
+        );
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
+        box-shadow:
+          0 12px 25px rgba(255, 171, 0, 0.42),
+          inset 0 4px 0 rgba(255, 255, 255, 0.32);
+      }
+
+      .ref-legacy-buttons {
+        display: none !important;
+      }
+
+      #resultBox {
+        display: none !important;
+      }
+
+      @media (max-height: 760px) {
+        .ref-warehouse {
+          margin-top: 6px;
+          padding: 8px;
+        }
+        .ref-daily,
+        .ref-vip {
+          top: 200px;
+        }
+        .ref-tasks,
+        .ref-boosts {
+          top: 278px;
+        }
+        .ref-coin-popup {
+          bottom: 120px;
+        }
+        .tap-btn {
+          width: 96px !important;
+          height: 96px !important;
+        }
+      }
+
+      @media (max-width: 390px) {
+        .ref-hud {
+          grid-template-columns: 1.25fr 1fr 1fr;
+          gap: 6px;
+          padding: 8px;
+        }
+        .ref-resource {
+          grid-template-columns: 32px 1fr;
+          padding: 7px;
+        }
+        .ref-resource-icon {
+          font-size: 24px;
+        }
+        .ref-resource-value {
+          font-size: 15px;
+        }
+        .ref-resource-sub {
+          font-size: 9px;
+        }
+        .ref-warehouse {
+          grid-template-columns: 56px 1fr 92px;
+        }
+        .ref-upgrade-btn b {
+          font-size: 12px;
+        }
+        .ref-upgrade-btn span {
+          font-size: 10px;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="app">
-      <div class="card">
-        <div class="top-row">
-          <div>
-            <div class="title">🚜 My Farm Clicker</div>
-            <div class="subtitle">Ферма в Telegram Mini App</div>
+      <div class="ref-game">
+        <div class="ref-hud">
+          <div class="ref-player">
+            <div class="ref-avatar">👨‍🌾</div>
+            <div class="ref-player-info">
+              <div class="ref-name">Farmer</div>
+              <div class="ref-level-line">
+                <span id="levelBadge">Level 1</span>
+              </div>
+              <div class="ref-xp-bar"><span id="refXpBar"></span></div>
+            </div>
           </div>
-          <div class="level-badge" id="levelBadge">LVL 1</div>
+
+          <div class="ref-resource ref-coins">
+            <div class="ref-resource-icon">🪙</div>
+            <div>
+              <div class="ref-resource-value" id="coins">0</div>
+              <div class="ref-resource-sub">+1 / tap</div>
+            </div>
+          </div>
+
+          <div class="ref-resource ref-diamonds">
+            <div class="ref-resource-icon">💎</div>
+            <div>
+              <div class="ref-resource-value" id="diamonds">0</div>
+              <div class="ref-resource-sub">premium</div>
+            </div>
+          </div>
         </div>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-label">Coins</div>
-            <div class="stat-value" id="coins">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Diamonds</div>
-            <div class="stat-value" id="diamonds">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Points</div>
-            <div class="stat-value" id="points">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">XP</div>
-            <div class="stat-value" id="xp">0</div>
-          </div>
+
+        <div class="ref-hidden-stats">
+          <span id="points">0</span>
+          <span id="xp">0</span>
         </div>
-        <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
+
+        <div class="ref-warehouse">
+          <div class="ref-warehouse-icon">🏚️</div>
+          <div class="ref-warehouse-mid">
+            <div class="ref-warehouse-title">Warehouse</div>
+            <div class="ref-warehouse-bar">
+              <span id="warehouseProgressBar"></span>
+            </div>
+            <div class="ref-warehouse-cap" id="refWarehouseCap">0 / 0</div>
+          </div>
+          <button class="ref-upgrade-btn" id="quickStorageBtn">
+            <b>UPGRADE</b>
+            <span>🪙 2,500</span>
+          </button>
+        </div>
+
+        <div class="status-line ref-status" id="boostStatus">
+          ⚡ OFF | 🤖 OFF | 👑 OFF
+        </div>
+
+        <div class="ref-farm">
+          <img
+            class="ref-bg"
+            src="/assets/farm_reference_bg_v5.jpg"
+            alt="farm"
+          />
+
+          <button class="ref-side ref-daily" id="heroDailyBtn">
+            <b class="ref-badge">3</b>
+            <span class="ref-side-emoji">📅</span>
+            <span>Daily</span>
+          </button>
+
+          <button class="ref-side ref-tasks" id="heroTasksBtn">
+            <span class="ref-side-emoji">📋</span>
+            <span>Tasks</span>
+          </button>
+
+          <button class="ref-side ref-vip" id="heroVipBtn">
+            <span class="ref-side-emoji">👑</span>
+            <span>VIP</span>
+          </button>
+
+          <button class="ref-side ref-boosts" id="heroBoostBtn">
+            <b class="ref-badge">2</b>
+            <span class="ref-side-emoji">🚀</span>
+            <span>Boosts</span>
+          </button>
+
+          <div class="ref-coin-popup">
+            <span>+1</span>
+            <span>🪙</span>
+          </div>
+
+          <button class="tap-btn ref-main-tap" id="tapBtn">
+            <span>TAP!</span>
+            <small>👆</small>
+          </button>
+        </div>
+
+        <div class="status-line ref-status" id="status">ok</div>
+
+        <div class="ref-bottom-nav">
+          <button class="ref-nav active" id="navFarmBtn">
+            <span>🏠</span>
+            <b>Farm</b>
+          </button>
+          <button class="ref-nav" id="navAnimalsBtn">
+            <span>🐾</span>
+            <b>Animals</b>
+          </button>
+          <button class="ref-nav-tap" id="navTapBtn">TAP!</button>
+          <button class="ref-nav" id="navShopBtn">
+            <span>🛒</span>
+            <b>Shop</b>
+          </button>
+          <button class="ref-nav" id="navWalletBtn">
+            <span>👤</span>
+            <b>Profile</b>
+          </button>
+        </div>
       </div>
-      <div class="card">
-        <div class="section-title">💰 Тапай і заробляй</div>
-        <div class="tap-wrap">
-          <button class="tap-btn" id="tapBtn">TAP</button>
-          <div class="tap-hint">1 тап = 1 монета</div>
-        </div>
-        <div class="status-line" id="status">ok</div>
-      </div>
-      <div class="card">
-        <div class="section-title">🗂 Меню</div>
-        <div class="menu-grid">
-          <button class="menu-btn" id="animalsBtn">
-            <span class="menu-emoji">🐔</span><span>Тварини</span></button
-          ><button class="menu-btn" id="storageBtn">
-            <span class="menu-emoji">📦</span><span>Склад</span></button
-          ><button class="menu-btn" id="feedBtn">
-            <span class="menu-emoji">🌾</span><span>Корм</span></button
-          ><button class="menu-btn" id="labBtn">
-            <span class="menu-emoji">🧪</span><span>Лабораторія</span></button
-          ><button class="menu-btn" id="dailyBtn">
-            <span class="menu-emoji">🎁</span><span>Daily</span></button
-          ><button class="menu-btn" id="questsBtn">
-            <span class="menu-emoji">📜</span><span>Квести</span></button
-          ><button class="menu-btn" id="wheelBtn">
-            <span class="menu-emoji">🎰</span><span>Wheel</span></button
-          ><button class="menu-btn" id="shopBtn">
-            <span class="menu-emoji">💎</span><span>Diamonds</span></button
-          ><button class="menu-btn" id="boostBtn">
-            <span class="menu-emoji">⚡</span><span>Boosters</span></button
-          ><button class="menu-btn" id="refsBtn">
-            <span class="menu-emoji">👥</span><span>Referrals</span>
-          </button>
-          <button
-            class="menu-btn"
-            id="leaderboardBtn"
-            onclick="openLeaderboardModal('referrals')"
-          >
-            <span class="menu-emoji">🏆</span><span>Топ</span>
-          </button>
-          <button class="menu-btn" id="walletBtn">
-            <span class="menu-emoji">👛</span><span>Гаманець</span>
-          </button>
-          <button class="menu-btn" id="refreshBtn">
-            <span class="menu-emoji">🔄</span><span>Оновити</span>
-          </button>
-        </div>
-        <button class="main-btn" id="loadStateBtn">Оновити стан</button>
+
+      <div class="ref-legacy-buttons" aria-hidden="true">
+        <button id="animalsBtn"></button>
+        <button id="storageBtn"></button>
+        <button id="feedBtn"></button>
+        <button id="labBtn"></button>
+        <button id="dailyBtn"></button>
+        <button id="questsBtn"></button>
+        <button id="wheelBtn"></button>
+        <button id="shopBtn"></button>
+        <button id="boostBtn"></button>
+        <button id="refsBtn"></button>
+        <button id="walletBtn"></button>
+        <button id="refreshBtn"></button>
+        <button id="loadStateBtn"></button>
       </div>
       <div id="resultBox">ще нічого</div>
     </div>
@@ -3365,6 +3971,33 @@
       document
         .getElementById("walletBtn")
         ?.addEventListener("click", openWalletModal);
+
+      document
+        .getElementById("heroTasksBtn")
+        ?.addEventListener("click", openQuestsModal);
+      document
+        .getElementById("heroDailyBtn")
+        ?.addEventListener("click", openDailyModal);
+      document
+        .getElementById("heroVipBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("heroBoostBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("quickStorageBtn")
+        ?.addEventListener("click", openLabModal);
+      document.getElementById("navTapBtn")?.addEventListener("click", collect);
+      document
+        .getElementById("navAnimalsBtn")
+        ?.addEventListener("click", openAnimalsModal);
+      document
+        .getElementById("navShopBtn")
+        ?.addEventListener("click", openShopModal);
+
+      document
+        .getElementById("navWalletBtn")
+        ?.addEventListener("click", openProfileModal);
       loadState();
     </script>
   </body>
