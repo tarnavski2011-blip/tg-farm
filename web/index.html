@@ -7,160 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>My Farm Clicker</title>
-    <script src="https://telegram.org/js/telegram-web-app.js">
-      /* V2.5 PREMIUM LOGIC */
-      function showTapEffect(){
-        const btn=document.getElementById("tapBtn");
-        if(!btn)return;
-        const r=btn.getBoundingClientRect();
-        const el=document.createElement("div");
-        el.className="floating-coin";
-        el.textContent="+1 🪙";
-        el.style.left=(r.left+r.width/2)+"px";
-        el.style.top=(r.top-8)+"px";
-        document.body.appendChild(el);
-        setTimeout(()=>el.remove(),850);
-      }
-
-      var __oldCollectV25 = typeof collect === "function" ? collect : null;
-      async function collect(){
-        showTapEffect();
-        const r = await apiPost("/tap");
-        if (r.ok) setState(r.data);
-      }
-
-      var __oldSetStateV25 = typeof setState === "function" ? setState : null;
-      function setState(s){
-        currentState=s||{};
-        const coins=document.getElementById("coins");
-        const diamonds=document.getElementById("diamonds");
-        const levelBadge=document.getElementById("levelBadge");
-        const xpBar=document.getElementById("xpBar");
-        const boostStatus=document.getElementById("boostStatus");
-        const whCap=document.getElementById("warehouseCap");
-        const whBar=document.getElementById("warehouseProgressBar");
-
-        if(coins) coins.textContent=currentState.coins??0;
-        if(diamonds) diamonds.textContent=currentState.diamonds??0;
-        if(levelBadge) levelBadge.textContent=`LVL ${currentState.level??1}`;
-
-        const xp=Number(currentState.xp??0), need=Number(currentState.xpNeeded??1);
-        if(xpBar) xpBar.style.width=`${Math.max(0,Math.min(100,Math.floor((xp/Math.max(1,need))*100)))}%`;
-
-        if(boostStatus) boostStatus.textContent=`⚡ ${currentState.boost?.active?"ON":"OFF"} | 🤖 ${currentState.autoCollect?.active?"ON":"OFF"} | 👑 ${currentState.vip?.active?"ON":"OFF"}`;
-
-        const st=currentState.storage||{};
-        const total=(st.eggs??0)+(st.wool??0)+(st.milk??0);
-        const cap=st.capacity??currentState.warehouseCapacity??1000;
-        if(whCap) whCap.textContent=`${total} / ${cap}`;
-        if(whBar) whBar.style.width=`${Math.max(0,Math.min(100,Math.floor((total/Math.max(1,cap))*100)))}%`;
-      }
-
-      function openDailyModal(){
-        modalTitle.textContent="🎁 Daily Rewards";
-        modalTabs.style.display="none";
-        const streak=currentState?.dailyStreak??0;
-        modalBody.innerHTML=`<div class="grid">
-          <div class="tile full"><div class="tile-title">Daily Streak</div><div class="tile-value">${streak} days</div></div>
-          <div class="tile full"><div class="daily-calendar">
-            ${[1,2,3,4,5,6,7,8].map(d=>`<div class="daily-day ${d===streak+1?'active':''}"><div>Day ${d}</div><div>${d*25} 🪙</div></div>`).join("")}
-          </div><button class="btn green" onclick="claimDaily()">Claim Daily</button></div>
-        </div>`;
-        showModal();
-      }
-
-      async function claimDaily(){
-        const r=await apiPost("/daily");
-        if(r.ok){setState(r.data);openDailyModal()}else showToast(r.data?.error||"Daily not ready");
-      }
-
-      function openWheelModal(){
-        modalTitle.textContent="🎰 Wheel";
-        modalTabs.style.display="none";
-        modalBody.innerHTML=`<div class="grid">
-          <div class="tile full"><div class="tile-title">Prize Wheel</div><div class="tile-value">1 spin / day</div></div>
-          <div class="tile full"><div class="wheel">🎁</div><button class="btn gold" onclick="spinWheel()">SPIN</button></div>
-          <div class="tile"><div class="tile-title">Top prize</div><div class="tile-value">💎 50</div></div>
-          <div class="tile"><div class="tile-title">Common</div><div class="tile-value">🪙 100</div></div>
-        </div>`;
-        showModal();
-      }
-
-      async function spinWheel(){
-        const r=await apiPost("/wheel/spin");
-        if(r.ok){setState(r.data);showToast("Wheel reward!");openWheelModal()}else showToast(r.data?.error||"Spin not ready");
-      }
-
-      function openTopModal(){
-        modalTitle.textContent="🏆 Top Players";
-        modalTabs.style.display="none";
-        const me=currentState||{};
-        modalBody.innerHTML=`<div class="grid">
-          <div class="tile full"><div class="tile-title">Leaderboard</div><div class="tile-value">Top Farmers</div></div>
-          <div class="tile full"><div class="row"><span>🥇 Farmer</span><span>${me.points??0} ⭐</span></div><div class="row"><span>🥈 Player</span><span>Coming</span></div><div class="row"><span>🥉 Player</span><span>Coming</span></div></div>
-        </div>`;
-        showModal();
-      }
-
-      function openWalletModal(){
-        modalTitle.textContent="👛 Wallet";
-        modalTabs.style.display="none";
-        const d=currentState?.diamonds??0, p=currentState?.points??0, c=currentState?.coins??0;
-        const usdt=(Number(p)/10000).toFixed(2);
-        modalBody.innerHTML=`<div class="grid">
-          <div class="tile"><div class="tile-title">Diamonds</div><div class="tile-value">${d} 💎</div></div>
-          <div class="tile"><div class="tile-title">Points</div><div class="tile-value">${p} ⭐</div></div>
-          <div class="tile full"><div class="tile-title">USDT Estimate</div><div class="tile-value wallet-usdt">${usdt} USDT</div><div class="row"><span>Coins</span><span>${c}</span></div><button class="btn gold" onclick="showToast('Withdraw soon')">Withdraw Soon</button></div>
-          <div class="tile full"><div class="tile-title">Status</div><div class="tile-value">Testing economy</div></div>
-        </div>`;
-        showModal();
-      }
-
-      function openShopModal(){
-        modalTitle.textContent="🛒 Premium Shop";
-        modalTabs.style.display="grid";
-        modalTabs.innerHTML=`<button class="tab active" id="shopPremium">Premium</button><button class="tab" id="shopStars">Stars</button>`;
-        showModal();
-        const renderPremium=()=>{
-          modalBody.innerHTML=`<div class="grid">
-            <div class="tile full"><div class="tile-title">Premium</div><div class="tile-value">Boosts / VIP / Stars</div></div>
-            <div class="tile"><div class="tile-title">⚡ Boost x2</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('boost_x2')">Купити</button></div>
-            <div class="tile"><div class="tile-title">💰 Auto Sell</div><div class="tile-value">10 💎</div><button class="btn" onclick="buyShop('auto_collect')">Купити</button></div>
-            <div class="tile"><div class="tile-title">👑 VIP 24h</div><div class="tile-value">150 💎</div><button class="btn gold" onclick="buyShop('vip_1d')">Купити</button></div>
-            <div class="tile stars-card"><div class="tile-title">⭐ Stars Pack</div><div class="tile-value">Soon</div><button class="btn gold" onclick="buyStars('diamonds_100')">Buy with Stars</button></div>
-          </div>`;
-        };
-        const renderStars=()=>{
-          modalBody.innerHTML=`<div class="grid">
-            <div class="tile full stars-card"><div class="tile-title">Telegram Stars</div><div class="tile-value">Buy Diamonds</div></div>
-            <div class="tile"><div class="tile-title">💎 100 Diamonds</div><div class="tile-value">50 ⭐</div><button class="btn" onclick="buyStars('diamonds_100')">Buy</button></div>
-            <div class="tile"><div class="tile-title">💎 500 Diamonds</div><div class="tile-value">220 ⭐</div><button class="btn" onclick="buyStars('diamonds_500')">Buy</button></div>
-          </div>`;
-        };
-        document.getElementById("shopPremium").onclick=()=>{document.getElementById("shopPremium").classList.add("active");document.getElementById("shopStars").classList.remove("active");renderPremium()};
-        document.getElementById("shopStars").onclick=()=>{document.getElementById("shopStars").classList.add("active");document.getElementById("shopPremium").classList.remove("active");renderStars()};
-        renderPremium();
-      }
-
-      async function buyStars(productId){
-        const r=await apiPost("/shopStars/createInvoice",{productId});
-        if(r.ok && r.data?.url){
-          if(window.Telegram?.WebApp?.openInvoice) window.Telegram.WebApp.openInvoice(r.data.url);
-          else location.href=r.data.url;
-        }else showToast(r.data?.error||"Stars invoice soon");
-      }
-
-      function bindV25(){
-        const top=document.getElementById("topBtn"); if(top) top.onclick=openTopModal;
-        const wheel=document.getElementById("wheelBtn"); if(wheel) wheel.onclick=openWheelModal;
-        const tap=document.getElementById("tapBtn"); if(tap) tap.onclick=collect;
-        const shop=document.getElementById("shopBtn"); if(shop) shop.onclick=openShopModal;
-        const wallet=document.getElementById("walletBtn"); if(wallet) wallet.onclick=openWalletModal;
-        const daily=document.getElementById("dailyBtn"); if(daily) daily.onclick=openDailyModal;
-      }
-      window.addEventListener("load",bindV25);
-      setTimeout(bindV25,300);
-    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -1093,7 +940,7 @@
       const tg = window.Telegram?.WebApp;
       tg?.ready?.();
       tg?.expand?.();
-      const API_BASE = location.origin,
+      const API_BASE = location.origin + "/api",
         TEST_ID = "123";
       let currentState = null;
       const $ = (id) => document.getElementById(id),
@@ -1605,7 +1452,7 @@
           try {
             if (typeof showTapEffect === "function") showTapEffect();
             const res = await apiPostTry(
-              ["/api/tap", "/tap", "/collect", "/state/tap"],
+              ["/tap", "/collect", "/state/tap"],
               {},
             );
             if (applyStateFromResponse(res)) {
@@ -1640,7 +1487,7 @@
         window.spinWheel = async function () {
           try {
             const res = await apiPostTry(
-              ["/api/wheel/spin", "/wheel/spin", "/wheel", "/wheel/spinDaily"],
+              ["/wheel/spin", "/wheel", "/wheel/spinDaily"],
               {},
             );
             if (applyStateFromResponse(res)) {
@@ -1656,10 +1503,11 @@
 
         window.buyShop = async function (code) {
           try {
-            const res = await apiPostTry(
-              ["/api/shop/buy", "/shop/buy", "/shop", "/boost", "/api/boost"],
-              { code, productId: code, type: code },
-            );
+            const res = await apiPostTry(["/shop/buy", "/shop", "/boost"], {
+              code,
+              productId: code,
+              type: code,
+            });
             if (applyStateFromResponse(res)) {
               showToast("✅ Куплено");
             } else {
@@ -1703,7 +1551,7 @@
               "/api/state",
               "/state",
               "/user/state",
-              "/api/user/state",
+              "/user/state",
             ]);
             if (applyStateFromResponse(res)) return;
             showToast(res?.data?.error || "State route не працює");
@@ -1857,13 +1705,10 @@
             const before = getCurrentCoinsNumber();
             setCoinsOnScreen(before + 1);
 
-            const res = await apiPostTry(
-              ["/api/tap", "/tap", "/collect", "/state/tap"],
-              {
-                amount: 1,
-                telegramId: String(getMyTelegramId?.() || ""),
-              },
-            );
+            const res = await apiPostTry(["/tap", "/collect", "/state/tap"], {
+              amount: 1,
+              telegramId: String(getMyTelegramId?.() || ""),
+            });
 
             if (res && res.ok) {
               const s = normalizeStatePayload(res.data);
@@ -1972,7 +1817,7 @@
             "/api/state",
             "/state",
             "/user/state",
-            "/api/user/state",
+            "/user/state",
           ]);
           if (!applyStateFixed(res)) {
             showToast(res?.data?.error || "State route не працює");
@@ -1991,7 +1836,7 @@
             if (coinsEl) coinsEl.textContent = String(before + 1);
 
             const res = await apiPostTryFixed(
-              ["/api/tap", "/tap", "/collect", "/state/tap"],
+              ["/tap", "/collect", "/state/tap"],
               {
                 amount: 1,
                 telegramId: String(getMyTelegramId?.() || ""),
@@ -2027,7 +1872,7 @@
 
         window.spinWheel = async function () {
           const res = await apiPostTryFixed(
-            ["/api/wheel/spin", "/wheel/spin", "/wheel", "/wheel/spinDaily"],
+            ["/wheel/spin", "/wheel", "/wheel/spinDaily"],
             {},
           );
           if (applyStateFixed(res)) {
@@ -2039,14 +1884,11 @@
         };
 
         window.buyShop = async function (code) {
-          const res = await apiPostTryFixed(
-            ["/api/shop/buy", "/shop/buy", "/shop", "/boost", "/api/boost"],
-            {
-              code,
-              productId: code,
-              type: code,
-            },
-          );
+          const res = await apiPostTryFixed(["/shop/buy", "/shop", "/boost"], {
+            code,
+            productId: code,
+            type: code,
+          });
           if (applyStateFixed(res)) {
             showToast("✅ Куплено");
           } else {
@@ -2075,6 +1917,153 @@
         window.addEventListener("load", bindApiRouteFix);
         setTimeout(bindApiRouteFix, 300);
         setTimeout(() => window.loadState?.(), 600);
+      })();
+
+      /* FINAL API BASE FIX: API_BASE already includes /api, routes below are clean */
+      (function () {
+        window.__apiBaseFixed = true;
+
+        function normalizeFinalState(data) {
+          if (!data) return null;
+          if (data.user) return data.user;
+          if (data.state) return data.state;
+          if (data.data?.user) return data.data.user;
+          if (data.data?.state) return data.data.state;
+          if (data.data) return data.data;
+          return data;
+        }
+
+        async function postFinal(paths, body = {}) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiPost(path, body);
+              last = res;
+              if (res?.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        async function getFinal(paths) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiGet(path);
+              last = res;
+              if (res?.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        function applyFinalState(res) {
+          if (!res?.ok) return false;
+          const state = normalizeFinalState(res.data);
+          if (state && typeof state === "object") {
+            setState(state);
+            return true;
+          }
+          return false;
+        }
+
+        window.loadState = async function () {
+          const res = await getFinal(["/state", "/user/state"]);
+          if (!applyFinalState(res)) {
+            showToast(res?.data?.error || "State route не працює");
+          }
+        };
+
+        window.collect = async function () {
+          try {
+            if (typeof showTapEffect === "function") showTapEffect();
+
+            const coinsEl = document.getElementById("coins");
+            const before =
+              Number(
+                String(coinsEl?.textContent || "0").replace(/[^\d.-]/g, ""),
+              ) || 0;
+            if (coinsEl) coinsEl.textContent = String(before + 1);
+
+            const res = await postFinal(["/tap", "/collect", "/state/tap"], {
+              amount: 1,
+              telegramId: String(getMyTelegramId?.() || ""),
+            });
+
+            if (!applyFinalState(res)) {
+              if (coinsEl) coinsEl.textContent = String(before);
+              showToast(res?.data?.error || "Tap route не працює");
+            }
+          } catch (e) {
+            showToast("Tap error: " + (e?.message || e));
+          }
+        };
+
+        window.claimDaily = async function () {
+          const res = await postFinal(
+            ["/daily/claim", "/daily", "/daily/claimReward"],
+            {},
+          );
+          if (applyFinalState(res)) {
+            showToast("🎁 Daily claimed");
+            if (typeof openDailyModal === "function") openDailyModal();
+          } else {
+            showToast(res?.data?.error || "Daily route не працює");
+          }
+        };
+
+        window.spinWheel = async function () {
+          const res = await postFinal(
+            ["/wheel/spin", "/wheel", "/wheel/spinDaily"],
+            {},
+          );
+          if (applyFinalState(res)) {
+            showToast("🎰 Wheel reward");
+            if (typeof openWheelModal === "function") openWheelModal();
+          } else {
+            showToast(res?.data?.error || "Wheel route не працює");
+          }
+        };
+
+        window.buyShop = async function (code) {
+          const res = await postFinal(["/shop/buy", "/shop", "/boost"], {
+            code,
+            productId: code,
+            type: code,
+          });
+          if (applyFinalState(res)) {
+            showToast("✅ Куплено");
+          } else {
+            showToast(
+              res?.data?.error ||
+                "Shop route не працює або недостатньо балансу",
+            );
+          }
+        };
+
+        function bindFinalApiButtons() {
+          const bind = (id, fn) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fn();
+            };
+          };
+
+          bind("tapBtn", window.collect);
+          bind("navTapBtn", window.collect);
+          bind("farmBtn", window.loadState);
+        }
+
+        window.addEventListener("load", bindFinalApiButtons);
+        setTimeout(bindFinalApiButtons, 300);
+        setTimeout(() => window.loadState?.(), 500);
       })();
     </script>
   </body>
