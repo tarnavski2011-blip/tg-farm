@@ -119,11 +119,21 @@ function getAnimalEfficiency(animal: {
 
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
-    if (!req.telegramUser?.id) {
-      return res.status(401).json({ error: "Unauthorized" });
+    const rawTelegramId =
+      req.telegramUser?.id ||
+      (typeof req.headers["x-telegram-id"] === "string"
+        ? req.headers["x-telegram-id"]
+        : Array.isArray(req.headers["x-telegram-id"])
+          ? req.headers["x-telegram-id"][0]
+          : null);
+
+    if (!rawTelegramId) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: telegram id missing" });
     }
 
-    const telegramId = BigInt(req.telegramUser.id);
+    const telegramId = BigInt(rawTelegramId);
 
     let user = await prisma.user.findUnique({
       where: { telegramId },
@@ -195,24 +205,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let userCoinsLeft = user.coins ?? 0;
 
     const animalUpdates: Promise<any>[] = [];
-    const deadAnimalDeletes: Promise<any>[] = [];
 
     for (const animal of user.animals) {
-      const preCheckStats = getAnimalEfficiency({
-        type: animal.type,
-        bornAt: animal.bornAt,
-        lastFedAt: animal.lastFedAt,
-      });
-
-      if (preCheckStats.lifePercent <= 0) {
-        deadAnimalDeletes.push(
-          prisma.animal.delete({
-            where: { id: animal.id },
-          }),
-        );
-        continue;
-      }
-
       const cfg = ANIMAL_PRODUCTION[animal.type];
       const passedSec = Math.floor(
         (now.getTime() - animal.lastClaim.getTime()) / 1000,
@@ -272,16 +266,13 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         lastFedAt: animal.lastFedAt,
       });
 
-      if (animalStats.lifePercent <= 0) {
-        deadAnimalDeletes.push(
-          prisma.animal.delete({
+      if (animalStats.lifePercent <= 0 || animalStats.efficiencyPercent <= 0) {
+        animalUpdates.push(
+          prisma.animal.update({
             where: { id: animal.id },
+            data: { lastClaim: now },
           }),
         );
-        continue;
-      }
-
-      if (animalStats.efficiencyPercent <= 0) {
         continue;
       }
 
@@ -323,9 +314,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       animalUpdates.push(
         prisma.animal.update({
           where: { id: animal.id },
-          data: {
-            lastClaim: newLastClaim,
-          },
+          data: { lastClaim: newLastClaim },
         }),
       );
     }
@@ -391,8 +380,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       totalAdd = eggsAdd + woolAdd + milkAdd;
     }
 
-    if (animalUpdates.length > 0 || deadAnimalDeletes.length > 0) {
-      await Promise.all([...animalUpdates, ...deadAnimalDeletes]);
+    if (animalUpdates.length > 0) {
+      await Promise.all(animalUpdates);
     }
 
     await prisma.user.update({
@@ -525,7 +514,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chicken: chickenAnimals.length,
         sheep: sheepAnimals.length,
         cow: cowAnimals.length,
-
         chickenLevel: chickenAnimals.length
           ? Math.max(...chickenAnimals.map((a) => a.level))
           : 0,
@@ -534,96 +522,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           : 0,
         cowLevel: cowAnimals.length
           ? Math.max(...cowAnimals.map((a) => a.level))
-          : 0,
-
-        chickenLife: chickenAnimals.length
-          ? Math.round(
-              chickenAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).lifePercent,
-                0,
-              ) / chickenAnimals.length,
-            )
-          : 0,
-
-        sheepLife: sheepAnimals.length
-          ? Math.round(
-              sheepAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).lifePercent,
-                0,
-              ) / sheepAnimals.length,
-            )
-          : 0,
-
-        cowLife: cowAnimals.length
-          ? Math.round(
-              cowAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).lifePercent,
-                0,
-              ) / cowAnimals.length,
-            )
-          : 0,
-
-        chickenEfficiency: chickenAnimals.length
-          ? Math.round(
-              chickenAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).efficiencyPercent,
-                0,
-              ) / chickenAnimals.length,
-            )
-          : 0,
-
-        sheepEfficiency: sheepAnimals.length
-          ? Math.round(
-              sheepAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).efficiencyPercent,
-                0,
-              ) / sheepAnimals.length,
-            )
-          : 0,
-
-        cowEfficiency: cowAnimals.length
-          ? Math.round(
-              cowAnimals.reduce(
-                (sum, a) =>
-                  sum +
-                  getAnimalEfficiency({
-                    type: a.type,
-                    bornAt: a.bornAt,
-                    lastFedAt: a.lastFedAt,
-                  }).efficiencyPercent,
-                0,
-              ) / cowAnimals.length,
-            )
           : 0,
       },
 
@@ -694,7 +592,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           autoFeedCoinsSpent,
           autoSellCoins: autoSellCoinsAdd,
           autoSellPoints: autoSellPointsAdd,
-          deadAnimalsRemoved: deadAnimalDeletes.length,
         },
       },
     });
