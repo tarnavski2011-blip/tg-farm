@@ -1815,6 +1815,99 @@
         setTimeout(bindButtonsFinal, 1200);
         setTimeout(() => window.loadState?.(), 400);
       })();
+
+      /* TAP COINS CREDIT FIX */
+      (function () {
+        function normalizeStatePayload(data) {
+          if (!data) return null;
+
+          if (data.user) return data.user;
+          if (data.state) return data.state;
+          if (data.data?.user) return data.data.user;
+          if (data.data?.state) return data.data.state;
+          if (data.data) return data.data;
+
+          return data;
+        }
+
+        function getCurrentCoinsNumber() {
+          const el = document.getElementById("coins");
+          const n = Number(
+            String(el?.textContent || "0").replace(/[^\d.-]/g, ""),
+          );
+          return Number.isFinite(n) ? n : 0;
+        }
+
+        function setCoinsOnScreen(value) {
+          const el = document.getElementById("coins");
+          if (el) el.textContent = String(value);
+          currentState = currentState || {};
+          currentState.coins = value;
+        }
+
+        window.collect = async function () {
+          try {
+            if (typeof showTapEffect === "function") showTapEffect();
+
+            const before = getCurrentCoinsNumber();
+            setCoinsOnScreen(before + 1);
+
+            const res = await apiPostTry(["/tap", "/collect", "/state/tap"], {
+              amount: 1,
+              telegramId: String(getMyTelegramId?.() || ""),
+            });
+
+            if (res && res.ok) {
+              const s = normalizeStatePayload(res.data);
+
+              if (s && typeof s === "object") {
+                if (typeof s.coins === "number") {
+                  setState(s);
+                } else if (typeof res.data?.coins === "number") {
+                  setCoinsOnScreen(res.data.coins);
+                } else if (typeof res.data?.balance === "number") {
+                  setCoinsOnScreen(res.data.balance);
+                } else {
+                  await loadState();
+                }
+              } else {
+                await loadState();
+              }
+            } else {
+              setCoinsOnScreen(before);
+              showToast(res?.data?.error || "Tap не зарахувався на сервері");
+            }
+          } catch (e) {
+            const now = getCurrentCoinsNumber();
+            if (now > 0) setCoinsOnScreen(now - 1);
+            showToast("Tap error: " + (e?.message || e));
+          }
+        };
+
+        function bindTapCoinFix() {
+          const tap = document.getElementById("tapBtn");
+          if (tap) {
+            tap.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.collect();
+            };
+          }
+
+          const navTap = document.getElementById("navTapBtn");
+          if (navTap) {
+            navTap.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.collect();
+            };
+          }
+        }
+
+        window.addEventListener("load", bindTapCoinFix);
+        setTimeout(bindTapCoinFix, 300);
+        setTimeout(bindTapCoinFix, 1200);
+      })();
     </script>
   </body>
 </html>
