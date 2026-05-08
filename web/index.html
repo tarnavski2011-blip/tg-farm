@@ -1094,7 +1094,7 @@
       tg?.ready?.();
       tg?.expand?.();
       const API_BASE = location.origin,
-        TEST_ID = "7758974573";
+        TEST_ID = "123";
       let currentState = null;
       const $ = (id) => document.getElementById(id),
         modal = $("modal"),
@@ -1605,7 +1605,7 @@
           try {
             if (typeof showTapEffect === "function") showTapEffect();
             const res = await apiPostTry(
-              ["/tap", "/collect", "/state/tap"],
+              ["/api/tap", "/tap", "/collect", "/state/tap"],
               {},
             );
             if (applyStateFromResponse(res)) {
@@ -1621,7 +1621,7 @@
         window.claimDaily = async function () {
           try {
             const res = await apiPostTry(
-              ["/daily/claim", "/daily", "/daily/claimReward"],
+              ["/api/daily/claim", "/daily/claim", "/daily/claimReward"],
               {},
             );
             if (applyStateFromResponse(res)) {
@@ -1640,7 +1640,7 @@
         window.spinWheel = async function () {
           try {
             const res = await apiPostTry(
-              ["/wheel/spin", "/wheel", "/wheel/spinDaily"],
+              ["/api/wheel/spin", "/wheel/spin", "/wheel", "/wheel/spinDaily"],
               {},
             );
             if (applyStateFromResponse(res)) {
@@ -1656,11 +1656,10 @@
 
         window.buyShop = async function (code) {
           try {
-            const res = await apiPostTry(["/shop/buy", "/shop", "/boost"], {
-              code,
-              productId: code,
-              type: code,
-            });
+            const res = await apiPostTry(
+              ["/api/shop/buy", "/shop/buy", "/shop", "/boost", "/api/boost"],
+              { code, productId: code, type: code },
+            );
             if (applyStateFromResponse(res)) {
               showToast("✅ Куплено");
             } else {
@@ -1678,6 +1677,7 @@
           try {
             const res = await apiPostTry(
               [
+                "/api/shopStars/createInvoice",
                 "/shopStars/createInvoice",
                 "/shop/stars/createInvoice",
                 "/stars/createInvoice",
@@ -1699,7 +1699,12 @@
 
         window.loadState = async function () {
           try {
-            const res = await apiGetTry(["/state", "/user/state"]);
+            const res = await apiGetTry([
+              "/api/state",
+              "/state",
+              "/user/state",
+              "/api/user/state",
+            ]);
             if (applyStateFromResponse(res)) return;
             showToast(res?.data?.error || "State route не працює");
           } catch (e) {
@@ -1852,10 +1857,13 @@
             const before = getCurrentCoinsNumber();
             setCoinsOnScreen(before + 1);
 
-            const res = await apiPostTry(["/tap", "/collect", "/state/tap"], {
-              amount: 1,
-              telegramId: String(getMyTelegramId?.() || ""),
-            });
+            const res = await apiPostTry(
+              ["/api/tap", "/tap", "/collect", "/state/tap"],
+              {
+                amount: 1,
+                telegramId: String(getMyTelegramId?.() || ""),
+              },
+            );
 
             if (res && res.ok) {
               const s = normalizeStatePayload(res.data);
@@ -1907,6 +1915,166 @@
         window.addEventListener("load", bindTapCoinFix);
         setTimeout(bindTapCoinFix, 300);
         setTimeout(bindTapCoinFix, 1200);
+      })();
+
+      /* API ROUTES FINAL FIX */
+      (function () {
+        async function apiPostTryFixed(paths, body = {}) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiPost(path, body);
+              last = res;
+              if (res && res.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        async function apiGetTryFixed(paths) {
+          let last = null;
+          for (const path of paths) {
+            try {
+              const res = await apiGet(path);
+              last = res;
+              if (res && res.ok) return res;
+            } catch (e) {
+              last = { ok: false, data: { error: String(e?.message || e) } };
+            }
+          }
+          return last || { ok: false, data: { error: "server error" } };
+        }
+
+        function normalizeStateFixed(data) {
+          if (!data) return null;
+          if (data.user) return data.user;
+          if (data.state) return data.state;
+          if (data.data?.user) return data.data.user;
+          if (data.data?.state) return data.data.state;
+          if (data.data) return data.data;
+          return data;
+        }
+
+        function applyStateFixed(res) {
+          if (!res || !res.ok) return false;
+          const state = normalizeStateFixed(res.data);
+          if (state && typeof state === "object") {
+            setState(state);
+            return true;
+          }
+          return false;
+        }
+
+        window.loadState = async function () {
+          const res = await apiGetTryFixed([
+            "/api/state",
+            "/state",
+            "/user/state",
+            "/api/user/state",
+          ]);
+          if (!applyStateFixed(res)) {
+            showToast(res?.data?.error || "State route не працює");
+          }
+        };
+
+        window.collect = async function () {
+          try {
+            if (typeof showTapEffect === "function") showTapEffect();
+
+            const coinsEl = document.getElementById("coins");
+            const before =
+              Number(
+                String(coinsEl?.textContent || "0").replace(/[^\d.-]/g, ""),
+              ) || 0;
+            if (coinsEl) coinsEl.textContent = String(before + 1);
+
+            const res = await apiPostTryFixed(
+              ["/api/tap", "/tap", "/collect", "/state/tap"],
+              {
+                amount: 1,
+                telegramId: String(getMyTelegramId?.() || ""),
+              },
+            );
+
+            if (!applyStateFixed(res)) {
+              if (coinsEl) coinsEl.textContent = String(before);
+              showToast(res?.data?.error || "Tap route не працює");
+            }
+          } catch (e) {
+            showToast("Tap error: " + (e?.message || e));
+          }
+        };
+
+        window.claimDaily = async function () {
+          const res = await apiPostTryFixed(
+            [
+              "/api/daily/claim",
+              "/daily/claim",
+              "/daily",
+              "/daily/claimReward",
+            ],
+            {},
+          );
+          if (applyStateFixed(res)) {
+            showToast("🎁 Daily claimed");
+            if (typeof openDailyModal === "function") openDailyModal();
+          } else {
+            showToast(res?.data?.error || "Daily route не працює");
+          }
+        };
+
+        window.spinWheel = async function () {
+          const res = await apiPostTryFixed(
+            ["/api/wheel/spin", "/wheel/spin", "/wheel", "/wheel/spinDaily"],
+            {},
+          );
+          if (applyStateFixed(res)) {
+            showToast("🎰 Wheel reward");
+            if (typeof openWheelModal === "function") openWheelModal();
+          } else {
+            showToast(res?.data?.error || "Wheel route не працює");
+          }
+        };
+
+        window.buyShop = async function (code) {
+          const res = await apiPostTryFixed(
+            ["/api/shop/buy", "/shop/buy", "/shop", "/boost", "/api/boost"],
+            {
+              code,
+              productId: code,
+              type: code,
+            },
+          );
+          if (applyStateFixed(res)) {
+            showToast("✅ Куплено");
+          } else {
+            showToast(
+              res?.data?.error ||
+                "Shop route не працює або недостатньо балансу",
+            );
+          }
+        };
+
+        function bindApiRouteFix() {
+          const bind = (id, fn) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fn();
+            };
+          };
+          bind("tapBtn", window.collect);
+          bind("navTapBtn", window.collect);
+          bind("farmBtn", window.loadState);
+        }
+
+        window.addEventListener("load", bindApiRouteFix);
+        setTimeout(bindApiRouteFix, 300);
+        setTimeout(() => window.loadState?.(), 600);
       })();
     </script>
   </body>
