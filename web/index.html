@@ -1121,87 +1121,754 @@
         border-radius: inherit;
         background: linear-gradient(90deg, #22c55e, #84cc16);
       }
+
+      /* PREMIUM V3 FULL UI */
+      :root {
+        --v3-bg: #06111f;
+        --v3-panel: #0b2038;
+        --v3-panel2: #15395e;
+        --v3-blue: #0ea5ff;
+        --v3-blue2: #1764ff;
+        --v3-green: #36d348;
+        --v3-gold: #ffbf1a;
+        --v3-orange: #ff8a00;
+        --v3-line: rgba(125, 211, 252, 0.24);
+        --v3-text: #ffffff;
+        --v3-muted: #b8cbe3;
+      }
+
+      html {
+        background: var(--v3-bg);
+      }
+
+      body {
+        touch-action: manipulation;
+        overscroll-behavior: none;
+        background:
+          radial-gradient(
+            circle at 50% -8%,
+            rgba(14, 165, 255, 0.34),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 15% 20%,
+            rgba(34, 197, 94, 0.12),
+            transparent 24%
+          ),
+          linear-gradient(180deg, #06111f 0%, #0a1b2d 52%, #06111f 100%) !important;
+        overflow-x: hidden;
+      }
+
+      .app {
+        max-width: 480px !important;
+        padding: 10px 8px 118px !important;
+      }
+
+      .v3-shell {
+        position: relative;
+        overflow: hidden;
+        border-radius: 34px;
+        padding: 10px;
+        margin-bottom: 14px;
+        background: linear-gradient(
+          180deg,
+          rgba(14, 34, 58, 0.98),
+          rgba(3, 12, 24, 0.98)
+        );
+        border: 1px solid var(--v3-line);
+        box-shadow:
+          0 28px 70px rgba(0, 0, 0, 0.48),
+          inset 0 2px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .v3-shell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          circle at top,
+          rgba(14, 165, 255, 0.18),
+          transparent 34%
+        );
+      }
+
+      .v3-hud {
+        position: relative;
+        z-index: 5;
+        padding: 10px;
+        border-radius: 25px;
+        background: linear-gradient(
+          180deg,
+          rgba(17, 40, 66, 0.97),
+          rgba(7, 19, 34, 0.98)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 14px 30px rgba(0, 0, 0, 0.24);
+      }
+
+      .v3-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .v3-avatar {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        font-size: 32px;
+        background: linear-gradient(135deg, #0ea5ff, #1d4ed8);
+        box-shadow: 0 12px 24px rgba(14, 165, 255, 0.28);
+      }
+
+      .v3-profile-text {
+        flex: 1;
+      }
+
+      .title {
+        font-size: 20px !important;
+        font-weight: 1000 !important;
+        color: #fff !important;
+        line-height: 1.05 !important;
+      }
+
+      .subtitle {
+        margin-top: 6px !important;
+        color: var(--v3-muted) !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+      }
+
+      .level-badge {
+        min-width: 82px !important;
+        padding: 13px 10px !important;
+        border-radius: 18px !important;
+        font-size: 16px !important;
+        font-weight: 1000 !important;
+        background: linear-gradient(135deg, #0ea5ff, #1d4ed8) !important;
+        box-shadow:
+          0 12px 28px rgba(14, 165, 255, 0.35),
+          inset 0 2px 0 rgba(255, 255, 255, 0.24) !important;
+      }
+
+      .v3-stats {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 7px !important;
+      }
+
+      .stat-box {
+        border-radius: 17px !important;
+        padding: 11px 5px !important;
+        background: linear-gradient(
+          180deg,
+          rgba(18, 42, 68, 0.98),
+          rgba(6, 17, 32, 0.98)
+        ) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.07);
+      }
+
+      .stat-label {
+        font-size: 9px !important;
+        font-weight: 1000 !important;
+        color: #9db7d4 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+      }
+
+      .stat-value {
+        margin-top: 4px;
+        font-size: 16px !important;
+        font-weight: 1000 !important;
+        color: #fff !important;
+      }
+
+      .v3-warehouse {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 18px;
+        background: linear-gradient(
+          180deg,
+          rgba(18, 42, 68, 0.92),
+          rgba(5, 15, 28, 0.94)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.16);
+      }
+
+      .v3-warehouse-icon {
+        font-size: 34px;
+      }
+
+      .v3-label {
+        color: #fff;
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .v3-progress {
+        height: 10px;
+        margin-top: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.7);
+      }
+
+      .v3-progress span {
+        display: block;
+        width: 68%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #facc15, #f97316);
+      }
+
+      .v3-small-btn {
+        border: none;
+        border-radius: 14px;
+        padding: 10px 12px;
+        color: #fff;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #31c943, #7ee928);
+        box-shadow: 0 10px 22px rgba(48, 201, 67, 0.25);
+      }
+
+      .status-line {
+        margin-top: 10px !important;
+        border-radius: 999px !important;
+        padding: 8px 10px !important;
+        background: rgba(2, 8, 18, 0.58) !important;
+        border: 1px solid rgba(125, 211, 252, 0.18) !important;
+        color: #e5f3ff !important;
+        font-weight: 1000 !important;
+      }
+
+      .v3-farm-stage {
+        position: relative;
+        height: 462px;
+        margin-top: 10px;
+        overflow: hidden;
+        border-radius: 30px;
+        border: 2px solid rgba(142, 224, 255, 0.32);
+        background: #65d4ff;
+        box-shadow:
+          inset 0 3px 0 rgba(255, 255, 255, 0.38),
+          0 18px 42px rgba(0, 0, 0, 0.26);
+      }
+
+      .v3-farm-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .v3-animal {
+        position: absolute;
+        z-index: 3;
+        filter: drop-shadow(0 18px 14px rgba(0, 0, 0, 0.3));
+        animation: v3Float 2.8s ease-in-out infinite;
+      }
+
+      @keyframes v3Float {
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      .v3-chicken {
+        left: 18px;
+        bottom: 78px;
+        width: 168px;
+      }
+
+      .v3-cow {
+        right: 30px;
+        bottom: 120px;
+        width: 160px;
+        animation-delay: 0.25s;
+      }
+
+      .v3-sheep {
+        right: 114px;
+        bottom: 62px;
+        width: 140px;
+        animation-delay: 0.5s;
+      }
+
+      .v3-side {
+        position: absolute;
+        z-index: 7;
+        width: 64px;
+        height: 64px;
+        border: none;
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 1000;
+        background: linear-gradient(180deg, #173a5f, #07182c);
+        border: 1px solid rgba(125, 211, 252, 0.23);
+        box-shadow:
+          0 12px 24px rgba(0, 0, 0, 0.25),
+          inset 0 2px 0 rgba(255, 255, 255, 0.09);
+      }
+
+      .v3-side span {
+        font-size: 10px;
+      }
+
+      .v3-side b {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        min-width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: #ef4444;
+        color: #fff;
+        font-size: 11px;
+      }
+
+      .v3-daily {
+        left: 12px;
+        top: 82px;
+      }
+      .v3-vip {
+        right: 12px;
+        top: 82px;
+        background: linear-gradient(135deg, #f59e0b, #facc15);
+      }
+      .v3-boosts {
+        right: 12px;
+        top: 158px;
+      }
+
+      .v3-coin-popup {
+        position: absolute;
+        z-index: 8;
+        left: 50%;
+        bottom: 82px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 24px;
+        border-radius: 999px;
+        background: rgba(76, 44, 8, 0.62);
+        color: #fff;
+        font-size: 30px;
+        font-weight: 1000;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+      }
+
+      .v3-coin-popup img {
+        width: 38px;
+        height: 38px;
+      }
+
+      .v3-tap {
+        position: absolute !important;
+        z-index: 9 !important;
+        left: 50% !important;
+        bottom: 16px !important;
+        transform: translateX(-50%) !important;
+      }
+
+      .tap-btn {
+        width: 126px !important;
+        height: 126px !important;
+        border-radius: 50% !important;
+        border: 6px solid rgba(255, 255, 255, 0.36) !important;
+        background: radial-gradient(
+          circle at 34% 18%,
+          #fff7b5,
+          #ffd84d 38%,
+          #ffae13 70%,
+          #d97706
+        ) !important;
+        color: #fff !important;
+        font-size: 24px !important;
+        font-weight: 1000 !important;
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
+        box-shadow:
+          0 16px 34px rgba(255, 171, 0, 0.44),
+          inset 0 7px 16px rgba(255, 255, 255, 0.34),
+          inset 0 -10px 20px rgba(120, 53, 15, 0.3) !important;
+      }
+
+      .tap-btn small {
+        display: block;
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .v3-tap:active {
+        transform: translateX(-50%) scale(0.94) !important;
+      }
+
+      .tap-hint {
+        text-align: center;
+        color: #dbeafe !important;
+        font-weight: 1000 !important;
+        margin-top: 12px !important;
+      }
+
+      .v3-bottom-nav {
+        position: sticky;
+        bottom: 10px;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: 1fr 1fr 84px 1fr 1fr;
+        gap: 7px;
+        align-items: end;
+        margin-top: 12px;
+        padding: 8px;
+        border-radius: 20px;
+        background: rgba(4, 12, 24, 0.84);
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+      }
+
+      .v3-nav,
+      .v3-nav-tap {
+        border: none;
+        border-radius: 15px;
+        min-height: 56px;
+        color: #fff;
+        font-weight: 1000;
+        background: linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(125, 211, 252, 0.16);
+      }
+
+      .v3-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+      }
+
+      .v3-nav span {
+        font-size: 10px;
+      }
+
+      .v3-nav.active {
+        background: linear-gradient(135deg, #0ea5ff, #1d4ed8);
+      }
+
+      .v3-nav-tap {
+        min-height: 70px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 34% 18%,
+          #fff7b5,
+          #ffd84d 38%,
+          #ffae13 70%,
+          #d97706
+        );
+        box-shadow:
+          0 10px 26px rgba(255, 171, 0, 0.35),
+          inset 0 3px 0 rgba(255, 255, 255, 0.3);
+        text-shadow: 0 2px 0 rgba(120, 53, 15, 0.45);
+      }
+
+      .card {
+        border-radius: 28px !important;
+        background: linear-gradient(
+          180deg,
+          rgba(17, 39, 65, 0.96),
+          rgba(8, 21, 38, 0.96)
+        ) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow:
+          0 18px 44px rgba(0, 0, 0, 0.36),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
+      }
+
+      .section-title {
+        font-size: 24px !important;
+        font-weight: 1000 !important;
+        color: #fff !important;
+      }
+
+      .menu-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 8px !important;
+      }
+
+      .menu-btn {
+        min-height: 76px !important;
+        padding: 7px 4px !important;
+        border-radius: 18px !important;
+        background: linear-gradient(180deg, #173a5f, #0b1c31) !important;
+        border: 1px solid rgba(125, 211, 252, 0.2) !important;
+        box-shadow:
+          0 10px 20px rgba(0, 0, 0, 0.26),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
+        color: #fff !important;
+        font-size: 10px !important;
+        font-weight: 1000 !important;
+      }
+
+      .menu-emoji {
+        font-size: 26px !important;
+      }
+
+      .main-btn,
+      .buy-btn {
+        border-radius: 16px !important;
+        font-weight: 1000 !important;
+        background: linear-gradient(135deg, #10b5ff, #1764ff) !important;
+        box-shadow:
+          0 12px 26px rgba(14, 165, 255, 0.26),
+          inset 0 2px 0 rgba(255, 255, 255, 0.22) !important;
+      }
+
+      .buy-btn.green {
+        background: linear-gradient(135deg, #22c55e, #73f052) !important;
+      }
+      .buy-btn.gold {
+        background: linear-gradient(135deg, #ff8a00, #ffcf25) !important;
+      }
+
+      .modal {
+        backdrop-filter: blur(8px);
+      }
+
+      .modal-sheet {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(14, 165, 255, 0.18),
+            transparent 30%
+          ),
+          linear-gradient(180deg, #112d4d, #071424) !important;
+        border: 1px solid rgba(125, 211, 252, 0.24) !important;
+        border-top-left-radius: 30px !important;
+        border-top-right-radius: 30px !important;
+      }
+
+      .modal-title {
+        font-size: 24px !important;
+        font-weight: 1000 !important;
+      }
+
+      .tile {
+        border-radius: 18px !important;
+        background: linear-gradient(180deg, #142f4f, #08182b) !important;
+        border: 1px solid rgba(125, 211, 252, 0.2) !important;
+        box-shadow:
+          0 12px 24px rgba(0, 0, 0, 0.25),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
+      }
+
+      .tile-title {
+        color: #c7ddf4 !important;
+        font-weight: 900 !important;
+      }
+
+      .tile-value {
+        color: #fff !important;
+        font-size: 22px !important;
+        font-weight: 1000 !important;
+      }
+
+      .tile-row span:last-child {
+        color: #fff;
+        font-weight: 1000;
+      }
+
+      .v3-animal-card {
+        display: grid;
+        grid-template-columns: 84px 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .animal-card-img {
+        width: 78px;
+        height: 78px;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.28));
+      }
+
+      .v3-bars {
+        display: grid;
+        gap: 7px;
+        margin-top: 8px;
+      }
+
+      .v3-bar {
+        height: 11px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(2, 8, 18, 0.65);
+      }
+
+      .v3-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .v3-vip-panel {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
     </style>
   </head>
   <body>
     <div class="app">
-      <div class="premium-screen">
-        <div class="premium-hud">
-          <div class="hud-left">
-            <div class="farmer-icon">👨‍🌾</div>
-            <div>
-              <div class="title">Farmer</div>
-              <div class="subtitle">My Farm Clicker</div>
+      <div class="v3-shell">
+        <div class="v3-hud">
+          <div class="v3-profile">
+            <div class="v3-avatar">👨‍🌾</div>
+            <div class="v3-profile-text">
+              <div class="title">My Farm Clicker</div>
+              <div class="subtitle">Premium Telegram Farm</div>
+            </div>
+            <div class="level-badge" id="levelBadge">LVL 1</div>
+          </div>
+
+          <div class="stats-grid v3-stats">
+            <div class="stat-box">
+              <div class="stat-label">Coins</div>
+              <div class="stat-value" id="coins">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Diamonds</div>
+              <div class="stat-value" id="diamonds">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Points</div>
+              <div class="stat-value" id="points">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">XP</div>
+              <div class="stat-value" id="xp">0</div>
             </div>
           </div>
-          <div class="level-badge" id="levelBadge">LVL 1</div>
-        </div>
 
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-label">Coins</div>
-            <div class="stat-value" id="coins">0</div>
+          <div class="v3-warehouse">
+            <div class="v3-warehouse-icon">🏚️</div>
+            <div class="v3-warehouse-mid">
+              <div class="v3-label">Warehouse</div>
+              <div class="v3-progress">
+                <span id="warehouseProgressBar"></span>
+              </div>
+            </div>
+            <button class="v3-small-btn" id="quickStorageBtn">UPGRADE</button>
           </div>
-          <div class="stat-box">
-            <div class="stat-label">Diamonds</div>
-            <div class="stat-value" id="diamonds">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Points</div>
-            <div class="stat-value" id="points">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">XP</div>
-            <div class="stat-value" id="xp">0</div>
+
+          <div class="status-line" id="boostStatus">
+            ⚡ OFF | 🤖 OFF | 👑 OFF
           </div>
         </div>
 
-        <div class="status-line" id="boostStatus">⚡ OFF | 🤖 OFF | 👑 OFF</div>
-
-        <div class="premium-farm">
-          <img class="farm-bg-img" src="/assets/farm_scene.svg" alt="farm" />
+        <div class="v3-farm-stage">
+          <img class="v3-farm-bg" src="/assets/farm_scene.svg" alt="farm" />
           <img
-            class="animal-img chicken-img"
+            class="v3-animal v3-chicken"
             src="/assets/chicken.svg"
             alt="chicken"
           />
-          <img class="animal-img cow-img" src="/assets/cow.svg" alt="cow" />
-          <img
-            class="animal-img sheep-img"
-            src="/assets/sheep.svg"
-            alt="sheep"
-          />
-          <div class="coin-bubble">
-            <span>+1</span><img src="/assets/coin.svg" alt="coin" />
+          <img class="v3-animal v3-cow" src="/assets/cow.svg" alt="cow" />
+          <img class="v3-animal v3-sheep" src="/assets/sheep.svg" alt="sheep" />
+
+          <button class="v3-side v3-daily" id="heroDailyBtn">
+            📅<span>Daily</span><b>3</b>
+          </button>
+          <button class="v3-side v3-vip" id="heroVipBtn">
+            👑<span>VIP</span>
+          </button>
+          <button class="v3-side v3-boosts" id="heroBoostBtn">
+            🚀<span>Boosts</span><b>2</b>
+          </button>
+
+          <div class="v3-coin-popup">
+            <span>+1</span>
+            <img src="/assets/coin.svg" alt="coin" />
           </div>
-          <button class="tap-btn" id="tapBtn">TAP!</button>
+
+          <button class="tap-btn v3-tap" id="tapBtn">
+            <span>TAP!</span>
+            <small>👆</small>
+          </button>
         </div>
 
         <div class="tap-hint">1 тап = 1 монета</div>
         <div class="status-line" id="status">ok</div>
+
+        <div class="v3-bottom-nav">
+          <button class="v3-nav active" id="navFarmBtn">
+            🏠<span>Farm</span>
+          </button>
+          <button class="v3-nav" id="navAnimalsBtn">
+            🐾<span>Animals</span>
+          </button>
+          <button class="v3-nav-tap" id="navTapBtn">TAP</button>
+          <button class="v3-nav" id="navShopBtn">🛒<span>Shop</span></button>
+          <button class="v3-nav" id="navWalletBtn">
+            👤<span>Profile</span>
+          </button>
+        </div>
       </div>
-      <div class="card">
+
+      <div class="card v3-quick-menu">
         <div class="section-title">🗂 Меню</div>
         <div class="menu-grid">
           <button class="menu-btn" id="animalsBtn">
-            <span class="menu-emoji">🐔</span><span>Тварини</span></button
-          ><button class="menu-btn" id="storageBtn">
-            <span class="menu-emoji">📦</span><span>Склад</span></button
-          ><button class="menu-btn" id="feedBtn">
-            <span class="menu-emoji">🌾</span><span>Корм</span></button
-          ><button class="menu-btn" id="labBtn">
-            <span class="menu-emoji">🧪</span><span>Лабораторія</span></button
-          ><button class="menu-btn" id="dailyBtn">
-            <span class="menu-emoji">🎁</span><span>Daily</span></button
-          ><button class="menu-btn" id="questsBtn">
-            <span class="menu-emoji">📜</span><span>Квести</span></button
-          ><button class="menu-btn" id="wheelBtn">
-            <span class="menu-emoji">🎰</span><span>Wheel</span></button
-          ><button class="menu-btn" id="shopBtn">
-            <span class="menu-emoji">🛒</span><span>Магазин</span></button
-          ><button class="menu-btn" id="boostBtn">
-            <span class="menu-emoji">⚡</span><span>Boosters</span></button
-          ><button class="menu-btn" id="refsBtn">
+            <span class="menu-emoji">🐔</span><span>Тварини</span>
+          </button>
+          <button class="menu-btn" id="storageBtn">
+            <span class="menu-emoji">📦</span><span>Склад</span>
+          </button>
+          <button class="menu-btn" id="feedBtn">
+            <span class="menu-emoji">🌾</span><span>Корм</span>
+          </button>
+          <button class="menu-btn" id="labBtn">
+            <span class="menu-emoji">🧪</span><span>Лабораторія</span>
+          </button>
+          <button class="menu-btn" id="dailyBtn">
+            <span class="menu-emoji">🎁</span><span>Daily</span>
+          </button>
+          <button class="menu-btn" id="questsBtn">
+            <span class="menu-emoji">📜</span><span>Квести</span>
+          </button>
+          <button class="menu-btn" id="wheelBtn">
+            <span class="menu-emoji">🎰</span><span>Wheel</span>
+          </button>
+          <button class="menu-btn" id="shopBtn">
+            <span class="menu-emoji">🛒</span><span>Магазин</span>
+          </button>
+          <button class="menu-btn" id="boostBtn">
+            <span class="menu-emoji">⚡</span><span>Boosters</span>
+          </button>
+          <button class="menu-btn" id="refsBtn">
             <span class="menu-emoji">👥</span><span>Referrals</span>
           </button>
           <button
@@ -1347,6 +2014,18 @@
         spawnFloatingText(text);
       }
 
+      function v3AnimalImgSrc(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function v3PercentBar(value) {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="v3-bar"><span style="width:${v}%"></span></div>`;
+      }
+
       function animalImgSrc(type) {
         if (type === "CHICKEN") return "/assets/chicken.svg";
         if (type === "SHEEP") return "/assets/sheep.svg";
@@ -1485,7 +2164,7 @@
 
           return `
                   <div class="tile">
-                    <img class="animal-card-img" src="${animalImgSrc(type)}" alt="${title}" />
+                    <img class="animal-card-img" src="${v3AnimalImgSrc(type)}" alt="${title}" />
                     <div class="tile-title">${emoji} ${title}</div>
                     <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
                     <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
@@ -1597,55 +2276,63 @@
           return Math.floor(perHourOne * count);
         }
 
+        function v3OwnedAnimalCard(
+          type,
+          emoji,
+          title,
+          count,
+          level,
+          life,
+          efficiency,
+          readyValue,
+          feedValue,
+        ) {
+          const hasAnimals = count > 0;
+          const lifeText = hasAnimals ? `${life ?? 100}%` : "-";
+          const effText = hasAnimals ? `${efficiency ?? 100}%` : "-";
+          const perHour = productionPerHour(type, level, count);
+
+          return `
+            <div class="tile full v3-animal-card">
+              <img class="animal-card-img" src="${v3AnimalImgSrc(type)}" alt="${title}" />
+              <div>
+                <div class="tile-title">${emoji} ${title}</div>
+                <div class="tile-value">${count}</div>
+                <div class="tile-row"><span>Level</span><span>${level}</span></div>
+                <div class="tile-row"><span>Coins / hour</span><span>${perHour}</span></div>
+                <div class="v3-bars">
+                  <div><div class="tile-row"><span>❤️ Life</span><span>${lifeText}</span></div>${hasAnimals ? v3PercentBar(life) : ""}</div>
+                  <div><div class="tile-row"><span>⚡ Power</span><span>${effText}</span></div>${hasAnimals ? v3PercentBar(efficiency) : ""}</div>
+                </div>
+              </div>
+              <div>
+                <div class="tile-row"><span>Ready</span><span>${readyValue}</span></div>
+                <div class="tile-row"><span>Feed</span><span>${feedValue}</span></div>
+              </div>
+            </div>
+          `;
+        }
+
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile">
-                                <div class="tile-title">🐔 Курки</div>
-                                <div class="tile-value">${animals.chicken ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.chicken ?? 0)}
-                              </div>
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">🐾 My Animals</div>
+              <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+              <div class="tile-row"><span>VIP</span><span>${currentState?.vip?.active ? "ACTIVE" : "OFF"}</span></div>
+            </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🐑 Вівці</div>
-                                <div class="tile-value">${animals.sheep ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.sheep ?? 0)}
-                              </div>
+            ${v3OwnedAnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0)}
+            ${v3OwnedAnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0)}
+            ${v3OwnedAnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0)}
 
-                              <div class="tile">
-                                <div class="tile-title">🐄 Корови</div>
-                                <div class="tile-value">${animals.cow ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.cow ?? 0)}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">⚙ Статус</div>
-                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-                              </div>
-                            </div>
-                          `;
+            <div class="tile full v3-vip-panel">
+              <div class="tile-title">👑 Premium Status</div>
+              <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+              <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+            </div>
+          </div>
+        `;
       }
       function renderAnimalsUpgrade() {
         openLabModal();
@@ -1925,18 +2612,20 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVipBtn").onclick = async () => {
-          if (currentState?.vip?.active) return;
-          const res = await apiPost("/shop/buy", { code: "vip_1d" });
-          setResult(res.data);
-          if (res.ok) {
-            showToast("VIP куплено");
-            await loadState();
-            openBoostersModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
+        const buyVipBtn = document.getElementById("buyVipBtn");
+        if (buyVipBtn)
+          buyVipBtn.onclick = async () => {
+            if (currentState?.vip?.active) return;
+            const res = await apiPost("/shop/buy", { code: "vip_1d" });
+            setResult(res.data);
+            if (res.ok) {
+              showToast("VIP куплено");
+              await loadState();
+              openBoostersModal();
+            } else {
+              showToast(res.data?.error || "Помилка");
+            }
+          };
       }
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
@@ -2772,6 +3461,28 @@
       }
 
       document.getElementById("tapBtn").addEventListener("click", collect);
+      document.getElementById("navTapBtn")?.addEventListener("click", collect);
+      document
+        .getElementById("navAnimalsBtn")
+        ?.addEventListener("click", openAnimalsModal);
+      document
+        .getElementById("navShopBtn")
+        ?.addEventListener("click", openShopModal);
+      document
+        .getElementById("navWalletBtn")
+        ?.addEventListener("click", openWalletModal);
+      document
+        .getElementById("heroDailyBtn")
+        ?.addEventListener("click", openDailyModal);
+      document
+        .getElementById("heroBoostBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("heroVipBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("quickStorageBtn")
+        ?.addEventListener("click", openLabModal);
       document
         .getElementById("loadStateBtn")
         .addEventListener("click", loadState);
