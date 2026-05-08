@@ -943,6 +943,221 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* ANIMALS V4 PRO MERGED */
+      .v4-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(14, 165, 255, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d) !important;
+      }
+
+      .v4-summary-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 1000;
+        white-space: nowrap;
+      }
+
+      .v4-summary-pill.on {
+        color: #fff;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .v4-animal-card {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px !important;
+      }
+
+      .v4-animal-left {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+      }
+
+      .v4-animal-img {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+      }
+
+      .v4-level-chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .v4-animal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .v4-animal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .v4-animal-count {
+        margin-top: 3px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .v4-income {
+        text-align: right;
+        min-width: 88px;
+      }
+
+      .v4-income span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .v4-income b {
+        display: block;
+        color: #fff;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .v4-bars {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .v4-bar-row {
+        display: flex;
+        justify-content: space-between;
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .v4-bar-row b {
+        color: #fff;
+      }
+
+      .v4-bar {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.72);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+
+      .v4-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .v4-bar.power span {
+        background: linear-gradient(90deg, #0ea5ff, #a3e635);
+      }
+
+      .v4-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .v4-mini-grid div {
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: rgba(2, 8, 18, 0.36);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        text-align: center;
+      }
+
+      .v4-mini-grid span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+      }
+
+      .v4-mini-grid b {
+        display: block;
+        color: #fff;
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .v4-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .v4-actions .buy-btn {
+        margin-top: 0 !important;
+        padding: 11px 8px !important;
+        font-size: 12px !important;
+      }
+
+      .v4-vip-panel {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      @media (max-width: 390px) {
+        .v4-animal-card {
+          grid-template-columns: 82px 1fr;
+          gap: 10px;
+        }
+
+        .v4-animal-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .v4-mini-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .v4-animal-head {
+          flex-direction: column;
+        }
+
+        .v4-income {
+          text-align: left;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1145,6 +1360,31 @@
       }
       function showToast(text) {
         spawnFloatingText(text);
+      }
+
+      function v4AnimalImgSrc(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function v4Bar(value, cls = "") {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="v4-bar ${cls}"><span style="width:${v}%"></span></div>`;
+      }
+
+      async function healAnimals(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          renderAnimalsOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
       }
 
       function showLevelUpPopup(xpData) {
@@ -1389,55 +1629,105 @@
           return Math.floor(perHourOne * count);
         }
 
+        function v4AnimalCard(
+          type,
+          emoji,
+          title,
+          count,
+          level,
+          life,
+          efficiency,
+          readyValue,
+          feedValue,
+          priceHeal,
+        ) {
+          const hasAnimals = count > 0;
+          const lifeValue = hasAnimals ? (life ?? 100) : 0;
+          const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
+          const perHour = productionPerHour(type, level, count);
+          const perCycle = productionText(type, level);
+          const points = pointsText(type, level);
+
+          return `
+            <div class="tile full v4-animal-card">
+              <div class="v4-animal-left">
+                <img class="v4-animal-img" src="${v4AnimalImgSrc(type)}" alt="${title}" />
+                <div class="v4-level-chip">LVL ${level}</div>
+              </div>
+
+              <div class="v4-animal-main">
+                <div class="v4-animal-head">
+                  <div>
+                    <div class="v4-animal-title">${emoji} ${title}</div>
+                    <div class="v4-animal-count">${count} animals</div>
+                  </div>
+                  <div class="v4-income">
+                    <span>Coins / hour</span>
+                    <b>${perHour}</b>
+                  </div>
+                </div>
+
+                <div class="v4-bars">
+                  <div>
+                    <div class="v4-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                    ${hasAnimals ? v4Bar(lifeValue, "life") : ""}
+                  </div>
+                  <div>
+                    <div class="v4-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                    ${hasAnimals ? v4Bar(efficiencyValue, "power") : ""}
+                  </div>
+                </div>
+
+                <div class="v4-mini-grid">
+                  <div><span>Ready</span><b>${readyValue}</b></div>
+                  <div><span>Feed</span><b>${feedValue}</b></div>
+                  <div><span>Cycle</span><b>${perCycle}</b></div>
+                  <div><span>Points</span><b>${points}</b></div>
+                </div>
+
+                <div class="v4-actions">
+                  <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                  <button class="buy-btn gold" data-heal="${type}" ${hasAnimals ? "" : "disabled"}>❤️ Heal ${hasAnimals ? `${count * priceHeal}` : ""}</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile">
-                                <div class="tile-title">🐔 Курки</div>
-                                <div class="tile-value">${animals.chicken ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.chicken ?? 0)}
-                              </div>
+          <div class="modal-grid">
+            <div class="tile full v4-summary">
+              <div>
+                <div class="tile-title">🐾 My Animals</div>
+                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+              </div>
+              <div>
+                <div class="v4-summary-pill ${currentState?.vip?.active ? "on" : ""}">
+                  👑 ${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}
+                </div>
+              </div>
+            </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🐑 Вівці</div>
-                                <div class="tile-value">${animals.sheep ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.sheep ?? 0)}
-                              </div>
+            ${v4AnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+            ${v4AnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+            ${v4AnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
 
-                              <div class="tile">
-                                <div class="tile-title">🐄 Корови</div>
-                                <div class="tile-value">${animals.cow ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.cow ?? 0)}
-                              </div>
+            <div class="tile full v4-vip-panel">
+              <div class="tile-title">👑 Premium Status</div>
+              <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+              <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+            </div>
+          </div>
+        `;
 
-                              <div class="tile">
-                                <div class="tile-title">⚙ Статус</div>
-                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-                              </div>
-                            </div>
-                          `;
+        modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
+          btn.onclick = async () => {
+            await healAnimals(btn.getAttribute("data-heal"));
+          };
+        });
       }
       function renderAnimalsUpgrade() {
         openLabModal();
