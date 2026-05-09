@@ -7,7 +7,332 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>My Farm Clicker</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js">
+            function bindFinalCloseFix() {
+              const closeBtn = document.getElementById("closeModalBtn");
+              if (closeBtn) {
+                closeBtn.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeModal();
+                };
+              }
+
+              const modalOverlay = document.getElementById("modal");
+              if (modalOverlay) {
+                modalOverlay.onclick = (e) => {
+                  if (e.target === modalOverlay) closeModal();
+                };
+              }
+            }
+
+            window.addEventListener("load", bindFinalCloseFix);
+            setTimeout(bindFinalCloseFix, 500);
+
+
+            function forceCleanMainScreen() {
+              document.querySelectorAll("#status").forEach((el) => {
+                el.style.display = "none";
+                el.textContent = "";
+              });
+
+              document.querySelectorAll(".ref-main-tap").forEach((el) => {
+                el.style.display = "none";
+                el.style.opacity = "0";
+                el.style.pointerEvents = "none";
+              });
+
+              document.querySelectorAll(".tap-wrap, .coin-popup").forEach((el) => {
+                el.style.display = "none";
+              });
+
+              const navTap = document.getElementById("navTapBtn");
+              if (navTap) {
+                navTap.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  collect();
+                };
+              }
+
+              const animalsBtn = document.getElementById("navAnimalsBtn");
+              if (animalsBtn) {
+                animalsBtn.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openAnimalsModal();
+                };
+              }
+            }
+
+            window.addEventListener("load", forceCleanMainScreen);
+            setTimeout(forceCleanMainScreen, 300);
+            setTimeout(forceCleanMainScreen, 1000);
+            setInterval(forceCleanMainScreen, 2500);
+
+
+      /* ANIMALS MODAL FINAL OVERRIDE START */
+            function animalFinalImg(type) {
+              if (type === "CHICKEN") return "/assets/chicken.svg";
+              if (type === "SHEEP") return "/assets/sheep.svg";
+              if (type === "COW") return "/assets/cow.svg";
+              return "/assets/chicken.svg";
+            }
+
+            function animalFinalBar(value, cls = "") {
+              const v = Math.max(0, Math.min(100, Number(value || 0)));
+              return `<div class="animal-final-bar ${cls}"><span style="width:${v}%"></span></div>`;
+            }
+
+            function animalFinalProduction(type, level) {
+              try {
+                return productionText(type, level);
+              } catch {
+                return "-";
+              }
+            }
+
+            function animalFinalPoints(type, level) {
+              try {
+                return pointsText(type, level);
+              } catch {
+                return "-";
+              }
+            }
+
+            async function animalFinalHeal(type) {
+              const res = await apiPost("/heal", { type });
+              setResult(res.data);
+
+              if (res.ok) {
+                showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+                await loadState();
+                animalFinalRenderOwned();
+              } else {
+                showToast(res.data?.error || "Помилка лікування");
+              }
+            }
+
+            function animalFinalRenderBuy() {
+              const s = currentState || {};
+              const level = s.level ?? 1;
+
+              const cards = [
+                {
+                  type: "CHICKEN",
+                  emoji: "🐔",
+                  title: "Курка",
+                  price: 100,
+                  resource: "Яйця",
+                  unlock: 1,
+                },
+                {
+                  type: "SHEEP",
+                  emoji: "🐑",
+                  title: "Вівця",
+                  price: 500,
+                  resource: "Шерсть",
+                  unlock: 5,
+                },
+                {
+                  type: "COW",
+                  emoji: "🐄",
+                  title: "Корова",
+                  price: 1000,
+                  resource: "Молоко",
+                  unlock: 10,
+                },
+              ];
+
+              modalBody.innerHTML = `
+                <div class="modal-grid">
+                  ${cards
+                    .map((a) => {
+                      const unlocked = level >= a.unlock;
+                      return `
+                        <div class="tile animal-final-buy-card">
+                          <img class="animal-final-buy-img" src="${animalFinalImg(a.type)}" alt="${a.title}" />
+                          <div class="tile-title">${a.emoji} ${a.title}</div>
+                          <div class="tile-value">${unlocked ? `${a.price} coins` : `🔒 LVL ${a.unlock}`}</div>
+                          <div class="tile-row"><span>Ресурс</span><span>${a.resource}</span></div>
+                          <div class="tile-row"><span>Відкривається</span><span>LVL ${a.unlock}</span></div>
+                          ${
+                            unlocked
+                              ? `<button class="buy-btn green" data-final-buy="${a.type}">Купити</button>`
+                              : `<button class="buy-btn gold" disabled>Потрібен LVL ${a.unlock}</button>`
+                          }
+                        </div>
+                      `;
+                    })
+                    .join("")}
+                </div>
+              `;
+
+              modalBody.querySelectorAll("[data-final-buy]").forEach((btn) => {
+                btn.onclick = async () => {
+                  await buyAnimal(btn.getAttribute("data-final-buy"));
+                };
+              });
+            }
+
+            function animalFinalCard(type, emoji, title, count, level, life, efficiency, readyValue, feedValue, healPrice) {
+              const hasAnimals = Number(count || 0) > 0;
+              const lifeValue = hasAnimals ? (life ?? 100) : 0;
+              const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
+
+              let perHour = 0;
+              try {
+                perHour = productionPerHour(type, level, count);
+              } catch {
+                perHour = 0;
+              }
+
+              return `
+                <div class="tile full animal-final-card">
+                  <div class="animal-final-left">
+                    <img class="animal-final-img" src="${animalFinalImg(type)}" alt="${title}" />
+                    <div class="animal-final-level">LVL ${level}</div>
+                  </div>
+
+                  <div class="animal-final-main">
+                    <div class="animal-final-head">
+                      <div>
+                        <div class="animal-final-title">${emoji} ${title}</div>
+                        <div class="animal-final-count">${count} animals</div>
+                      </div>
+                      <div class="animal-final-income">
+                        <span>Coins / hour</span>
+                        <b>${perHour}</b>
+                      </div>
+                    </div>
+
+                    <div class="animal-final-bars">
+                      <div>
+                        <div class="animal-final-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                        ${hasAnimals ? animalFinalBar(lifeValue, "life") : ""}
+                      </div>
+                      <div>
+                        <div class="animal-final-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                        ${hasAnimals ? animalFinalBar(efficiencyValue, "power") : ""}
+                      </div>
+                    </div>
+
+                    <div class="animal-final-mini">
+                      <div><span>Ready</span><b>${readyValue}</b></div>
+                      <div><span>Feed</span><b>${feedValue}</b></div>
+                      <div><span>Cycle</span><b>${animalFinalProduction(type, level)}</b></div>
+                      <div><span>Points</span><b>${animalFinalPoints(type, level)}</b></div>
+                    </div>
+
+                    <div class="animal-final-actions">
+                      <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                      <button class="buy-btn gold" data-final-heal="${type}" ${hasAnimals ? "" : "disabled"}>
+                        ❤️ Heal ${hasAnimals ? `${count * healPrice}` : ""}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+
+            function animalFinalRenderOwned() {
+              const s = currentState || {};
+              const animals = s.animals || {};
+              const feed = s.feed || {};
+              const ready = s.ready || {};
+
+              modalBody.innerHTML = `
+                <div class="modal-grid">
+                  <div class="tile full animal-final-summary">
+                    <div>
+                      <div class="tile-title">🐾 My Animals</div>
+                      <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+                    </div>
+                    <div class="animal-final-pill ${s.vip?.active ? "on" : ""}">
+                      👑 ${s.vip?.active ? "VIP ON" : "VIP OFF"}
+                    </div>
+                  </div>
+
+                  ${animalFinalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+                  ${animalFinalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+                  ${animalFinalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+
+                  <div class="tile full animal-final-vip">
+                    <div class="tile-title">👑 Premium Status</div>
+                    <div class="tile-value">${s.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+                    <div class="tile-row"><span>Boost</span><span>${s.boost?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Sell</span><span>${s.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                    <div class="tile-row"><span>Auto Feed</span><span>${s.vip?.active ? "ON" : "VIP only"}</span></div>
+                    <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+                  </div>
+                </div>
+              `;
+
+              modalBody.querySelectorAll("[data-final-heal]").forEach((btn) => {
+                btn.onclick = async () => {
+                  await animalFinalHeal(btn.getAttribute("data-final-heal"));
+                };
+              });
+            }
+
+            function openAnimalsModal() {
+              modalTitle.textContent = "🐾 Тварини";
+              modalTabs.style.display = "grid";
+
+              modalTabs.innerHTML = `
+                <button class="tab-btn" id="animalsBuyTab" type="button">Купити</button>
+                <button class="tab-btn active" id="animalsMineTab" type="button">Мої</button>
+              `;
+
+              showModal();
+
+              const buyTab = document.getElementById("animalsBuyTab");
+              const mineTab = document.getElementById("animalsMineTab");
+
+              buyTab.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                buyTab.classList.add("active");
+                mineTab.classList.remove("active");
+                animalFinalRenderBuy();
+              };
+
+              mineTab.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                mineTab.classList.add("active");
+                buyTab.classList.remove("active");
+                animalFinalRenderOwned();
+              };
+
+              animalFinalRenderOwned();
+            }
+
+            function bindAnimalsFinalButton() {
+              const navAnimals = document.getElementById("navAnimalsBtn");
+              if (navAnimals) {
+                navAnimals.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openAnimalsModal();
+                };
+              }
+
+              const animalsBtn = document.getElementById("animalsBtn");
+              if (animalsBtn) {
+                animalsBtn.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openAnimalsModal();
+                };
+              }
+            }
+
+            window.addEventListener("load", bindAnimalsFinalButton);
+            setTimeout(bindAnimalsFinalButton, 300);
+            setTimeout(bindAnimalsFinalButton, 1000);
+      /* ANIMALS MODAL FINAL OVERRIDE END */
+    </script>
     <style>
       * {
         box-sizing: border-box;
@@ -17,8 +342,6 @@
         margin: 0;
         font-family: Arial, sans-serif;
         color: #e5e7eb;
-        touch-action: manipulation;
-        overscroll-behavior: none;
         background:
           radial-gradient(
             circle at top,
@@ -539,54 +862,954 @@
         line-height: 1.4;
       }
 
-      /* PREMIUM FARM DESIGN OVER OLD WORKING LOGIC */
-      body {
-        background: #06111f !important;
+      /* SHOP + BOOSTERS + VIP V4 PRO */
+      .v4-shop-hero,
+      .v4-boost-hero,
+      .v4-vip-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 22px;
+        padding: 16px;
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(14, 165, 255, 0.22),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 12px 26px rgba(0, 0, 0, 0.24);
       }
+
+      .v4-vip-hero {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.35),
+            transparent 38%
+          ),
+          linear-gradient(180deg, #4a3104, #0b0803);
+        border-color: rgba(250, 204, 21, 0.35);
+      }
+
+      .v4-hero-title {
+        color: #fff;
+        font-size: 24px;
+        font-weight: 1000;
+      }
+
+      .v4-hero-sub {
+        margin-top: 6px;
+        color: #c7ddf4;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.35;
+      }
+
+      .v4-shop-tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin: 12px 0;
+      }
+
+      .v4-shop-tab {
+        border: none;
+        border-radius: 15px;
+        padding: 11px 8px;
+        color: #dbeafe;
+        font-weight: 1000;
+        background: linear-gradient(180deg, #173a5f, #07182c);
+        border: 1px solid rgba(125, 211, 252, 0.16);
+      }
+
+      .v4-shop-tab.active {
+        color: #fff;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        box-shadow: 0 10px 22px rgba(14, 165, 255, 0.24);
+      }
+
+      .v4-product-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 210px;
+      }
+
+      .v4-product-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .v4-product-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        font-size: 42px;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.98),
+          rgba(6, 17, 32, 0.98)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 10px 20px rgba(0, 0, 0, 0.22);
+      }
+
+      .v4-product-name {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .v4-product-desc {
+        margin-top: 5px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .v4-price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.38);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+      }
+
+      .v4-price-label {
+        color: #9db7d4;
+        font-size: 11px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .v4-price-value {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .v4-product-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 9px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+      }
+
+      .v4-product-badge.gold {
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .v4-product-badge.blue {
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .v4-boost-card {
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .v4-boost-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        font-size: 40px;
+        background: linear-gradient(180deg, #173a5f, #07182c);
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .v4-boost-title {
+        color: #fff;
+        font-size: 17px;
+        font-weight: 1000;
+      }
+
+      .v4-boost-desc {
+        margin-top: 4px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .v4-boost-status {
+        margin-top: 8px;
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.5);
+        color: #cbd5e1;
+        font-size: 11px;
+        font-weight: 1000;
+      }
+
+      .v4-boost-status.on {
+        color: #fff;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+      }
+
+      .v4-vip-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .v4-vip-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.35);
+        border: 1px solid rgba(250, 204, 21, 0.14);
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .v4-vip-item span {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+        font-size: 13px;
+      }
+
+      .v4-vip-plans {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .v4-vip-plan {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        padding: 14px;
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.18),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(250, 204, 21, 0.22);
+      }
+
+      .v4-vip-plan.best {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.32),
+            transparent 38%
+          ),
+          linear-gradient(180deg, #4a3104, #0b0803);
+      }
+
+      .v4-plan-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 1000;
+      }
+
+      .v4-plan-price {
+        margin-top: 8px;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 1000;
+      }
+
+      .v4-plan-note {
+        margin-top: 6px;
+        color: #cbd5e1;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .v4-diamond {
+        color: #67e8f9;
+      }
+
+      .v4-compact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      @media (max-width: 390px) {
+        .v4-boost-card {
+          grid-template-columns: 60px 1fr;
+        }
+        .v4-boost-card .buy-btn {
+          grid-column: 1 / -1;
+        }
+        .v4-vip-plans {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* SHOP FIX V5 - Shop only premium, Feed/Animals separate */
+      .v5-info-card {
+        border-radius: 20px;
+        padding: 14px;
+        background: rgba(2, 8, 18, 0.34);
+        border: 1px solid rgba(125, 211, 252, 0.13);
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .v5-premium-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .v5-premium-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 210px;
+      }
+
+      .v5-premium-card.stars {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(99, 102, 241, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #172554, #070b20) !important;
+        border-color: rgba(129, 140, 248, 0.28) !important;
+      }
+
+      .v5-premium-card.vip {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.3),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #4a3104, #0b0803) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      .v5-premium-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        font-size: 40px;
+        background: rgba(2, 8, 18, 0.38);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .v5-card-title {
+        margin-top: 12px;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 1000;
+      }
+
+      .v5-card-desc {
+        margin-top: 6px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .v5-card-price {
+        margin-top: 12px;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 1000;
+      }
+
+      .v5-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 9px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .v5-badge.gold {
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      @media (max-width: 390px) {
+        .v5-premium-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ANIMALS V4 PRO MERGED */
+      .v4-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(14, 165, 255, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d) !important;
+      }
+
+      .v4-summary-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 1000;
+        white-space: nowrap;
+      }
+
+      .v4-summary-pill.on {
+        color: #fff;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .v4-animal-card {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px !important;
+      }
+
+      .v4-animal-left {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+      }
+
+      .v4-animal-img {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+      }
+
+      .v4-level-chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .v4-animal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .v4-animal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .v4-animal-count {
+        margin-top: 3px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .v4-income {
+        text-align: right;
+        min-width: 88px;
+      }
+
+      .v4-income span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .v4-income b {
+        display: block;
+        color: #fff;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .v4-bars {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .v4-bar-row {
+        display: flex;
+        justify-content: space-between;
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .v4-bar-row b {
+        color: #fff;
+      }
+
+      .v4-bar {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.72);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+
+      .v4-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .v4-bar.power span {
+        background: linear-gradient(90deg, #0ea5ff, #a3e635);
+      }
+
+      .v4-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .v4-mini-grid div {
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: rgba(2, 8, 18, 0.36);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        text-align: center;
+      }
+
+      .v4-mini-grid span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+      }
+
+      .v4-mini-grid b {
+        display: block;
+        color: #fff;
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .v4-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .v4-actions .buy-btn {
+        margin-top: 0 !important;
+        padding: 11px 8px !important;
+        font-size: 12px !important;
+      }
+
+      .v4-vip-panel {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      @media (max-width: 390px) {
+        .v4-animal-card {
+          grid-template-columns: 82px 1fr;
+          gap: 10px;
+        }
+
+        .v4-animal-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .v4-mini-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .v4-animal-head {
+          flex-direction: column;
+        }
+
+        .v4-income {
+          text-align: left;
+        }
+      }
+
+      /* PROFILE + WALLET + REFERRALS V4 PRO */
+      .v4-profile-hero,
+      .v4-wallet-hero,
+      .v4-ref-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 22px;
+        padding: 16px;
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(14, 165, 255, 0.24),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d);
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 12px 26px rgba(0, 0, 0, 0.24);
+      }
+
+      .v4-wallet-hero {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(56, 189, 248, 0.28),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #082f49, #071424);
+      }
+
+      .v4-ref-hero {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(34, 197, 94, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #14532d, #071424);
+      }
+
+      .v4-profile-top {
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .v4-profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
+        display: grid;
+        place-items: center;
+        font-size: 42px;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        box-shadow: 0 14px 28px rgba(14, 165, 255, 0.28);
+      }
+
+      .v4-profile-name {
+        color: #fff;
+        font-size: 22px;
+        font-weight: 1000;
+      }
+
+      .v4-profile-sub {
+        margin-top: 5px;
+        color: #c7ddf4;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .v4-id-pill {
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.44);
+        color: #dbeafe;
+        font-size: 11px;
+        font-weight: 1000;
+        max-width: 112px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .v4-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .v4-big-stat {
+        padding: 14px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #142f4f, #08182b);
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.07);
+      }
+
+      .v4-big-stat span {
+        display: block;
+        color: #9db7d4;
+        font-size: 11px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .v4-big-stat b {
+        display: block;
+        margin-top: 8px;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 1000;
+      }
+
+      .v4-ref-link-box {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .v4-ref-link {
+        padding: 12px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.48);
+        border: 1px solid rgba(125, 211, 252, 0.14);
+        color: #dbeafe;
+        font-size: 12px;
+        font-weight: 900;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .v4-copy-btn {
+        border: none;
+        border-radius: 15px;
+        padding: 0 14px;
+        color: #fff;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #22c55e, #84cc16);
+      }
+
+      .v4-info-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .v4-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px;
+        border-radius: 15px;
+        background: rgba(2, 8, 18, 0.35);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .v4-info-item span {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+        font-size: 14px;
+      }
+
+      .v4-wallet-balance {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .v4-wallet-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        padding: 15px;
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(103, 232, 249, 0.18),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #142f4f, #08182b);
+        border: 1px solid rgba(125, 211, 252, 0.18);
+      }
+
+      .v4-wallet-card.gold {
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(250, 204, 21, 0.26),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #3b2703, #090806);
+        border-color: rgba(250, 204, 21, 0.25);
+      }
+
+      .v4-wallet-card span {
+        display: block;
+        color: #9db7d4;
+        font-size: 11px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .v4-wallet-card b {
+        display: block;
+        margin-top: 8px;
+        color: #fff;
+        font-size: 26px;
+        font-weight: 1000;
+      }
+
+      .v4-withdraw-card {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(34, 197, 94, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #14532d, #071424) !important;
+        border-color: rgba(34, 197, 94, 0.25) !important;
+      }
+
+      .v4-soon-badge {
+        display: inline-flex;
+        margin-top: 10px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f59e0b, #facc15);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+      }
+
+      @media (max-width: 390px) {
+        .v4-profile-top {
+          grid-template-columns: 60px 1fr;
+        }
+        .v4-id-pill {
+          grid-column: 1 / -1;
+          max-width: 100%;
+        }
+        .v4-wallet-balance,
+        .v4-stat-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* MAIN SCREEN REFERENCE V5 */
+      :root {
+        --ref-bg: #06111f;
+        --ref-panel: rgba(5, 17, 31, 0.94);
+        --ref-panel2: rgba(10, 31, 54, 0.96);
+        --ref-blue: #0ea5ff;
+        --ref-blue2: #1764ff;
+        --ref-green: #4ade20;
+        --ref-gold: #ffc21c;
+        --ref-line: rgba(125, 211, 252, 0.28);
+      }
+
+      body {
+        touch-action: manipulation;
+        overscroll-behavior: none;
+        background:
+          radial-gradient(
+            circle at 50% -8%,
+            rgba(14, 165, 255, 0.32),
+            transparent 34%
+          ),
+          linear-gradient(180deg, #06111f 0%, #0a1b2d 48%, #06111f 100%) !important;
+      }
+
       .app {
         max-width: 480px !important;
-        margin: 0 auto !important;
-        min-height: 100vh !important;
-        padding: 8px 6px 18px !important;
+        padding: 8px 6px 10px !important;
       }
-      .premium-game {
+
+      .ref-game {
         position: relative;
         min-height: calc(100vh - 20px);
         overflow: hidden;
         border-radius: 28px;
         background: #06111f;
-        border: 1px solid rgba(125, 211, 252, 0.28);
+        border: 1px solid rgba(125, 211, 252, 0.26);
         box-shadow:
           0 22px 60px rgba(0, 0, 0, 0.5),
           inset 0 2px 0 rgba(255, 255, 255, 0.08);
       }
-      .premium-game::before {
+
+      .ref-game::before {
         content: "";
         position: absolute;
         inset: 0;
         pointer-events: none;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(4, 12, 24, 0.65) 0%,
+            transparent 18%,
+            transparent 76%,
+            rgba(4, 12, 24, 0.85) 100%
+          ),
+          radial-gradient(
+            circle at top,
+            rgba(14, 165, 255, 0.2),
+            transparent 35%
+          );
         z-index: 2;
-        background: linear-gradient(
-          180deg,
-          rgba(4, 12, 24, 0.58),
-          transparent 20%,
-          transparent 74%,
-          rgba(4, 12, 24, 0.88)
-        );
       }
-      .premium-bg {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        z-index: 1;
-      }
-      .premium-top {
+
+      .ref-hud {
         position: relative;
         z-index: 10;
         display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr 1fr;
+        grid-template-columns: 1.2fr 1fr 1fr;
         gap: 8px;
         padding: 10px;
         background: linear-gradient(
@@ -595,56 +1818,65 @@
           rgba(3, 10, 20, 0.96)
         );
         border-bottom: 1px solid rgba(125, 211, 252, 0.18);
-        box-shadow:
-          0 14px 32px rgba(0, 0, 0, 0.38),
-          inset 0 2px 0 rgba(255, 255, 255, 0.08);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
       }
-      .player-box {
+
+      .ref-player {
         display: grid;
         grid-template-columns: 52px 1fr;
         gap: 8px;
         align-items: center;
         min-width: 0;
       }
-      .avatar {
+
+      .ref-avatar {
         width: 52px;
         height: 52px;
-        border-radius: 50%;
         display: grid;
         place-items: center;
+        border-radius: 50%;
         font-size: 30px;
         background: linear-gradient(135deg, #0ea5ff, #1764ff);
         border: 2px solid rgba(255, 255, 255, 0.24);
         box-shadow: 0 8px 18px rgba(14, 165, 255, 0.3);
       }
-      .player-name {
+
+      .ref-player-info {
+        min-width: 0;
+      }
+
+      .ref-name {
+        color: #fff;
         font-size: 17px;
         font-weight: 1000;
-        color: #fff;
         line-height: 1;
       }
-      .player-lvl {
+
+      .ref-level-line {
         color: #b8cbe3;
         font-size: 11px;
         font-weight: 900;
         margin-top: 5px;
       }
-      .xp-line {
+
+      .ref-xp-bar {
         height: 10px;
         margin-top: 5px;
         border-radius: 999px;
-        background: rgba(0, 0, 0, 0.55);
+        background: rgba(0, 0, 0, 0.5);
         overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
-      .xp-line span {
+
+      .ref-xp-bar span {
         display: block;
+        width: 48%;
         height: 100%;
-        width: 30%;
+        background: linear-gradient(90deg, #43e329, #a3e635);
         border-radius: inherit;
-        background: linear-gradient(90deg, #43e329, #a3e635, #facc15);
-        box-shadow: 0 0 16px rgba(163, 230, 53, 0.55);
       }
-      .resource-box {
+
+      .ref-resource {
         min-width: 0;
         display: grid;
         grid-template-columns: 42px 1fr;
@@ -658,11 +1890,15 @@
           rgba(4, 13, 25, 0.94)
         );
         border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05);
       }
-      .resource-icon {
+
+      .ref-resource-icon {
         font-size: 30px;
+        filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.25));
       }
-      .resource-value {
+
+      .ref-resource-value {
         color: #fff;
         font-size: 19px;
         font-weight: 1000;
@@ -670,22 +1906,26 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .resource-sub {
+
+      .ref-resource-sub {
         color: #b8cbe3;
         font-size: 11px;
         font-weight: 900;
+        margin-top: 2px;
       }
-      .hidden-old-stats {
+
+      .ref-hidden-stats {
         position: absolute;
-        left: -9999px;
+        opacity: 0;
+        pointer-events: none;
         width: 1px;
         height: 1px;
         overflow: hidden;
       }
-      .warehouse-panel {
+
+      .ref-warehouse {
         position: relative;
         z-index: 10;
-        width: calc(100% - 20px);
         margin: 8px 10px 0;
         display: grid;
         grid-template-columns: 78px 1fr 112px;
@@ -693,72 +1933,105 @@
         align-items: center;
         padding: 10px;
         border-radius: 20px;
-        border: 1px solid rgba(125, 211, 252, 0.28);
         background: linear-gradient(
           180deg,
           rgba(13, 81, 159, 0.9),
           rgba(5, 27, 62, 0.95)
         );
-        color: white;
-        text-align: left;
-        cursor: pointer;
+        border: 1px solid rgba(125, 211, 252, 0.28);
         box-shadow:
           0 12px 26px rgba(0, 0, 0, 0.28),
           inset 0 2px 0 rgba(255, 255, 255, 0.08);
       }
-      .warehouse-icon {
+
+      .ref-warehouse-icon {
         font-size: 48px;
+        filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.28));
       }
-      .warehouse-title {
+
+      .ref-warehouse-title {
+        color: #fff;
         font-size: 17px;
         font-weight: 1000;
       }
-      .warehouse-bar {
+
+      .ref-warehouse-bar {
         height: 18px;
         margin-top: 8px;
         border-radius: 999px;
         background: rgba(0, 0, 0, 0.62);
         overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
-      .warehouse-bar span {
+
+      .ref-warehouse-bar span {
         display: block;
+        width: 64%;
         height: 100%;
-        width: 0%;
         border-radius: inherit;
-        background: linear-gradient(90deg, #22c55e, #facc15, #ff9f0a);
-        box-shadow: 0 0 16px rgba(250, 204, 21, 0.42);
+        background: linear-gradient(90deg, #ffdf3d, #ff9f0a);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
       }
-      .warehouse-cap {
+
+      .ref-warehouse-cap {
         color: #dbeafe;
         text-align: center;
         margin-top: 5px;
         font-size: 12px;
         font-weight: 900;
       }
-      .warehouse-upgrade {
-        text-align: center;
+
+      .ref-upgrade-btn {
+        border: none;
         border-radius: 16px;
         padding: 12px 8px;
         color: #fff;
         background: linear-gradient(180deg, #7cff32, #129909);
-        font-weight: 1000;
         box-shadow:
-          0 0 22px rgba(34, 197, 94, 0.42),
-          inset 0 2px 0 rgba(255, 255, 255, 0.25);
+          0 8px 18px rgba(34, 197, 94, 0.28),
+          inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.18);
       }
-      .premium-status {
+
+      .ref-upgrade-btn b {
+        display: block;
+        font-size: 15px;
+        font-weight: 1000;
+      }
+
+      .ref-upgrade-btn span {
+        display: block;
+        font-size: 12px;
+        font-weight: 1000;
+        margin-top: 3px;
+      }
+
+      .ref-status {
         position: relative;
         z-index: 10;
-        margin: 8px 10px 0;
-        text-align: center;
-        padding: 8px;
-        border-radius: 999px;
-        background: rgba(2, 8, 18, 0.58);
-        border: 1px solid rgba(125, 211, 252, 0.16);
-        font-weight: 1000;
-        color: #e5e7eb;
+        margin: 8px 10px 0 !important;
+        background: rgba(2, 8, 18, 0.58) !important;
+        border: 1px solid rgba(125, 211, 252, 0.16) !important;
+        border-radius: 999px !important;
+        font-weight: 1000 !important;
       }
-      .side-btn {
+
+      .ref-farm {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      .ref-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .ref-side {
         position: absolute;
         z-index: 11;
         width: 64px;
@@ -782,14 +2055,37 @@
           0 10px 22px rgba(0, 0, 0, 0.34),
           inset 0 2px 0 rgba(255, 255, 255, 0.1);
       }
-      .side-btn span {
+
+      .ref-side-emoji {
         font-size: 31px;
-        line-height: 1;
+        filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.28));
       }
-      .side-btn strong {
+
+      .ref-side span:last-child {
         font-size: 12px;
       }
-      .notify {
+
+      .ref-daily {
+        top: 220px;
+        left: 10px;
+      }
+
+      .ref-tasks {
+        top: 300px;
+        left: 10px;
+      }
+
+      .ref-vip {
+        top: 220px;
+        right: 10px;
+      }
+
+      .ref-boosts {
+        top: 300px;
+        right: 10px;
+      }
+
+      .ref-badge {
         position: absolute;
         top: -9px;
         right: -9px;
@@ -803,103 +2099,39 @@
         font-size: 13px;
         border: 2px solid rgba(255, 255, 255, 0.28);
       }
-      .daily {
-        top: 220px;
-        left: 10px;
-      }
-      .tasks {
-        top: 300px;
-        left: 10px;
-      }
-      .refs {
-        top: 380px;
-        left: 10px;
-      }
-      .vip {
-        top: 220px;
-        right: 10px;
-      }
-      .boosts {
-        top: 300px;
-        right: 10px;
-      }
-      .wallet {
-        top: 380px;
-        right: 10px;
-      }
-      .tap-float-label {
+
+      .ref-coin-popup {
         position: absolute;
         z-index: 12;
         left: 50%;
         bottom: 132px;
         transform: translateX(-50%);
-        padding: 7px 16px;
-        border-radius: 999px;
-        background: rgba(2, 8, 18, 0.55);
-        color: #fff;
-        font-weight: 900;
-        font-size: 13px;
-      }
-      .bottom-nav {
-        position: absolute;
-        z-index: 40;
-        left: 12px;
-        right: 12px;
-        bottom: 12px;
-        height: 88px;
-        display: grid;
-        grid-template-columns: 1fr 1fr 92px 1fr 1fr;
-        gap: 7px;
-        align-items: end;
-        padding: 7px;
-        border-radius: 24px;
-        background: rgba(4, 12, 24, 0.88);
-        border: 1px solid rgba(125, 211, 252, 0.22);
-        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42);
-        overflow: visible;
-      }
-      .nav-btn,
-      .premium-tap {
-        border: none;
-        color: #fff;
-        font-weight: 1000;
-        border-radius: 17px;
-        background: linear-gradient(
-          180deg,
-          rgba(20, 45, 72, 0.96),
-          rgba(4, 13, 25, 0.96)
-        );
-        border: 1px solid rgba(125, 211, 252, 0.18);
-      }
-      .nav-btn {
-        height: 68px;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
+        gap: 9px;
+        padding: 10px 26px;
+        border-radius: 999px;
+        background: rgba(75, 45, 7, 0.65);
+        color: #fff;
+        font-size: 34px;
+        font-weight: 1000;
+        text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
       }
-      .nav-btn.active {
-        background: linear-gradient(135deg, #0ea5ff, #1764ff);
-        box-shadow:
-          0 0 22px rgba(14, 165, 255, 0.38),
-          inset 0 2px 0 rgba(255, 255, 255, 0.18);
+
+      .ref-main-tap {
+        position: absolute !important;
+        z-index: 15 !important;
+        left: 50% !important;
+        bottom: 36px !important;
+        transform: translateX(-50%) !important;
       }
-      .nav-btn span {
-        font-size: 28px;
-        line-height: 1;
-      }
-      .nav-btn strong {
-        font-size: 12px;
-        margin-top: 4px;
-      }
-      .premium-tap {
-        width: 92px !important;
-        height: 92px !important;
+
+      .tap-btn {
+        width: 104px !important;
+        height: 104px !important;
         border-radius: 50% !important;
-        margin-bottom: 4px;
-        align-self: end;
-        justify-self: center;
-        font-size: 21px !important;
+        border: 5px solid rgba(255, 255, 255, 0.36) !important;
         background: radial-gradient(
           circle at 34% 18%,
           #fff9b7,
@@ -907,242 +2139,1191 @@
           #ffae13 70%,
           #d97706
         ) !important;
+        color: #fff !important;
+        font-size: 23px !important;
+        font-weight: 1000 !important;
+        line-height: 0.9 !important;
+        text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
+        box-shadow:
+          0 14px 30px rgba(255, 171, 0, 0.45),
+          inset 0 7px 16px rgba(255, 255, 255, 0.34),
+          inset 0 -10px 20px rgba(120, 53, 15, 0.3) !important;
+      }
+
+      .tap-btn small {
+        display: block;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .ref-main-tap:active {
+        transform: translateX(-50%) scale(0.94) !important;
+      }
+
+      .ref-bottom-nav {
+        position: absolute;
+        z-index: 20;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 96px 1fr 1fr;
+        gap: 5px;
+        align-items: end;
+        padding: 5px;
+        border-radius: 18px;
+        background: rgba(4, 12, 24, 0.84);
+        border: 1px solid rgba(125, 211, 252, 0.2);
+        box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.4);
+      }
+
+      .ref-nav,
+      .ref-nav-tap {
+        border: none;
+        color: #fff;
+        font-weight: 1000;
+        border-radius: 13px;
+        background: linear-gradient(
+          180deg,
+          rgba(20, 45, 72, 0.96),
+          rgba(4, 13, 25, 0.96)
+        );
+        border: 1px solid rgba(125, 211, 252, 0.18);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .ref-nav {
+        min-height: 63px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ref-nav.active {
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .ref-nav span {
+        font-size: 28px;
+      }
+
+      .ref-nav b {
+        font-size: 12px;
+        margin-top: 2px;
+      }
+
+      .ref-nav-tap {
+        min-height: 86px;
+        border-radius: 50%;
+        font-size: 20px;
+        background: radial-gradient(
+          circle at 34% 18%,
+          #fff9b7,
+          #ffd84d 38%,
+          #ffae13 70%,
+          #d97706
+        );
         text-shadow: 0 3px 0 rgba(120, 53, 15, 0.45);
         box-shadow:
           0 12px 25px rgba(255, 171, 0, 0.42),
           inset 0 4px 0 rgba(255, 255, 255, 0.32);
-        animation: tapPulse 1.15s infinite ease-in-out;
       }
-      @keyframes tapPulse {
-        0%,
-        100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.08);
-        }
-      }
-      .premium-menu-fallback {
+
+      .ref-legacy-buttons {
         display: none !important;
       }
+
       #resultBox {
         display: none !important;
       }
-      .modal-sheet {
-        background:
-          radial-gradient(
-            circle at top,
-            rgba(14, 165, 255, 0.12),
-            transparent 26%
-          ),
-          linear-gradient(180deg, #112d4d, #071424) !important;
-        border: 1px solid rgba(125, 211, 252, 0.24) !important;
-        border-top-left-radius: 30px !important;
-        border-top-right-radius: 30px !important;
+
+      @media (max-height: 760px) {
+        .ref-warehouse {
+          margin-top: 6px;
+          padding: 8px;
+        }
+        .ref-daily,
+        .ref-vip {
+          top: 200px;
+        }
+        .ref-tasks,
+        .ref-boosts {
+          top: 278px;
+        }
+        .ref-coin-popup {
+          bottom: 120px;
+        }
+        .tap-btn {
+          width: 96px !important;
+          height: 96px !important;
+        }
       }
-      .tile {
-        border-radius: 20px !important;
-        background: linear-gradient(180deg, #142f4f, #08182b) !important;
-        border: 1px solid rgba(125, 211, 252, 0.2) !important;
-        box-shadow:
-          0 12px 24px rgba(0, 0, 0, 0.25),
-          inset 0 2px 0 rgba(255, 255, 255, 0.07) !important;
-      }
-      .buy-btn,
-      .main-btn {
-        border-radius: 16px !important;
-        font-weight: 1000 !important;
-        background: linear-gradient(135deg, #10b5ff, #1764ff) !important;
-      }
-      .buy-btn.green {
-        background: linear-gradient(135deg, #22c55e, #73f052) !important;
-      }
-      .buy-btn.gold {
-        background: linear-gradient(135deg, #ff8a00, #ffcf25) !important;
-      }
+
       @media (max-width: 390px) {
-        .resource-box {
+        .ref-hud {
+          grid-template-columns: 1.25fr 1fr 1fr;
+          gap: 6px;
+          padding: 8px;
+        }
+        .ref-resource {
           grid-template-columns: 32px 1fr;
           padding: 7px;
         }
-        .resource-icon {
+        .ref-resource-icon {
           font-size: 24px;
         }
-        .resource-value {
+        .ref-resource-value {
           font-size: 15px;
         }
-        .resource-sub {
+        .ref-resource-sub {
           font-size: 9px;
         }
-        .warehouse-panel {
+        .ref-warehouse {
           grid-template-columns: 56px 1fr 92px;
         }
+        .ref-upgrade-btn b {
+          font-size: 12px;
+        }
+        .ref-upgrade-btn span {
+          font-size: 10px;
+        }
+      }
+
+      /* MAIN SCREEN BUTTONS FIX */
+      .ref-legacy-buttons {
+        display: none !important;
+        pointer-events: none !important;
+      }
+
+      .ref-side,
+      .ref-nav,
+      .ref-nav-tap,
+      .ref-main-tap,
+      .ref-upgrade-btn {
+        pointer-events: auto !important;
+        cursor: pointer;
+      }
+
+      /* MAIN UI FINAL FIX: bottom nav + modal close */
+      .ref-bottom-nav {
+        position: absolute !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 10px !important;
+        height: 110px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 120px 1fr 1fr !important;
+        align-items: end !important;
+        gap: 7px !important;
+        padding: 8px !important;
+        border-radius: 26px !important;
+        background: rgba(4, 12, 24, 0.88) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42) !important;
+        z-index: 40 !important;
+      }
+
+      .ref-nav {
+        height: 82px !important;
+        min-height: 82px !important;
+        border-radius: 18px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 15px !important;
+        font-weight: 1000 !important;
+      }
+
+      .ref-nav span {
+        font-size: 34px !important;
+        line-height: 1 !important;
+      }
+
+      .ref-nav b {
+        font-size: 13px !important;
+        margin-top: 5px !important;
+      }
+
+      .ref-nav-tap {
+        width: 120px !important;
+        height: 120px !important;
+        min-height: 120px !important;
+        border-radius: 50% !important;
+        margin-bottom: 8px !important;
+        font-size: 26px !important;
+        font-weight: 1000 !important;
+        align-self: end !important;
+        justify-self: center !important;
+      }
+
+      .ref-main-tap {
+        bottom: 142px !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 245px !important;
+      }
+
+      .modal {
+        z-index: 9999 !important;
+      }
+
+      .modal-sheet {
+        position: relative !important;
+        z-index: 10000 !important;
+      }
+
+      .close-btn,
+      #closeModalBtn {
+        position: absolute !important;
+        top: 14px !important;
+        right: 14px !important;
+        z-index: 10050 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        touch-action: manipulation !important;
+      }
+
+      .modal-header {
+        position: relative !important;
+        padding-right: 76px !important;
+      }
+
+      /* FINAL CORRECT MAIN SCREEN FIX */
+      .ref-bg {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+      }
+
+      .ref-farm {
+        background: #071424 !important;
+      }
+
+      .ref-bottom-nav {
+        position: absolute !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        height: 92px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 96px 1fr 1fr !important;
+        align-items: end !important;
+        gap: 7px !important;
+        padding: 7px !important;
+        border-radius: 24px !important;
+        background: rgba(4, 12, 24, 0.88) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42) !important;
+        z-index: 40 !important;
+      }
+
+      .ref-nav {
+        height: 72px !important;
+        min-height: 72px !important;
+        border-radius: 17px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-weight: 1000 !important;
+      }
+
+      .ref-nav span {
+        font-size: 29px !important;
+        line-height: 1 !important;
+      }
+
+      .ref-nav b {
+        font-size: 12px !important;
+        margin-top: 4px !important;
+      }
+
+      .ref-nav-tap {
+        width: 96px !important;
+        height: 96px !important;
+        min-height: 96px !important;
+        border-radius: 50% !important;
+        margin-bottom: 5px !important;
+        font-size: 22px !important;
+        font-weight: 1000 !important;
+        align-self: end !important;
+        justify-self: center !important;
+      }
+
+      .ref-main-tap {
+        width: 96px !important;
+        height: 96px !important;
+        bottom: 118px !important;
+        z-index: 15 !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 220px !important;
+        z-index: 14 !important;
+      }
+
+      .tap-wrap {
+        display: none !important;
+      }
+
+      .ref-legacy-buttons {
+        display: none !important;
+        pointer-events: none !important;
+      }
+
+      #resultBox {
+        display: none !important;
+      }
+
+      .modal {
+        z-index: 9999 !important;
+      }
+
+      .modal-sheet {
+        position: relative !important;
+        z-index: 10000 !important;
+      }
+
+      #closeModalBtn,
+      .close-btn {
+        position: absolute !important;
+        top: 14px !important;
+        right: 14px !important;
+        z-index: 10050 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        touch-action: manipulation !important;
+      }
+
+      .modal-header {
+        position: relative !important;
+        padding-right: 76px !important;
+      }
+
+      @media (max-height: 760px) {
+        .ref-bottom-nav {
+          height: 86px !important;
+        }
+        .ref-nav {
+          height: 66px !important;
+          min-height: 66px !important;
+        }
+        .ref-nav-tap {
+          width: 88px !important;
+          height: 88px !important;
+          min-height: 88px !important;
+        }
+        .ref-main-tap {
+          bottom: 108px !important;
+        }
+        .ref-coin-popup {
+          bottom: 205px !important;
+        }
+      }
+
+      /* FINAL CLEAN MAIN SCREEN PATCH */
+      #status,
+      .ref-status#status {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+      }
+
+      .ref-main-tap {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 150px !important;
+        z-index: 18 !important;
+        transform: translateX(-50%) scale(0.92) !important;
+      }
+
+      .ref-bottom-nav {
+        position: absolute !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        height: 88px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 92px 1fr 1fr !important;
+        align-items: end !important;
+        gap: 7px !important;
+        padding: 7px !important;
+        border-radius: 24px !important;
+        background: rgba(4, 12, 24, 0.88) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42) !important;
+        z-index: 40 !important;
+        overflow: visible !important;
+      }
+
+      .ref-nav {
+        height: 68px !important;
+        min-height: 68px !important;
+        border-radius: 17px !important;
+      }
+
+      .ref-nav span {
+        font-size: 28px !important;
+        line-height: 1 !important;
+      }
+
+      .ref-nav b {
+        font-size: 12px !important;
+        margin-top: 4px !important;
+      }
+
+      .ref-nav-tap {
+        width: 92px !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        border-radius: 50% !important;
+        margin-bottom: 4px !important;
+        font-size: 21px !important;
+        font-weight: 1000 !important;
+        align-self: end !important;
+        justify-self: center !important;
+        z-index: 45 !important;
+      }
+
+      .ref-farm {
+        bottom: 0 !important;
+      }
+
+      .tap-wrap,
+      .coin-popup,
+      .farm-stage .tap-btn:not(.ref-main-tap),
+      .premium-farm .tap-btn:not(.ref-main-tap) {
+        display: none !important;
+      }
+
+      #resultBox {
+        display: none !important;
+      }
+
+      @media (max-height: 760px) {
+        .ref-bottom-nav {
+          height: 82px !important;
+          bottom: 10px !important;
+        }
+
+        .ref-nav {
+          height: 62px !important;
+          min-height: 62px !important;
+        }
+
+        .ref-nav-tap {
+          width: 84px !important;
+          height: 84px !important;
+          min-height: 84px !important;
+        }
+
+        .ref-coin-popup {
+          bottom: 138px !important;
+        }
+      }
+
+      /* FINAL MAIN + ANIMALS FIX */
+      #status,
+      .ref-status#status {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+      }
+
+      .ref-main-tap {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .ref-bottom-nav {
+        height: 88px !important;
+        grid-template-columns: 1fr 1fr 92px 1fr 1fr !important;
+        overflow: visible !important;
+        z-index: 50 !important;
+      }
+
+      .ref-nav {
+        height: 68px !important;
+        min-height: 68px !important;
+      }
+
+      .ref-nav-tap {
+        width: 92px !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        margin-bottom: 4px !important;
+        z-index: 55 !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 150px !important;
+        transform: translateX(-50%) scale(0.92) !important;
+      }
+
+      .fixed-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(14, 165, 255, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d) !important;
+      }
+
+      .fixed-summary-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 1000;
+        white-space: nowrap;
+      }
+
+      .fixed-summary-pill.on {
+        color: #fff;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .fixed-animal-card {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px !important;
+      }
+
+      .fixed-animal-left {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+      }
+
+      .fixed-animal-img {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+      }
+
+      .fixed-level-chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .fixed-animal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .fixed-animal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .fixed-animal-count {
+        margin-top: 3px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .fixed-income {
+        text-align: right;
+        min-width: 88px;
+      }
+
+      .fixed-income span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .fixed-income b {
+        display: block;
+        color: #fff;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .fixed-bars {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .fixed-bar-row {
+        display: flex;
+        justify-content: space-between;
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .fixed-bar-row b {
+        color: #fff;
+      }
+
+      .fixed-bar {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.72);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+
+      .fixed-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .fixed-bar.power span {
+        background: linear-gradient(90deg, #0ea5ff, #a3e635);
+      }
+
+      .fixed-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .fixed-mini-grid div {
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: rgba(2, 8, 18, 0.36);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        text-align: center;
+      }
+
+      .fixed-mini-grid span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+      }
+
+      .fixed-mini-grid b {
+        display: block;
+        color: #fff;
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .fixed-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .fixed-actions .buy-btn {
+        margin-top: 0 !important;
+        padding: 11px 8px !important;
+        font-size: 12px !important;
+      }
+
+      .fixed-vip-panel {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      @media (max-width: 390px) {
+        .fixed-animal-card {
+          grid-template-columns: 82px 1fr;
+          gap: 10px;
+        }
+
+        .fixed-animal-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .fixed-mini-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .fixed-animal-head {
+          flex-direction: column;
+        }
+
+        .fixed-income {
+          text-align: left;
+        }
+      }
+
+      /* ANIMALS MODAL FINAL FIX */
+      .animal-final-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(14, 165, 255, 0.22),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #173a5f, #08192d) !important;
+      }
+
+      .animal-final-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 1000;
+        white-space: nowrap;
+      }
+
+      .animal-final-pill.on {
+        color: #fff;
+        background: linear-gradient(135deg, #ff8a00, #ffcf25);
+      }
+
+      .animal-final-card {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px !important;
+      }
+
+      .animal-final-left {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+      }
+
+      .animal-final-img {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+      }
+
+      .animal-final-level {
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 1000;
+        background: linear-gradient(135deg, #0ea5ff, #1764ff);
+      }
+
+      .animal-final-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .animal-final-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .animal-final-count {
+        margin-top: 3px;
+        color: #b8cbe3;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .animal-final-income {
+        text-align: right;
+        min-width: 88px;
+      }
+
+      .animal-final-income span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }
+
+      .animal-final-income b {
+        display: block;
+        color: #fff;
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .animal-final-bars {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .animal-final-bar-row {
+        display: flex;
+        justify-content: space-between;
+        color: #dbeafe;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+      }
+
+      .animal-final-bar-row b {
+        color: #fff;
+      }
+
+      .animal-final-bar {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(2, 8, 18, 0.72);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+
+      .animal-final-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #84cc16);
+      }
+
+      .animal-final-bar.power span {
+        background: linear-gradient(90deg, #0ea5ff, #a3e635);
+      }
+
+      .animal-final-mini {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .animal-final-mini div {
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: rgba(2, 8, 18, 0.36);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        text-align: center;
+      }
+
+      .animal-final-mini span {
+        display: block;
+        color: #9db7d4;
+        font-size: 10px;
+        font-weight: 1000;
+      }
+
+      .animal-final-mini b {
+        display: block;
+        color: #fff;
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .animal-final-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .animal-final-actions .buy-btn {
+        margin-top: 0 !important;
+        padding: 11px 8px !important;
+        font-size: 12px !important;
+      }
+
+      .animal-final-vip {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(250, 204, 21, 0.28),
+            transparent 36%
+          ),
+          linear-gradient(180deg, #3b2703, #090806) !important;
+        border-color: rgba(250, 204, 21, 0.34) !important;
+      }
+
+      .animal-final-buy-img {
+        width: 110px;
+        height: 110px;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+        margin: 0 auto 10px;
+        display: block;
+      }
+
+      @media (max-width: 390px) {
+        .animal-final-card {
+          grid-template-columns: 82px 1fr;
+          gap: 10px;
+        }
+
+        .animal-final-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .animal-final-mini {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .animal-final-head {
+          flex-direction: column;
+        }
+
+        .animal-final-income {
+          text-align: left;
+        }
+      }
+
+      /* KEEP MAIN CLEAN FROM ANIMALS MODAL FINAL */
+      #status,
+      .ref-status#status {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+      }
+
+      .ref-main-tap {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .ref-bottom-nav {
+        height: 88px !important;
+        grid-template-columns: 1fr 1fr 92px 1fr 1fr !important;
+        overflow: visible !important;
+        z-index: 50 !important;
+      }
+
+      .ref-nav-tap {
+        width: 92px !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        margin-bottom: 4px !important;
+        z-index: 55 !important;
+      }
+
+      .ref-coin-popup {
+        bottom: 150px !important;
+        transform: translateX(-50%) scale(0.92) !important;
       }
     </style>
   </head>
   <body>
     <div class="app">
-      <div class="premium-game">
-        <img
-          class="premium-bg"
-          src="/assets/farm_reference_bg_v5.jpg"
-          alt="farm"
-        />
-
-        <div class="premium-top">
-          <div class="player-box">
-            <div class="avatar">👨‍🌾</div>
-            <div>
-              <div class="player-name">Farmer</div>
-              <div class="player-lvl" id="levelBadge">LVL 1</div>
-              <div class="xp-line"><span id="premiumXpBar"></span></div>
+      <div class="ref-game">
+        <div class="ref-hud">
+          <div class="ref-player">
+            <div class="ref-avatar">👨‍🌾</div>
+            <div class="ref-player-info">
+              <div class="ref-name">Farmer</div>
+              <div class="ref-level-line">
+                <span id="levelBadge">Level 1</span>
+              </div>
+              <div class="ref-xp-bar"><span id="refXpBar"></span></div>
             </div>
           </div>
 
-          <div class="resource-box">
-            <div class="resource-icon">🪙</div>
+          <div class="ref-resource ref-coins">
+            <div class="ref-resource-icon">🪙</div>
             <div>
-              <div class="resource-value" id="coins">0</div>
-              <div class="resource-sub">+1 / tap</div>
+              <div class="ref-resource-value" id="coins">0</div>
+              <div class="ref-resource-sub">+1 / tap</div>
             </div>
           </div>
 
-          <div class="resource-box">
-            <div class="resource-icon">🏆</div>
+          <div class="ref-resource ref-diamonds">
+            <div class="ref-resource-icon">💎</div>
             <div>
-              <div class="resource-value" id="points">0</div>
-              <div class="resource-sub">points</div>
-            </div>
-          </div>
-
-          <div class="resource-box">
-            <div class="resource-icon">💎</div>
-            <div>
-              <div class="resource-value" id="diamonds">0</div>
-              <div class="resource-sub">premium</div>
+              <div class="ref-resource-value" id="diamonds">0</div>
+              <div class="ref-resource-sub">premium</div>
             </div>
           </div>
         </div>
 
-        <div class="hidden-old-stats">
-          <div id="points">0</div>
-          <div id="xp">0</div>
-          <button id="loadStateBtn" type="button">load</button>
-          <button id="refreshBtn" type="button">refresh</button>
-          <button id="feedBtn" type="button">feed</button>
-          <button id="labBtn" type="button">lab</button>
+        <div class="ref-hidden-stats">
+          <span id="points">0</span>
+          <span id="xp">0</span>
+        </div>
+
+        <div class="ref-warehouse">
+          <div class="ref-warehouse-icon">🏚️</div>
+          <div class="ref-warehouse-mid">
+            <div class="ref-warehouse-title">Warehouse</div>
+            <div class="ref-warehouse-bar">
+              <span id="warehouseProgressBar"></span>
+            </div>
+            <div class="ref-warehouse-cap" id="refWarehouseCap">0 / 0</div>
+          </div>
           <button
-            id="leaderboardBtn"
-            type="button"
-            onclick="openLeaderboardModal('referrals')"
+            class="ref-upgrade-btn"
+            id="quickStorageBtn"
+            onclick="openLabModal()"
           >
-            top
+            <b>UPGRADE</b>
+            <span>🪙 2,500</span>
           </button>
         </div>
 
-        <button class="warehouse-panel" id="storageBtn" type="button">
-          <div class="warehouse-icon">🏚️</div>
-          <div class="warehouse-info">
-            <div class="warehouse-title">Warehouse</div>
-            <div class="warehouse-bar"><span id="warehouseFill"></span></div>
-            <div class="warehouse-cap" id="warehouseText">0 / 0</div>
-          </div>
-          <div class="warehouse-upgrade">
-            UPGRADE<br /><small>🪙 2,500</small>
-          </div>
-        </button>
-
-        <div class="premium-status" id="boostStatus">
+        <div class="status-line ref-status" id="boostStatus">
           ⚡ OFF | 🤖 OFF | 👑 OFF
         </div>
 
-        <button class="side-btn daily" id="dailyBtn" type="button">
-          <b class="notify">3</b><span>📅</span><strong>Daily</strong>
-        </button>
-        <button class="side-btn tasks" id="questsBtn" type="button">
-          <span>📋</span><strong>Tasks</strong>
-        </button>
-        <button class="side-btn refs" id="feedSideBtn" type="button">
-          <span>🌾</span><strong>Feed</strong>
-        </button>
+        <div class="ref-farm">
+          <img
+            class="ref-bg"
+            src="/assets/farm_reference_bg_v5.jpg"
+            alt="farm"
+          />
 
-        <button class="side-btn vip" id="labSideBtn" type="button">
-          <span>🧪</span><strong>Lab</strong>
-        </button>
-        <button class="side-btn boosts" id="boostBtn" type="button">
-          <b class="notify">2</b><span>🚀</span><strong>Boosts</strong>
-        </button>
-        <button class="side-btn wallet" id="walletBtn" type="button">
-          <span>👛</span><strong>Wallet</strong>
-        </button>
+          <button
+            class="ref-side ref-daily"
+            id="heroDailyBtn"
+            onclick="openDailyModal()"
+          >
+            <b class="ref-badge">3</b>
+            <span class="ref-side-emoji">📅</span>
+            <span>Daily</span>
+          </button>
 
-        <div class="tap-float-label" id="status">ok</div>
+          <button
+            class="ref-side ref-tasks"
+            id="heroTasksBtn"
+            onclick="openQuestsModal()"
+          >
+            <span class="ref-side-emoji">📋</span>
+            <span>Tasks</span>
+          </button>
 
-        <div class="bottom-nav">
-          <button class="nav-btn active" id="farmHomeBtn" type="button">
-            <span>🏠</span><strong>Farm</strong>
+          <button
+            class="ref-side ref-vip"
+            id="heroVipBtn"
+            onclick="openBoostersModal()"
+          >
+            <span class="ref-side-emoji">👑</span>
+            <span>VIP</span>
           </button>
-          <button class="nav-btn" id="animalsBtn" type="button">
-            <span>🐾</span><strong>Animals</strong>
+
+          <button
+            class="ref-side ref-boosts"
+            id="heroBoostBtn"
+            onclick="openBoostersModal()"
+          >
+            <b class="ref-badge">2</b>
+            <span class="ref-side-emoji">🚀</span>
+            <span>Boosts</span>
           </button>
-          <button class="tap-btn premium-tap" id="tapBtn" type="button">
-            TAP!
-          </button>
-          <button class="nav-btn" id="shopBtn" type="button">
-            <span>🛒</span><strong>Shop</strong>
-          </button>
-          <button class="nav-btn" id="profileBtn" type="button">
-            <span>👤</span><strong>Profile</strong>
+
+          <div class="ref-coin-popup">
+            <span>+1</span>
+            <span>🪙</span>
+          </div>
+
+          <button class="tap-btn ref-main-tap" id="tapBtn" onclick="collect()">
+            <span>TAP!</span>
+            <small>👆</small>
           </button>
         </div>
-      </div>
 
-      <div class="card premium-menu-fallback">
-        <div class="section-title">🗂 Меню</div>
-        <div class="menu-grid">
-          <button class="menu-btn" id="animalsBtnOld">
-            <span class="menu-emoji">🐔</span><span>Тварини</span>
-          </button>
-          <button class="menu-btn" id="storageBtnOld">
-            <span class="menu-emoji">📦</span><span>Склад</span>
-          </button>
-          <button class="menu-btn" id="feedBtnOld">
-            <span class="menu-emoji">🌾</span><span>Корм</span>
-          </button>
-          <button class="menu-btn" id="labBtnOld">
-            <span class="menu-emoji">🧪</span><span>Лабораторія</span>
-          </button>
-          <button class="menu-btn" id="dailyBtnOld">
-            <span class="menu-emoji">🎁</span><span>Daily</span>
-          </button>
-          <button class="menu-btn" id="questsBtnOld">
-            <span class="menu-emoji">📜</span><span>Квести</span>
-          </button>
-          <button class="menu-btn" id="wheelBtn">
-            <span class="menu-emoji">🎰</span><span>Wheel</span>
-          </button>
-          <button class="menu-btn" id="shopBtnOld">
-            <span class="menu-emoji">🛒</span><span>Магазин</span>
-          </button>
-          <button class="menu-btn" id="boostBtnOld">
-            <span class="menu-emoji">⚡</span><span>Boosters</span>
-          </button>
-          <button class="menu-btn" id="refsBtnOld">
-            <span class="menu-emoji">👥</span><span>Referrals</span>
+        <div class="status-line ref-status" id="status">ok</div>
+
+        <div class="ref-bottom-nav">
+          <button class="ref-nav active" id="navFarmBtn" onclick="loadState()">
+            <span>🏠</span>
+            <b>Farm</b>
           </button>
           <button
-            class="menu-btn"
-            id="leaderboardBtnOld"
-            onclick="openLeaderboardModal('referrals')"
+            class="ref-nav"
+            id="navAnimalsBtn"
+            onclick="openAnimalsModal()"
           >
-            <span class="menu-emoji">🏆</span><span>Топ</span>
+            <span>🐾</span>
+            <b>Animals</b>
           </button>
-          <button class="menu-btn" id="walletBtnOld">
-            <span class="menu-emoji">👛</span><span>Гаманець</span>
+          <button class="ref-nav-tap" id="navTapBtn" onclick="collect()">
+            TAP!
+          </button>
+          <button class="ref-nav" id="navShopBtn" onclick="openShopModal()">
+            <span>🛒</span>
+            <b>Shop</b>
+          </button>
+          <button
+            class="ref-nav"
+            id="navWalletBtn"
+            onclick="openProfileModal()"
+          >
+            <span>👤</span>
+            <b>Profile</b>
           </button>
         </div>
       </div>
 
+      <div class="ref-legacy-buttons" aria-hidden="true">
+        <button id="animalsBtn" onclick="openAnimalsModal()"></button>
+        <button id="storageBtn" onclick="openStorageModal()"></button>
+        <button id="feedBtn" onclick="openFeedModal()"></button>
+        <button id="labBtn" onclick="openLabModal()"></button>
+        <button id="dailyBtn" onclick="openDailyModal()"></button>
+        <button id="questsBtn" onclick="openQuestsModal()"></button>
+        <button id="wheelBtn" onclick="openWheelModal()"></button>
+        <button id="shopBtn" onclick="openShopModal()"></button>
+        <button id="boostBtn" onclick="openBoostersModal()"></button>
+        <button id="refsBtn" onclick="openRefsModal()"></button>
+        <button id="walletBtn" onclick="openWalletModal()"></button>
+        <button id="refreshBtn" onclick="loadState()"></button>
+        <button id="loadStateBtn" onclick="loadState()"></button>
+      </div>
       <div id="resultBox">ще нічого</div>
     </div>
 
@@ -1163,7 +3344,14 @@
       <div class="modal-sheet">
         <div class="modal-header">
           <div class="modal-title" id="modalTitle">Вікно</div>
-          <button class="close-btn" id="closeModalBtn">✕</button>
+          <button
+            class="close-btn"
+            id="closeModalBtn"
+            type="button"
+            onclick="closeModal()"
+          >
+            ✕
+          </button>
         </div>
         <div id="modalTabs" style="display: none">
           <div class="tabs">
@@ -1268,6 +3456,56 @@
       }
       function showToast(text) {
         spawnFloatingText(text);
+      }
+
+      function v4AnimalImgSrc(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function v4Bar(value, cls = "") {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="v4-bar ${cls}"><span style="width:${v}%"></span></div>`;
+      }
+
+      async function healAnimals(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          renderAnimalsOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
+      }
+
+      function fixedAnimalImgSrc(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function fixedBar(value, cls = "") {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="fixed-bar ${cls}"><span style="width:${v}%"></span></div>`;
+      }
+
+      async function fixedHealAnimals(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          fixedRenderAnimalsOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
       }
 
       function showLevelUpPopup(xpData) {
@@ -1388,17 +3626,111 @@
           showToast(res.data?.error || "Помилка");
         }
       }
-      async function healAnimals(type) {
-        const res = await apiPost("/heal", { type });
-        setResult(res.data);
+      function fixedRenderAnimalsOwned() {
+        const s = currentState || {};
+        const animals = s.animals || {};
+        const feed = s.feed || {};
+        const ready = s.ready || {};
 
-        if (res.ok) {
-          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка лікування");
+        function animalCard(
+          type,
+          emoji,
+          title,
+          count,
+          level,
+          life,
+          efficiency,
+          readyValue,
+          feedValue,
+          healPrice,
+        ) {
+          const hasAnimals = count > 0;
+          const lifeValue = hasAnimals ? (life ?? 100) : 0;
+          const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
+          const perHour = productionPerHour(type, level, count);
+          const cycle = productionText(type, level);
+          const points = pointsText(type, level);
+
+          return `
+            <div class="tile full fixed-animal-card">
+              <div class="fixed-animal-left">
+                <img class="fixed-animal-img" src="${fixedAnimalImgSrc(type)}" alt="${title}" />
+                <div class="fixed-level-chip">LVL ${level}</div>
+              </div>
+
+              <div class="fixed-animal-main">
+                <div class="fixed-animal-head">
+                  <div>
+                    <div class="fixed-animal-title">${emoji} ${title}</div>
+                    <div class="fixed-animal-count">${count} animals</div>
+                  </div>
+                  <div class="fixed-income">
+                    <span>Coins / hour</span>
+                    <b>${perHour}</b>
+                  </div>
+                </div>
+
+                <div class="fixed-bars">
+                  <div>
+                    <div class="fixed-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                    ${hasAnimals ? fixedBar(lifeValue, "life") : ""}
+                  </div>
+                  <div>
+                    <div class="fixed-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                    ${hasAnimals ? fixedBar(efficiencyValue, "power") : ""}
+                  </div>
+                </div>
+
+                <div class="fixed-mini-grid">
+                  <div><span>Ready</span><b>${readyValue}</b></div>
+                  <div><span>Feed</span><b>${feedValue}</b></div>
+                  <div><span>Cycle</span><b>${cycle}</b></div>
+                  <div><span>Points</span><b>${points}</b></div>
+                </div>
+
+                <div class="fixed-actions">
+                  <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                  <button class="buy-btn gold" data-fixed-heal="${type}" ${hasAnimals ? "" : "disabled"}>
+                    ❤️ Heal ${hasAnimals ? `${count * healPrice}` : ""}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
         }
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full fixed-summary">
+              <div>
+                <div class="tile-title">🐾 My Animals</div>
+                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+              </div>
+              <div class="fixed-summary-pill ${s.vip?.active ? "on" : ""}">
+                👑 ${s.vip?.active ? "VIP ON" : "VIP OFF"}
+              </div>
+            </div>
+
+            ${animalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+            ${animalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+            ${animalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+
+            <div class="tile full fixed-vip-panel">
+              <div class="tile-title">👑 Premium Status</div>
+              <div class="tile-value">${s.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+              <div class="tile-row"><span>Boost</span><span>${s.boost?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${s.autoCollect?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Feed</span><span>${s.vip?.active ? "ON" : "VIP only"}</span></div>
+              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+            </div>
+          </div>
+        `;
+
+        modalBody.querySelectorAll("[data-fixed-heal]").forEach((btn) => {
+          btn.onclick = async () => {
+            await fixedHealAnimals(btn.getAttribute("data-fixed-heal"));
+          };
+        });
       }
 
       function renderAnimalsBuy() {
@@ -1525,72 +3857,103 @@
           return Math.floor(perHourOne * count);
         }
 
-        function healButton(type, count, price) {
-          if (!count || count <= 0) {
-            return `<button class="buy-btn gold" disabled>Немає тварин</button>`;
-          }
+        function v4AnimalCard(
+          type,
+          emoji,
+          title,
+          count,
+          level,
+          life,
+          efficiency,
+          readyValue,
+          feedValue,
+          priceHeal,
+        ) {
+          const hasAnimals = count > 0;
+          const lifeValue = hasAnimals ? (life ?? 100) : 0;
+          const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
+          const perHour = productionPerHour(type, level, count);
+          const perCycle = productionText(type, level);
+          const points = pointsText(type, level);
 
-          return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${count * price} coins)</button>`;
+          return `
+            <div class="tile full v4-animal-card">
+              <div class="v4-animal-left">
+                <img class="v4-animal-img" src="${v4AnimalImgSrc(type)}" alt="${title}" />
+                <div class="v4-level-chip">LVL ${level}</div>
+              </div>
+
+              <div class="v4-animal-main">
+                <div class="v4-animal-head">
+                  <div>
+                    <div class="v4-animal-title">${emoji} ${title}</div>
+                    <div class="v4-animal-count">${count} animals</div>
+                  </div>
+                  <div class="v4-income">
+                    <span>Coins / hour</span>
+                    <b>${perHour}</b>
+                  </div>
+                </div>
+
+                <div class="v4-bars">
+                  <div>
+                    <div class="v4-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                    ${hasAnimals ? v4Bar(lifeValue, "life") : ""}
+                  </div>
+                  <div>
+                    <div class="v4-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                    ${hasAnimals ? v4Bar(efficiencyValue, "power") : ""}
+                  </div>
+                </div>
+
+                <div class="v4-mini-grid">
+                  <div><span>Ready</span><b>${readyValue}</b></div>
+                  <div><span>Feed</span><b>${feedValue}</b></div>
+                  <div><span>Cycle</span><b>${perCycle}</b></div>
+                  <div><span>Points</span><b>${points}</b></div>
+                </div>
+
+                <div class="v4-actions">
+                  <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                  <button class="buy-btn gold" data-heal="${type}" ${hasAnimals ? "" : "disabled"}>❤️ Heal ${hasAnimals ? `${count * priceHeal}` : ""}</button>
+                </div>
+              </div>
+            </div>
+          `;
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile">
-                                <div class="tile-title">🐔 Курки</div>
-                                <div class="tile-value">${animals.chicken ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.chicken ?? 0)}
-                                ${healButton("CHICKEN", animals.chicken ?? 0, 50)}
-                              </div>
+          <div class="modal-grid">
+            <div class="tile full v4-summary">
+              <div>
+                <div class="tile-title">🐾 My Animals</div>
+                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+              </div>
+              <div>
+                <div class="v4-summary-pill ${currentState?.vip?.active ? "on" : ""}">
+                  👑 ${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}
+                </div>
+              </div>
+            </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🐑 Вівці</div>
-                                <div class="tile-value">${animals.sheep ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.sheep ?? 0)}
-                                ${healButton("SHEEP", animals.sheep ?? 0, 150)}
-                              </div>
+            ${v4AnimalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+            ${v4AnimalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+            ${v4AnimalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
 
-                              <div class="tile">
-                                <div class="tile-title">🐄 Корови</div>
-                                <div class="tile-value">${animals.cow ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.cow ?? 0)}
-                                ${healButton("COW", animals.cow ?? 0, 300)}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">⚙ Статус</div>
-                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-                                <button class="buy-btn gold" data-heal="ALL">❤️ Лікувати всіх</button>
-                              </div>
-                            </div>
-                          `;
+            <div class="tile full v4-vip-panel">
+              <div class="tile-title">👑 Premium Status</div>
+              <div class="tile-value">${currentState?.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+              <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+            </div>
+          </div>
+        `;
 
         modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
           btn.onclick = async () => {
-            const type = btn.getAttribute("data-heal");
-            await healAnimals(type);
+            await healAnimals(btn.getAttribute("data-heal"));
           };
         });
       }
@@ -1600,14 +3963,31 @@
 
       function openAnimalsModal() {
         modalTitle.textContent = "🐾 Тварини";
-        modalTabs.style.display = "block";
-        tabBuyBtn.style.display = "";
-        tabOwnedBtn.style.display = "";
-        tabUpgradeBtn.style.display = "none";
-        tabBuyBtn.textContent = "Купити";
-        tabOwnedBtn.textContent = "Мої";
-        renderAnimalsBuy();
+        modalTabs.style.display = "grid";
+
+        modalTabs.innerHTML = `
+          <button class="tab-btn" id="animalsBuyTab">Купити</button>
+          <button class="tab-btn active" id="animalsMineTab">Мої</button>
+        `;
+
         showModal();
+
+        const buyTab = document.getElementById("animalsBuyTab");
+        const mineTab = document.getElementById("animalsMineTab");
+
+        buyTab.onclick = () => {
+          buyTab.classList.add("active");
+          mineTab.classList.remove("active");
+          renderAnimalsBuy();
+        };
+
+        mineTab.onclick = () => {
+          mineTab.classList.add("active");
+          buyTab.classList.remove("active");
+          fixedRenderAnimalsOwned();
+        };
+
+        fixedRenderAnimalsOwned();
       }
 
       async function openStorageModal() {
@@ -1702,7 +4082,7 @@
           setResult(res.data);
 
           if (res.ok) {
-            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
+            if (!handleXpResult(res.data?.levelUpData)) {
               showToast(
                 `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
               );
@@ -1720,45 +4100,7 @@
         const feed = currentState?.feedStock || {};
         modalTitle.textContent = "🌾 Корм";
         modalTabs.style.display = "none";
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👑 VIP Auto</div>
-              <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">🌾 Feed All</div>
-              <div class="tile-value">+10 / +10 / +10</div>
-              <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
-              <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐔 Корм для курки</div>
-              <div class="tile-value">${feed.chicken ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
-              <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐑 Корм для вівці</div>
-              <div class="tile-value">${feed.sheep ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
-              <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">🐄 Корм для корови</div>
-              <div class="tile-value">${feed.cow ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
-              <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
-            </div>
-          </div>
-        `;
+        modalBody.innerHTML = `<div class="modal-grid"><div class="tile"><div class="tile-title">🐔 Корм для курки</div><div class="tile-value">${feed.chicken ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div><button class="buy-btn" data-feed="chicken_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐑 Корм для вівці</div><div class="tile-value">${feed.sheep ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div><button class="buy-btn" data-feed="sheep_feed_10">Купити</button></div><div class="tile"><div class="tile-title">🐄 Корм для корови</div><div class="tile-value">${feed.cow ?? 0} шт</div><div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div><button class="buy-btn" data-feed="cow_feed_10">Купити</button></div></div>`;
         showModal();
         modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1766,9 +4108,7 @@
             const res = await apiPost("/shop/buy", { code });
             setResult(res.data);
             if (res.ok) {
-              showToast(
-                code === "feed_all_10" ? "🌾 Усі нагодовані" : "Корм куплено",
-              );
+              showToast("Корм куплено");
               await loadState();
               openFeedModal();
             } else {
@@ -1780,104 +4120,115 @@
       function openBoostersModal() {
         modalTitle.textContent = "⚡ Boosters";
         modalTabs.style.display = "none";
+
+        const boostOn = !!currentState?.boost?.active;
+        const autoOn = !!currentState?.autoCollect?.active;
+        const vipOn = !!currentState?.vip?.active;
+
         modalBody.innerHTML = `
-  <div class="modal-grid">
+          <div class="modal-grid">
+            <div class="tile full v4-boost-hero">
+              <div class="v4-hero-title">⚡ Boost Center</div>
+              <div class="v4-hero-sub">Активуй бустери, Auto Sell і VIP, щоб ферма працювала швидше.</div>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">⚡ Boost x2</div>
-      <div class="tile-value">
-        ${currentState?.boost?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
-        id="buyBoostBtn"
-      >
-        ${currentState?.boost?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-boost-card">
+              <div class="v4-boost-icon">⚡</div>
+              <div>
+                <div class="v4-boost-title">Boost x2</div>
+                <div class="v4-boost-desc">Подвоює ефект на короткий час.</div>
+                <div class="v4-boost-status ${boostOn ? "on" : ""}">${boostOn ? "ACTIVE" : "OFF"}</div>
+              </div>
+              <button class="buy-btn ${boostOn ? "green" : ""}" id="buyBoostBtn">${boostOn ? "ON" : "10 💎"}</button>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">💰 Auto Sell</div>
-      <div class="tile-value">
-        ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
-        id="buyAutoBtn"
-      >
-        ${currentState?.autoCollect?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-boost-card">
+              <div class="v4-boost-icon">💰</div>
+              <div>
+                <div class="v4-boost-title">Auto Sell</div>
+                <div class="v4-boost-desc">Автоматично продає склад, коли він заповнюється.</div>
+                <div class="v4-boost-status ${autoOn ? "on" : ""}">${autoOn ? "ACTIVE" : "OFF"}</div>
+              </div>
+              <button class="buy-btn ${autoOn ? "green" : ""}" id="buyAutoBtn">${autoOn ? "ON" : "10 💎"}</button>
+            </div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 24h</div>
-      <div class="tile-value">
-        ${currentState?.vip?.active ? "ON" : "150 diamonds"}
-      </div>
-      <div class="tile-row">
-        <span>Auto Feed</span><span>ON</span>
-      </div>
-      <div class="tile-row">
-        <span>Auto Sell</span><span>ON</span>
-      </div>
-      <button
-        class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
-        id="buyVip1dBtn"
-      >
-        ${currentState?.vip?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+            <div class="tile full v4-vip-hero">
+              <div class="v4-hero-title">👑 VIP Membership</div>
+              <div class="v4-hero-sub">${vipOn ? "VIP активний. Ферма працює в premium режимі." : "Увімкни VIP, щоб отримати Auto Feed, Auto Sell і premium переваги."}</div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 7d</div>
-      <div class="tile-value">800 diamonds</div>
-      <div class="tile-row">
-        <span>VIP Premium</span><span>7 днів</span>
-      </div>
-      <div class="tile-row">
-        <span>Економія</span><span>вигідніше</span>
-      </div>
-      <button
-        class="buy-btn gold"
-        id="buyVip7dBtn"
-      >
-        Купити
-      </button>
-    </div>
+              <div class="v4-vip-list">
+                <div class="v4-vip-item"><span>✓</span> Auto Feed</div>
+                <div class="v4-vip-item"><span>✓</span> Auto Sell</div>
+                <div class="v4-vip-item"><span>✓</span> Better premium gameplay</div>
+                <div class="v4-vip-item"><span>✓</span> Підходить для донату через Stars</div>
+              </div>
 
-  </div>
-`;
+              <div class="v4-vip-plans">
+                <div class="v4-vip-plan">
+                  <div class="v4-plan-title">VIP 24h</div>
+                  <div class="v4-plan-price">${vipOn ? "ON" : "150 💎"}</div>
+                  <div class="v4-plan-note">Для швидкої перевірки</div>
+                  <button class="buy-btn gold" id="buyVip1dBtn">${vipOn ? "ON" : "Купити"}</button>
+                </div>
+
+                <div class="v4-vip-plan best">
+                  <div class="v4-product-badge gold">BEST</div>
+                  <div class="v4-plan-title">VIP 7d</div>
+                  <div class="v4-plan-price">800 💎</div>
+                  <div class="v4-plan-note">Вигідніше на довше</div>
+                  <button class="buy-btn gold" id="buyVip7dBtn">Купити</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
         showModal();
+
         document.getElementById("buyBoostBtn").onclick = async () => {
-          if (currentState?.boost?.active) return;
-          const res = await apiPost("/shop/buy", { code: "boost_1h" });
+          if (boostOn) return;
+          const res = await apiPost("/shop/buy", { code: "boost_x2" });
           setResult(res.data);
           if (res.ok) {
-            showToast("Boost куплено");
+            showToast("Boost ON");
             await loadState();
             openBoostersModal();
           } else {
             showToast(res.data?.error || "Помилка");
           }
         };
+
         document.getElementById("buyAutoBtn").onclick = async () => {
-          if (currentState?.autoCollect?.active) return;
-          const res = await apiPost("/shop/buy", { code: "auto_1h" });
+          if (autoOn) return;
+          const res = await apiPost("/shop/buy", { code: "auto_collect" });
           setResult(res.data);
           if (res.ok) {
-            showToast("Auto куплено");
+            showToast("Auto Sell ON");
             await loadState();
             openBoostersModal();
           } else {
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVipBtn").onclick = async () => {
-          if (currentState?.vip?.active) return;
+
+        document.getElementById("buyVip1dBtn").onclick = async () => {
+          if (vipOn) return;
           const res = await apiPost("/shop/buy", { code: "vip_1d" });
           setResult(res.data);
           if (res.ok) {
-            showToast("VIP куплено");
+            showToast("VIP 24h ON");
+            await loadState();
+            openBoostersModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
+          }
+        };
+
+        document.getElementById("buyVip7dBtn").onclick = async () => {
+          const res = await apiPost("/shop/buy", { code: "vip_7d" });
+          setResult(res.data);
+          if (res.ok) {
+            showToast("VIP 7d ON");
             await loadState();
             openBoostersModal();
           } else {
@@ -2341,238 +4692,307 @@
       }
 
       async function openShopModal() {
-        modalTitle.textContent = "🛒 Магазин";
+        modalTitle.textContent = "🛒 Premium Shop";
         modalTabs.style.display = "none";
-
-        const walletRes = await apiGet("/wallet");
-        const wallet = walletRes.ok ? walletRes.data || {} : {};
 
         modalBody.innerHTML = `
           <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👛 TON Баланс</div>
-              <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
+            <div class="tile full v4-shop-hero">
+              <div class="v4-hero-title">🛒 Premium Shop</div>
+              <div class="v4-hero-sub">
+                Тут тільки premium-покупки: Boosters, VIP, Diamonds / Telegram Stars.
+                Тварини залишаються у вкладці "Тварини", корм — у вкладці "Корм".
+              </div>
+            </div>
+
+            <div class="tile full v5-info-card">
+              🐾 Тварини купуються в меню <b>Тварини</b><br>
+              🌾 Корм купується в меню <b>Корм</b><br>
+              👑 Premium покупки — тут
             </div>
 
             <div class="tile full">
-              <div class="tile-title">⭐ Telegram Stars</div>
-              <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">Малий пакет</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">Середній пакет</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">Великий пакет</div>
-              <div class="tile-value">300 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">💎 Diamonds за TON</div>
-              <div class="note">Покупка йде з TON балансу у гаманці</div>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Small</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="small">Купити</button>
-            </div>
-
-            <div class="tile">
-              <div class="tile-title">TON Medium</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">TON Large</div>
-              <div class="tile-value">700 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
-              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
+              <div class="v4-shop-tabs">
+                <button class="v4-shop-tab active" data-shop-tab="premium">💎 Premium</button>
+                <button class="v4-shop-tab" data-shop-tab="boosts">🚀 Boosts</button>
+                <button class="v4-shop-tab" data-shop-tab="vip">👑 VIP</button>
+                <button class="v4-shop-tab" data-shop-tab="stars">⭐ Stars</button>
+              </div>
+              <div id="v4ShopContent"></div>
             </div>
           </div>
         `;
 
-        showModal();
-
-        modalBody.querySelectorAll("[data-stars-product]").forEach((btn) => {
-          btn.onclick = async () => {
-            const productCode = btn.getAttribute("data-stars-product");
-            const res = await apiPost("/payments/create-invoice", {
-              productCode,
-            });
-            setResult(res.data);
-
-            if (!res.ok) {
-              showToast(res.data?.error || "Помилка");
-              return;
-            }
-
-            const link = res.data?.invoiceLink;
-            if (!link) {
-              showToast("Не вдалося створити invoice");
-              return;
-            }
-
-            if (tg?.openTelegramLink) {
-              tg.openTelegramLink(link);
-            } else {
-              window.open(link, "_blank");
-            }
-          };
-        });
-
-        modalBody.querySelectorAll("[data-wallet-buy]").forEach((btn) => {
-          btn.onclick = async () => {
-            const pkg = btn.getAttribute("data-wallet-buy");
-
-            const resp = await apiPost("/wallet/buy-diamonds", {
-              package: pkg,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast(`💎 +${resp.data?.diamondsReceived ?? 0}`);
-              await loadState();
-              await openShopModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
-            }
-          };
-        });
-      }
-      async function openWalletModal() {
-        modalTitle.textContent = "👛 Гаманець";
-        modalTabs.style.display = "none";
-
-        const res = await apiGet("/wallet");
-        const data = res.data || {};
-
-        if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
-          showModal();
-          return;
+        function premiumCard({
+          icon,
+          title,
+          desc,
+          price,
+          code,
+          cls = "",
+          badge = "",
+        }) {
+          return `
+            <div class="tile v5-premium-card ${cls}">
+              ${badge ? `<div class="v5-badge ${badge === "BEST" ? "gold" : ""}">${badge}</div>` : ""}
+              <div class="v5-premium-icon">${icon}</div>
+              <div class="v5-card-title">${title}</div>
+              <div class="v5-card-desc">${desc}</div>
+              <div class="v5-card-price">${price}</div>
+              <button class="buy-btn ${cls === "vip" ? "gold" : "green"}" data-premium-buy="${code}">
+                Купити
+              </button>
+            </div>
+          `;
         }
 
-        const points = data.points ?? currentState?.points ?? 0;
-        const availableTon = Math.floor(points / 100000);
-        const receiveTon =
-          availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
+        function renderShopTab(tab) {
+          const box = document.getElementById("v4ShopContent");
+          if (!box) return;
+
+          if (tab === "boosts") {
+            box.innerHTML = `
+              <div class="v5-premium-grid">
+                ${premiumCard({
+                  icon: "⚡",
+                  title: "Boost x2",
+                  desc: "Подвійна сила для швидшого прогресу.",
+                  price: currentState?.boost?.active ? "ON" : "10 💎",
+                  code: "boost_x2",
+                  badge: currentState?.boost?.active ? "ON" : "",
+                })}
+                ${premiumCard({
+                  icon: "💰",
+                  title: "Auto Sell",
+                  desc: "Автоматичний продаж складу, коли він заповнюється.",
+                  price: currentState?.autoCollect?.active ? "ON" : "10 💎",
+                  code: "auto_collect",
+                  badge: currentState?.autoCollect?.active ? "ON" : "",
+                })}
+              </div>
+            `;
+          } else if (tab === "vip") {
+            box.innerHTML = `
+              <div class="v5-premium-grid">
+                ${premiumCard({
+                  icon: "👑",
+                  title: "VIP 24h",
+                  desc: "Auto Feed + Auto Sell на 24 години.",
+                  price: currentState?.vip?.active ? "ON" : "150 💎",
+                  code: "vip_1d",
+                  cls: "vip",
+                })}
+                ${premiumCard({
+                  icon: "👑",
+                  title: "VIP 7d",
+                  desc: "Premium режим на 7 днів. Вигідніше.",
+                  price: "800 💎",
+                  code: "vip_7d",
+                  cls: "vip",
+                  badge: "BEST",
+                })}
+              </div>
+            `;
+          } else if (tab === "stars") {
+            box.innerHTML = `
+              <div class="v5-premium-grid">
+                ${premiumCard({
+                  icon: "⭐",
+                  title: "Telegram Stars",
+                  desc: "Покупки через Telegram Stars. Підготовлено для донату.",
+                  price: "Soon",
+                  code: "stars_soon",
+                  cls: "stars",
+                  badge: "SOON",
+                })}
+                ${premiumCard({
+                  icon: "💎",
+                  title: "Diamonds Pack",
+                  desc: "Пакет діамантів для VIP та бустерів.",
+                  price: "Soon",
+                  code: "diamonds_soon",
+                  cls: "stars",
+                  badge: "SOON",
+                })}
+              </div>
+            `;
+          } else {
+            box.innerHTML = `
+              <div class="v5-premium-grid">
+                ${premiumCard({
+                  icon: "💎",
+                  title: "Diamonds",
+                  desc: "Premium валюта для VIP і бустерів.",
+                  price: "Soon",
+                  code: "diamonds_soon",
+                  badge: "SOON",
+                })}
+                ${premiumCard({
+                  icon: "⚡",
+                  title: "Boost x2",
+                  desc: "Швидкий бустер для активного фарму.",
+                  price: currentState?.boost?.active ? "ON" : "10 💎",
+                  code: "boost_x2",
+                })}
+                ${premiumCard({
+                  icon: "💰",
+                  title: "Auto Sell",
+                  desc: "Автоматично продає склад.",
+                  price: currentState?.autoCollect?.active ? "ON" : "10 💎",
+                  code: "auto_collect",
+                })}
+                ${premiumCard({
+                  icon: "👑",
+                  title: "VIP",
+                  desc: "Auto Feed + Auto Sell + premium режим.",
+                  price: currentState?.vip?.active ? "ON" : "від 150 💎",
+                  code: "vip_open",
+                  cls: "vip",
+                  badge: "BEST",
+                })}
+              </div>
+            `;
+          }
+
+          box.querySelectorAll("[data-premium-buy]").forEach((btn) => {
+            btn.onclick = async () => {
+              const code = btn.getAttribute("data-premium-buy");
+
+              if (code === "vip_open") {
+                renderShopTab("vip");
+                modalBody
+                  .querySelectorAll("[data-shop-tab]")
+                  .forEach((b) => b.classList.remove("active"));
+                modalBody
+                  .querySelector('[data-shop-tab="vip"]')
+                  ?.classList.add("active");
+                return;
+              }
+
+              if (code.includes("soon")) {
+                showToast("Скоро буде доступно");
+                return;
+              }
+
+              const res = await apiPost("/shop/buy", { code });
+              setResult(res.data);
+
+              if (res.ok) {
+                showToast("Куплено");
+                await loadState();
+                openShopModal();
+              } else {
+                showToast(res.data?.error || "Помилка");
+              }
+            };
+          });
+        }
+
+        modalBody.querySelectorAll("[data-shop-tab]").forEach((btn) => {
+          btn.onclick = () => {
+            modalBody
+              .querySelectorAll("[data-shop-tab]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderShopTab(btn.getAttribute("data-shop-tab"));
+          };
+        });
+
+        renderShopTab("premium");
+        showModal();
+      }
+      async function openRefsModal() {
+        modalTitle.textContent = "👥 Referrals";
+        modalTabs.style.display = "none";
+
+        const link = makeReferralLink();
+        const refs = currentState?.referrals || {};
+        const count =
+          refs.count ?? refs.total ?? currentState?.referralsCount ?? 0;
+        const coinsEarned =
+          refs.coinsEarned ??
+          refs.earnedCoins ??
+          currentState?.referralCoins ??
+          0;
+        const pointsEarned =
+          refs.pointsEarned ??
+          refs.earnedPoints ??
+          currentState?.referralPoints ??
+          0;
 
         modalBody.innerHTML = `
           <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">💰 TON Баланс</div>
-              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Points</span><span>${points}</span></div>
-            </div>
+            <div class="tile full v4-ref-hero">
+              <div class="v4-hero-title">👥 Referral Program</div>
+              <div class="v4-hero-sub">
+                Запрошуй друзів і отримуй бонуси. Новий гравець отримує стартовий бонус, а ти отримуєш coins + points.
+              </div>
 
-            <div class="tile full">
-              <div class="tile-title">📥 Поповнення TON</div>
-              <div class="note">Надішли TON на адресу:</div>
-              <input class="code-box" value="${data.depositWallet}" readonly />
-              <div class="note" style="margin-top:8px;">
-                Коментар платежу: USER_${getMyTelegramId()}
+              <div class="v4-ref-link-box">
+                <div class="v4-ref-link" id="refLinkText">${link}</div>
+                <button class="v4-copy-btn" id="copyRefBtn">Copy</button>
               </div>
             </div>
 
             <div class="tile full">
-              <div class="tile-title">⭐ Points → TON</div>
-              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
-              <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-              <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
-              <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
-              <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
+              <div class="v4-stat-grid">
+                <div class="v4-big-stat">
+                  <span>Invited</span>
+                  <b>${count}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Coins earned</span>
+                  <b>${coinsEarned}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Points earned</span>
+                  <b>${pointsEarned}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Bonus</span>
+                  <b>+50 / ref</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">🎁 Referral rewards</div>
+              <div class="v4-info-list">
+                <div class="v4-info-item"><span>1</span> Новий гравець отримує +100 coins</div>
+                <div class="v4-info-item"><span>2</span> Ти отримуєш +50 coins за реферала</div>
+                <div class="v4-info-item"><span>3</span> Points з рефералів показуються окремо</div>
+                <div class="v4-info-item"><span>4</span> Кращі реферали можуть бути в leaderboard</div>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <button class="buy-btn green" id="shareRefBtn">📤 Поділитися</button>
             </div>
           </div>
         `;
 
         showModal();
 
-        const withdrawBtn = document.getElementById("requestWithdrawBtn");
-        if (withdrawBtn) {
-          withdrawBtn.onclick = async () => {
-            const tonAddress =
-              document.getElementById("withdrawTonAddress").value;
-            const pointsAmount = Number(
-              document.getElementById("withdrawPointsAmount").value,
-            );
-
-            const resp = await apiPost("/wallet/request-withdraw", {
-              tonAddress,
-              pointsAmount,
-            });
-
-            setResult(resp.data);
-
-            if (resp.ok) {
-              showToast("✅ Заявку створено");
-              await loadState();
-              await openWalletModal();
-            } else {
-              showToast(
-                resp.data?.error || "Потрібно підключити backend withdraw",
-              );
-            }
-          };
-        }
-      }
-
-      async function openRefsModal() {
-        modalTitle.textContent = "👥 Referrals";
-        modalTabs.style.display = "none";
-        const res = await apiGet("/referrals"),
-          data = res.data || {},
-          shareLink = makeReferralLink();
-        modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div>
-      <div class="tile-row"><span>Заробив coins</span><span>${data.earnedCoins ?? 0}</span></div>
-      <div class="tile-row"><span>Заробив points</span><span>${data.earnedPoints ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
-        showModal();
         document.getElementById("copyRefBtn").onclick = async () => {
-          await navigator.clipboard.writeText(shareLink);
-          showToast("Скопійовано");
+          try {
+            await navigator.clipboard.writeText(link);
+            showToast("Referral link copied");
+          } catch {
+            showToast("Скопіюй вручну");
+          }
         };
-        document.getElementById("shareRefBtn").onclick = async () => {
-          if (tg?.openTelegramLink)
+
+        document.getElementById("shareRefBtn").onclick = () => {
+          const text = `🌾 Join My Farm Clicker and get bonus coins!`;
+          if (tg?.openTelegramLink) {
             tg.openTelegramLink(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
+              `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`,
             );
-          else
+          } else {
             window.open(
-              `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent("Заходь у гру 🚜")}`,
+              `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`,
               "_blank",
             );
-        };
-        document.getElementById("applyRefBtn").onclick = async () => {
-          const code = document.getElementById("refCodeInput").value,
-            resp = await apiPost("/referrals/apply", { code });
-          setResult(resp.data);
-          if (resp.ok) {
-            showToast(`+${resp.data?.rewardYou ?? 0}`);
-            await loadState();
-            await openRefsModal();
-          } else {
-            showToast(resp.data?.error || "Помилка");
           }
         };
       }
@@ -2718,6 +5138,167 @@
         }
       }
 
+      function openWalletModal() {
+        modalTitle.textContent = "👛 Wallet";
+        modalTabs.style.display = "none";
+
+        const diamonds = currentState?.diamonds ?? 0;
+        const points = currentState?.points ?? 0;
+        const coins = currentState?.coins ?? 0;
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full v4-wallet-hero">
+              <div class="v4-hero-title">👛 Wallet</div>
+              <div class="v4-hero-sub">
+                Баланс гравця, diamonds, points і майбутній withdraw.
+              </div>
+
+              <div class="v4-wallet-balance">
+                <div class="v4-wallet-card">
+                  <span>Diamonds</span>
+                  <b>${diamonds} 💎</b>
+                </div>
+                <div class="v4-wallet-card gold">
+                  <span>Points</span>
+                  <b>${points} ⭐</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="v4-stat-grid">
+                <div class="v4-big-stat">
+                  <span>Coins</span>
+                  <b>${coins}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>USDT estimate</span>
+                  <b>Soon</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Withdraw</span>
+                  <b>Locked</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Status</span>
+                  <b>Testing</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile full v4-withdraw-card">
+              <div class="tile-title">💸 Withdraw</div>
+              <div class="tile-value">Coming soon</div>
+              <div class="tile-row"><span>Points → USDT</span><span>Soon</span></div>
+              <div class="tile-row"><span>Diamonds → Bonus</span><span>Soon</span></div>
+              <div class="v4-soon-badge">Withdraw буде після запуску економіки</div>
+              <button class="buy-btn gold" id="withdrawSoonBtn">Withdraw Soon</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">⚠️ Important</div>
+              <div class="note">
+                Поки гра в тесті, withdraw краще показувати як Coming Soon.
+              </div>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        document.getElementById("withdrawSoonBtn").onclick = () => {
+          showToast("Withdraw буде пізніше");
+        };
+      }
+
+      function openProfileModal() {
+        modalTitle.textContent = "👤 Profile";
+        modalTabs.style.display = "none";
+
+        const telegramId = getMyTelegramId() || "test";
+        const level = currentState?.level ?? 1;
+        const xp = currentState?.xp ?? 0;
+        const xpNeeded = currentState?.xpNeeded ?? 0;
+        const coins = currentState?.coins ?? 0;
+        const diamonds = currentState?.diamonds ?? 0;
+        const points = currentState?.points ?? 0;
+        const vip = currentState?.vip?.active ? "ACTIVE" : "OFF";
+        const link = makeReferralLink();
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full v4-profile-hero">
+              <div class="v4-profile-top">
+                <div class="v4-profile-avatar">👨‍🌾</div>
+                <div>
+                  <div class="v4-profile-name">Farmer</div>
+                  <div class="v4-profile-sub">My Farm Clicker player</div>
+                </div>
+                <div class="v4-id-pill">ID: ${telegramId}</div>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="v4-stat-grid">
+                <div class="v4-big-stat">
+                  <span>Level</span>
+                  <b>${level}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>XP</span>
+                  <b>${xp}/${xpNeeded}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Coins</span>
+                  <b>${coins}</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Diamonds</span>
+                  <b>${diamonds} 💎</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>Points</span>
+                  <b>${points} ⭐</b>
+                </div>
+                <div class="v4-big-stat">
+                  <span>VIP</span>
+                  <b>${vip}</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">🔗 Referral link</div>
+              <div class="v4-ref-link-box">
+                <div class="v4-ref-link">${link}</div>
+                <button class="v4-copy-btn" id="copyProfileRefBtn">Copy</button>
+              </div>
+            </div>
+
+            <div class="tile full">
+              <div class="v4-info-list">
+                <div class="v4-info-item"><span>👛</span> Wallet для diamonds / points / withdraw</div>
+                <div class="v4-info-item"><span>👥</span> Referrals для запрошень</div>
+                <div class="v4-info-item"><span>🏆</span> Leaderboard для топ-гравців</div>
+                <div class="v4-info-item"><span>👑</span> VIP для premium automation</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        document.getElementById("copyProfileRefBtn").onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(link);
+            showToast("Copied");
+          } catch {
+            showToast("Скопіюй вручну");
+          }
+        };
+      }
+
       document.getElementById("tapBtn").addEventListener("click", collect);
       document
         .getElementById("loadStateBtn")
@@ -2751,9 +5332,6 @@
         .getElementById("shopBtn")
         .addEventListener("click", openShopModal);
       document
-        .getElementById("walletBtn")
-        .addEventListener("click", openWalletModal);
-      document
         .getElementById("refsBtn")
         .addEventListener("click", openRefsModal);
       document
@@ -2765,166 +5343,571 @@
       tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
+      document
+        .getElementById("walletBtn")
+        ?.addEventListener("click", openWalletModal);
+
+      document
+        .getElementById("heroTasksBtn")
+        ?.addEventListener("click", openQuestsModal);
+      document
+        .getElementById("heroDailyBtn")
+        ?.addEventListener("click", openDailyModal);
+      document
+        .getElementById("heroVipBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("heroBoostBtn")
+        ?.addEventListener("click", openBoostersModal);
+      document
+        .getElementById("quickStorageBtn")
+        ?.addEventListener("click", openLabModal);
+      document.getElementById("navTapBtn")?.addEventListener("click", collect);
+      document
+        .getElementById("navAnimalsBtn")
+        ?.addEventListener("click", openAnimalsModal);
+      document
+        .getElementById("navShopBtn")
+        ?.addEventListener("click", openShopModal);
+
+      document
+        .getElementById("navWalletBtn")
+        ?.addEventListener("click", openProfileModal);
       loadState();
 
-      /* PREMIUM UI BRIDGE - keeps old working backend logic */
-      (function () {
-        const oldApplyState = applyState;
-        applyState = function (data) {
-          oldApplyState(data);
-
-          const xpFill = document.getElementById("premiumXpBar");
-          if (xpFill) {
-            const xp = Number(data?.xp ?? 0);
-            const need = Number(data?.xpNeeded ?? 1);
-            xpFill.style.width = `${Math.max(0, Math.min(100, Math.round((xp / Math.max(1, need)) * 100)))}%`;
-          }
-
-          const s = data?.storage || {};
-          const eggs = s.eggs ?? 0;
-          const wool = s.wool ?? 0;
-          const milk = s.milk ?? 0;
-          const total = s.total ?? eggs + wool + milk;
-          const capacity = s.capacity ?? 1000;
-          const whText = document.getElementById("warehouseText");
-          const whFill = document.getElementById("warehouseFill");
-          if (whText) whText.textContent = `${total} / ${capacity}`;
-          if (whFill)
-            whFill.style.width = `${Math.max(0, Math.min(100, Math.round((total / Math.max(1, capacity)) * 100)))}%`;
+      function bindMainScreenButtonsFix() {
+        const safeBind = (id, fn) => {
+          const el = document.getElementById(id);
+          if (!el || !fn) return;
+          el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fn();
+          };
         };
 
-        function bindPremiumUi() {
-          const bindClick = (id, fn) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              fn();
-            };
-          };
+        safeBind("quickStorageBtn", () => openLabModal());
+        safeBind("heroDailyBtn", () => openDailyModal());
+        safeBind("heroTasksBtn", () => openQuestsModal());
+        safeBind("heroVipBtn", () => openBoostersModal());
+        safeBind("heroBoostBtn", () => openBoostersModal());
+        safeBind("tapBtn", () => collect());
+        safeBind("navFarmBtn", () => loadState());
+        safeBind("navAnimalsBtn", () => openAnimalsModal());
+        safeBind("navTapBtn", () => collect());
+        safeBind("navShopBtn", () => openShopModal());
 
-          bindClick("farmHomeBtn", loadState);
-          bindClick("labSideBtn", openLabModal);
-          bindClick("feedSideBtn", openFeedModal);
-
-          bindClick("animalsBtnOld", openAnimalsModal);
-          bindClick("storageBtnOld", openStorageModal);
-          bindClick("feedBtnOld", openFeedModal);
-          bindClick("labBtnOld", openLabModal);
-          bindClick("dailyBtnOld", openDailyModal);
-          bindClick("questsBtnOld", openQuestsModal);
-          bindClick("shopBtnOld", openShopModal);
-          bindClick("boostBtnOld", openBoostersModal);
-          bindClick("refsBtnOld", openRefsModal);
-          bindClick("walletBtnOld", openWalletModal);
+        if (typeof openProfileModal === "function") {
+          safeBind("navWalletBtn", () => openProfileModal());
+        } else {
+          safeBind("navWalletBtn", () => openWalletModal());
         }
 
-        window.addEventListener("load", bindPremiumUi);
-        setTimeout(bindPremiumUi, 300);
-      })();
+        safeBind("animalsBtn", () => openAnimalsModal());
+        safeBind("storageBtn", () => openStorageModal());
+        safeBind("feedBtn", () => openFeedModal());
+        safeBind("labBtn", () => openLabModal());
+        safeBind("dailyBtn", () => openDailyModal());
+        safeBind("questsBtn", () => openQuestsModal());
+        safeBind("wheelBtn", () => openWheelModal());
+        safeBind("shopBtn", () => openShopModal());
+        safeBind("boostBtn", () => openBoostersModal());
+        safeBind("refsBtn", () => openRefsModal());
+        safeBind("walletBtn", () => openWalletModal());
+        safeBind("refreshBtn", () => loadState());
+        safeBind("loadStateBtn", () => loadState());
+      }
 
-      /* PROFILE WITH REFERRALS */
-      window.openProfileModal = function () {
-        modalTitle.textContent = "👤 Profile";
-        modalTabs.style.display = "none";
+      window.addEventListener("load", bindMainScreenButtonsFix);
+      setTimeout(bindMainScreenButtonsFix, 300);
+      setTimeout(bindMainScreenButtonsFix, 1200);
 
-        const refLink = makeReferralLink();
-        const refs = currentState?.referrals || {};
-        const invited =
-          refs.invited ??
-          refs.count ??
-          currentState?.referralsCount ??
-          currentState?.invited ??
-          0;
+      function bindModalCloseFix() {
+        const closeBtn = document.getElementById("closeModalBtn");
+        if (closeBtn) {
+          closeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
+          };
+        }
+
+        const modalOverlay = document.getElementById("modal");
+        if (modalOverlay) {
+          modalOverlay.addEventListener("click", (e) => {
+            if (e.target === modalOverlay) closeModal();
+          });
+        }
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeModal();
+        });
+      }
+
+      window.addEventListener("load", bindModalCloseFix);
+      setTimeout(bindModalCloseFix, 300);
+
+      function bindFinalCloseFix() {
+        const closeBtn = document.getElementById("closeModalBtn");
+        if (closeBtn) {
+          closeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
+          };
+        }
+
+        const modalOverlay = document.getElementById("modal");
+        if (modalOverlay) {
+          modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) closeModal();
+          };
+        }
+      }
+
+      window.addEventListener("load", bindFinalCloseFix);
+      setTimeout(bindFinalCloseFix, 500);
+
+      function forceCleanMainScreen() {
+        document.querySelectorAll("#status").forEach((el) => {
+          el.style.display = "none";
+          el.textContent = "";
+        });
+
+        document.querySelectorAll(".ref-main-tap").forEach((el) => {
+          el.style.display = "none";
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        });
+
+        document.querySelectorAll(".tap-wrap, .coin-popup").forEach((el) => {
+          el.style.display = "none";
+        });
+
+        const navTap = document.getElementById("navTapBtn");
+        if (navTap) {
+          navTap.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            collect();
+          };
+        }
+
+        const animalsBtn = document.getElementById("navAnimalsBtn");
+        if (animalsBtn) {
+          animalsBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAnimalsModal();
+          };
+        }
+      }
+
+      window.addEventListener("load", forceCleanMainScreen);
+      setTimeout(forceCleanMainScreen, 300);
+      setTimeout(forceCleanMainScreen, 1000);
+      setInterval(forceCleanMainScreen, 2500);
+
+      /* ANIMALS MODAL FINAL OVERRIDE START */
+      function animalFinalImg(type) {
+        if (type === "CHICKEN") return "/assets/chicken.svg";
+        if (type === "SHEEP") return "/assets/sheep.svg";
+        if (type === "COW") return "/assets/cow.svg";
+        return "/assets/chicken.svg";
+      }
+
+      function animalFinalBar(value, cls = "") {
+        const v = Math.max(0, Math.min(100, Number(value || 0)));
+        return `<div class="animal-final-bar ${cls}"><span style="width:${v}%"></span></div>`;
+      }
+
+      function animalFinalProduction(type, level) {
+        try {
+          return productionText(type, level);
+        } catch {
+          return "-";
+        }
+      }
+
+      function animalFinalPoints(type, level) {
+        try {
+          return pointsText(type, level);
+        } catch {
+          return "-";
+        }
+      }
+
+      async function animalFinalHeal(type) {
+        const res = await apiPost("/heal", { type });
+        setResult(res.data);
+
+        if (res.ok) {
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          await loadState();
+          animalFinalRenderOwned();
+        } else {
+          showToast(res.data?.error || "Помилка лікування");
+        }
+      }
+
+      function animalFinalRenderBuy() {
+        const s = currentState || {};
+        const level = s.level ?? 1;
+
+        const cards = [
+          {
+            type: "CHICKEN",
+            emoji: "🐔",
+            title: "Курка",
+            price: 100,
+            resource: "Яйця",
+            unlock: 1,
+          },
+          {
+            type: "SHEEP",
+            emoji: "🐑",
+            title: "Вівця",
+            price: 500,
+            resource: "Шерсть",
+            unlock: 5,
+          },
+          {
+            type: "COW",
+            emoji: "🐄",
+            title: "Корова",
+            price: 1000,
+            resource: "Молоко",
+            unlock: 10,
+          },
+        ];
 
         modalBody.innerHTML = `
-    <div class="modal-grid">
-      <div class="tile full">
-        <div class="tile-title">Farmer</div>
-        <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-        <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-        <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-      </div>
+          <div class="modal-grid">
+            ${cards
+              .map((a) => {
+                const unlocked = level >= a.unlock;
+                return `
+                  <div class="tile animal-final-buy-card">
+                    <img class="animal-final-buy-img" src="${animalFinalImg(a.type)}" alt="${a.title}" />
+                    <div class="tile-title">${a.emoji} ${a.title}</div>
+                    <div class="tile-value">${unlocked ? `${a.price} coins` : `🔒 LVL ${a.unlock}`}</div>
+                    <div class="tile-row"><span>Ресурс</span><span>${a.resource}</span></div>
+                    <div class="tile-row"><span>Відкривається</span><span>LVL ${a.unlock}</span></div>
+                    ${
+                      unlocked
+                        ? `<button class="buy-btn green" data-final-buy="${a.type}">Купити</button>`
+                        : `<button class="buy-btn gold" disabled>Потрібен LVL ${a.unlock}</button>`
+                    }
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        `;
 
-      <div class="tile full">
-        <div class="tile-title">👥 Referrals</div>
-        <div class="tile-value">Invited: ${invited}</div>
-        <div class="tile-row"><span>Bonus</span><span>+5000 points</span></div>
-        <div class="tile-row"><span>Coins</span><span>+500 coins</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>+5 diamonds</span></div>
-      </div>
+        modalBody.querySelectorAll("[data-final-buy]").forEach((btn) => {
+          btn.onclick = async () => {
+            await buyAnimal(btn.getAttribute("data-final-buy"));
+          };
+        });
+      }
 
-      <div class="tile full">
-        <div class="tile-title">Referral link</div>
-        <div class="code-box" style="word-break:break-all">${refLink}</div>
-        <button class="buy-btn green" id="copyRefFromProfileBtn">Copy referral link</button>
-      </div>
+      function animalFinalCard(
+        type,
+        emoji,
+        title,
+        count,
+        level,
+        life,
+        efficiency,
+        readyValue,
+        feedValue,
+        healPrice,
+      ) {
+        const hasAnimals = Number(count || 0) > 0;
+        const lifeValue = hasAnimals ? (life ?? 100) : 0;
+        const efficiencyValue = hasAnimals ? (efficiency ?? 100) : 0;
 
-      <div class="tile full">
-        <div class="tile-title">🎁 Referral milestones</div>
-        <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-        <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-        <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-        <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-        <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-      </div>
+        let perHour = 0;
+        try {
+          perHour = productionPerHour(type, level, count);
+        } catch {
+          perHour = 0;
+        }
 
-      <div class="tile full">
-        <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
-        <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
-      </div>
-    </div>
-  `;
+        return `
+          <div class="tile full animal-final-card">
+            <div class="animal-final-left">
+              <img class="animal-final-img" src="${animalFinalImg(type)}" alt="${title}" />
+              <div class="animal-final-level">LVL ${level}</div>
+            </div>
+
+            <div class="animal-final-main">
+              <div class="animal-final-head">
+                <div>
+                  <div class="animal-final-title">${emoji} ${title}</div>
+                  <div class="animal-final-count">${count} animals</div>
+                </div>
+                <div class="animal-final-income">
+                  <span>Coins / hour</span>
+                  <b>${perHour}</b>
+                </div>
+              </div>
+
+              <div class="animal-final-bars">
+                <div>
+                  <div class="animal-final-bar-row"><span>❤️ Life</span><b>${hasAnimals ? `${lifeValue}%` : "-"}</b></div>
+                  ${hasAnimals ? animalFinalBar(lifeValue, "life") : ""}
+                </div>
+                <div>
+                  <div class="animal-final-bar-row"><span>⚡ Power</span><b>${hasAnimals ? `${efficiencyValue}%` : "-"}</b></div>
+                  ${hasAnimals ? animalFinalBar(efficiencyValue, "power") : ""}
+                </div>
+              </div>
+
+              <div class="animal-final-mini">
+                <div><span>Ready</span><b>${readyValue}</b></div>
+                <div><span>Feed</span><b>${feedValue}</b></div>
+                <div><span>Cycle</span><b>${animalFinalProduction(type, level)}</b></div>
+                <div><span>Points</span><b>${animalFinalPoints(type, level)}</b></div>
+              </div>
+
+              <div class="animal-final-actions">
+                <button class="buy-btn green" onclick="openLabModal()">⬆ Upgrade</button>
+                <button class="buy-btn gold" data-final-heal="${type}" ${hasAnimals ? "" : "disabled"}>
+                  ❤️ Heal ${hasAnimals ? `${count * healPrice}` : ""}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function animalFinalRenderOwned() {
+        const s = currentState || {};
+        const animals = s.animals || {};
+        const feed = s.feed || {};
+        const ready = s.ready || {};
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full animal-final-summary">
+              <div>
+                <div class="tile-title">🐾 My Animals</div>
+                <div class="tile-value">Total: ${(animals.chicken ?? 0) + (animals.sheep ?? 0) + (animals.cow ?? 0)}</div>
+              </div>
+              <div class="animal-final-pill ${s.vip?.active ? "on" : ""}">
+                👑 ${s.vip?.active ? "VIP ON" : "VIP OFF"}
+              </div>
+            </div>
+
+            ${animalFinalCard("CHICKEN", "🐔", "Chicken", animals.chicken ?? 0, animals.chickenLevel ?? 0, animals.chickenLife ?? 0, animals.chickenEfficiency ?? 0, ready.eggsReady ?? 0, feed.chicken ?? 0, 50)}
+            ${animalFinalCard("SHEEP", "🐑", "Sheep", animals.sheep ?? 0, animals.sheepLevel ?? 0, animals.sheepLife ?? 0, animals.sheepEfficiency ?? 0, ready.woolReady ?? 0, feed.sheep ?? 0, 150)}
+            ${animalFinalCard("COW", "🐄", "Cow", animals.cow ?? 0, animals.cowLevel ?? 0, animals.cowLife ?? 0, animals.cowEfficiency ?? 0, ready.milkReady ?? 0, feed.cow ?? 0, 300)}
+
+            <div class="tile full animal-final-vip">
+              <div class="tile-title">👑 Premium Status</div>
+              <div class="tile-value">${s.vip?.active ? "VIP ACTIVE" : "VIP OFF"}</div>
+              <div class="tile-row"><span>Boost</span><span>${s.boost?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Sell</span><span>${s.autoCollect?.active ? "ON" : "OFF"}</span></div>
+              <div class="tile-row"><span>Auto Feed</span><span>${s.vip?.active ? "ON" : "VIP only"}</span></div>
+              <button class="buy-btn gold" onclick="openBoostersModal()">Manage VIP</button>
+            </div>
+          </div>
+        `;
+
+        modalBody.querySelectorAll("[data-final-heal]").forEach((btn) => {
+          btn.onclick = async () => {
+            await animalFinalHeal(btn.getAttribute("data-final-heal"));
+          };
+        });
+      }
+
+      function openAnimalsModal() {
+        modalTitle.textContent = "🐾 Тварини";
+        modalTabs.style.display = "grid";
+
+        modalTabs.innerHTML = `
+          <button class="tab-btn" id="animalsBuyTab" type="button">Купити</button>
+          <button class="tab-btn active" id="animalsMineTab" type="button">Мої</button>
+        `;
 
         showModal();
 
-        const copyBtn = document.getElementById("copyRefFromProfileBtn");
-        if (copyBtn) {
-          copyBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(refLink);
-              showToast("Referral link copied");
-            } catch {
-              showToast(refLink);
-            }
+        const buyTab = document.getElementById("animalsBuyTab");
+        const mineTab = document.getElementById("animalsMineTab");
+
+        buyTab.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          buyTab.classList.add("active");
+          mineTab.classList.remove("active");
+          animalFinalRenderBuy();
+        };
+
+        mineTab.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          mineTab.classList.add("active");
+          buyTab.classList.remove("active");
+          animalFinalRenderOwned();
+        };
+
+        animalFinalRenderOwned();
+      }
+
+      function bindAnimalsFinalButton() {
+        const navAnimals = document.getElementById("navAnimalsBtn");
+        if (navAnimals) {
+          navAnimals.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAnimalsModal();
           };
         }
 
-        const openRefsBtn = document.getElementById("openRefsFromProfileBtn");
-        if (openRefsBtn) openRefsBtn.onclick = openRefsModal;
+        const animalsBtn = document.getElementById("animalsBtn");
+        if (animalsBtn) {
+          animalsBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAnimalsModal();
+          };
+        }
+      }
 
-        const openTopBtn = document.getElementById("openTopFromProfileBtn");
-        if (openTopBtn)
-          openTopBtn.onclick = () => openLeaderboardModal("referrals");
-      };
+      window.addEventListener("load", bindAnimalsFinalButton);
+      setTimeout(bindAnimalsFinalButton, 300);
+      setTimeout(bindAnimalsFinalButton, 1000);
+      /* ANIMALS MODAL FINAL OVERRIDE END */
 
-      /* FEED BUTTON BIND */
+      /* FINAL BUTTON FIX: FEED / PROFILE / CLOSE */
       (function () {
-        function bindFeedProfileFix() {
-          const feed = document.getElementById("feedSideBtn");
-          if (feed) {
-            feed.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
+        function safeOpenFeed() {
+          try {
+            if (typeof openFeedModal === "function") {
               openFeedModal();
-            };
-          }
-
-          const profile = document.getElementById("profileBtn");
-          if (profile) {
-            profile.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openProfileModal();
-            };
+            } else {
+              showToast("Feed modal not found");
+            }
+          } catch (e) {
+            console.error("Feed open error:", e);
+            showToast("Feed error");
           }
         }
 
-        window.addEventListener("load", bindFeedProfileFix);
-        setTimeout(bindFeedProfileFix, 300);
-        setTimeout(bindFeedProfileFix, 1200);
+        function safeOpenProfile() {
+          try {
+            if (typeof openProfileModal === "function") {
+              openProfileModal();
+            } else {
+              modalTitle.textContent = "👤 Profile";
+              modalTabs.style.display = "none";
+
+              const refLink =
+                typeof makeReferralLink === "function"
+                  ? makeReferralLink()
+                  : "https://t.me/my_farm_clicker_bot";
+
+              modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">Farmer</div>
+              <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
+              <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
+              <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">👥 Referrals</div>
+              <div class="tile-value">Referral rewards</div>
+              <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
+              <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
+              <div class="tile-row"><span>You get</span><span>+500 coins / +5 💎</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">Referral link</div>
+              <div class="code-box" style="word-break:break-all">${refLink}</div>
+              <button class="buy-btn green" id="copyRefProfileFixBtn">Copy</button>
+            </div>
+
+            <div class="tile full">
+              <button class="buy-btn" id="openRefsProfileFixBtn">Open referrals</button>
+            </div>
+          </div>
+        `;
+
+              showModal();
+
+              const copyBtn = document.getElementById("copyRefProfileFixBtn");
+              if (copyBtn) {
+                copyBtn.onclick = async () => {
+                  try {
+                    await navigator.clipboard.writeText(refLink);
+                    showToast("Copied");
+                  } catch {
+                    showToast(refLink);
+                  }
+                };
+              }
+
+              const refsBtn = document.getElementById("openRefsProfileFixBtn");
+              if (refsBtn && typeof openRefsModal === "function") {
+                refsBtn.onclick = openRefsModal;
+              }
+            }
+          } catch (e) {
+            console.error("Profile open error:", e);
+            showToast("Profile error");
+          }
+        }
+
+        function safeCloseModal() {
+          try {
+            const modalEl = document.getElementById("modal");
+            if (modalEl) modalEl.classList.remove("show");
+            if (typeof closeModal === "function") closeModal();
+          } catch (e) {
+            console.error("Close modal error:", e);
+          }
+        }
+
+        function hardBind(id, fn) {
+          const el = document.getElementById(id);
+          if (!el) return;
+
+          el.onclick = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fn();
+            return false;
+          };
+        }
+
+        function bindFinalButtons() {
+          hardBind("feedSideBtn", safeOpenFeed);
+          hardBind("feedBtn", safeOpenFeed);
+          hardBind("feedBtnOld", safeOpenFeed);
+
+          hardBind("profileBtn", safeOpenProfile);
+
+          hardBind("closeModalBtn", safeCloseModal);
+
+          const modalEl = document.getElementById("modal");
+          if (modalEl && !modalEl.dataset.closeFixApplied) {
+            modalEl.dataset.closeFixApplied = "1";
+            modalEl.addEventListener("click", function (e) {
+              if (e.target === modalEl) safeCloseModal();
+            });
+          }
+        }
+
+        window.addEventListener("load", bindFinalButtons);
+        setTimeout(bindFinalButtons, 200);
+        setTimeout(bindFinalButtons, 800);
+        setTimeout(bindFinalButtons, 1800);
       })();
     </script>
   </body>
