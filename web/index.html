@@ -1872,20 +1872,18 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        const buyVip1dBtn = document.getElementById("buyVip1dBtn");
-        if (buyVip1dBtn)
-          buyVip1dBtn.onclick = async () => {
-            if (currentState?.vip?.active) return;
-            const res = await apiPost("/shop/buy", { code: "vip_1d" });
-            setResult(res.data);
-            if (res.ok) {
-              showToast("VIP куплено");
-              await loadState();
-              openBoostersModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
-            }
-          };
+        document.getElementById("buyVipBtn").onclick = async () => {
+          if (currentState?.vip?.active) return;
+          const res = await apiPost("/shop/buy", { code: "vip_1d" });
+          setResult(res.data);
+          if (res.ok) {
+            showToast("VIP куплено");
+            await loadState();
+            openBoostersModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
+          }
+        };
       }
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
@@ -2928,108 +2926,6 @@
         setTimeout(bindFeedProfileFix, 300);
         setTimeout(bindFeedProfileFix, 1200);
       })();
-
-      /* POINT FIX: Feed / Profile / Close only */
-      function openProfileModal() {
-        modalTitle.textContent = "👤 Profile";
-        modalTabs.style.display = "none";
-
-        const refLink =
-          typeof makeReferralLink === "function"
-            ? makeReferralLink()
-            : `https://t.me/${BOT_USERNAME}`;
-
-        const refs = currentState?.referrals || {};
-        const invited =
-          refs.invited ??
-          refs.count ??
-          currentState?.referralsCount ??
-          currentState?.invited ??
-          0;
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">Farmer</div>
-              <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-              <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-              <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-              <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">👥 Referrals</div>
-              <div class="tile-value">Invited: ${invited}</div>
-              <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
-              <div class="tile-row"><span>You get</span><span>+500 coins</span></div>
-              <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
-              <div class="tile-row"><span>You get</span><span>+5 💎</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">Referral link</div>
-              <div class="code-box" style="word-break:break-all">${refLink}</div>
-              <button class="buy-btn green" id="copyProfileRefBtn">Copy link</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">🎁 Milestones</div>
-              <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-              <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-              <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-              <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-              <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-            </div>
-          </div>
-        `;
-
-        showModal();
-
-        const copyBtn = document.getElementById("copyProfileRefBtn");
-        if (copyBtn) {
-          copyBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(refLink);
-              showToast("Referral link copied");
-            } catch {
-              showToast(refLink);
-            }
-          };
-        }
-      }
-
-      function bindPointFixButtons() {
-        const feedSide = document.getElementById("feedSideBtn");
-        if (feedSide) {
-          feedSide.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openFeedModal();
-          };
-        }
-
-        const profile = document.getElementById("profileBtn");
-        if (profile) {
-          profile.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openProfileModal();
-          };
-        }
-
-        const close = document.getElementById("closeModalBtn");
-        if (close) {
-          close.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            closeModal();
-          };
-        }
-      }
-
-      bindPointFixButtons();
-      setTimeout(bindPointFixButtons, 300);
-      setTimeout(bindPointFixButtons, 1200);
     </script>
   </body>
 </html>
