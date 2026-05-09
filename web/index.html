@@ -1872,7 +1872,7 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVipBtn").onclick = async () => {
+        document.getElementById("buyVip1dBtn").onclick = async () => {
           if (currentState?.vip?.active) return;
           const res = await apiPost("/shop/buy", { code: "vip_1d" });
           setResult(res.data);
@@ -2766,6 +2766,18 @@
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
       loadState();
+
+      setTimeout(() => {
+        document
+          .getElementById("feedSideBtn")
+          ?.addEventListener("click", openFeedModal);
+        document
+          .getElementById("profileBtn")
+          ?.addEventListener("click", openProfileModal);
+        document
+          .getElementById("closeModalBtn")
+          ?.addEventListener("click", closeModal);
+      }, 500);
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
       (function () {
