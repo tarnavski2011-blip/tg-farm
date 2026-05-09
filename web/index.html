@@ -1872,18 +1872,20 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVipBtn").onclick = async () => {
-          if (currentState?.vip?.active) return;
-          const res = await apiPost("/shop/buy", { code: "vip_1d" });
-          setResult(res.data);
-          if (res.ok) {
-            showToast("VIP куплено");
-            await loadState();
-            openBoostersModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
-          }
-        };
+        const buyVip1dBtn = document.getElementById("buyVip1dBtn");
+        if (buyVip1dBtn)
+          buyVip1dBtn.onclick = async () => {
+            if (currentState?.vip?.active) return;
+            const res = await apiPost("/shop/buy", { code: "vip_1d" });
+            setResult(res.data);
+            if (res.ok) {
+              showToast("VIP куплено");
+              await loadState();
+              openBoostersModal();
+            } else {
+              showToast(res.data?.error || "Помилка");
+            }
+          };
       }
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
@@ -2718,53 +2720,161 @@
         }
       }
 
-      document.getElementById("tapBtn").addEventListener("click", collect);
-      document
-        .getElementById("loadStateBtn")
-        .addEventListener("click", loadState);
-      document
-        .getElementById("refreshBtn")
-        .addEventListener("click", loadState);
-      document
-        .getElementById("animalsBtn")
-        .addEventListener("click", openAnimalsModal);
-      document
-        .getElementById("storageBtn")
-        .addEventListener("click", openStorageModal);
-      document
-        .getElementById("feedBtn")
-        .addEventListener("click", openFeedModal);
-      document.getElementById("labBtn").addEventListener("click", openLabModal);
-      document
-        .getElementById("boostBtn")
-        .addEventListener("click", openBoostersModal);
-      document
-        .getElementById("dailyBtn")
-        .addEventListener("click", openDailyModal);
-      document
-        .getElementById("questsBtn")
-        .addEventListener("click", openQuestsModal);
-      document
-        .getElementById("wheelBtn")
-        .addEventListener("click", openWheelModal);
-      document
-        .getElementById("shopBtn")
-        .addEventListener("click", openShopModal);
-      document
-        .getElementById("walletBtn")
-        .addEventListener("click", openWalletModal);
-      document
-        .getElementById("refsBtn")
-        .addEventListener("click", openRefsModal);
-      document
-        .getElementById("leaderboardBtn")
-        .addEventListener("click", () => openLeaderboardModal("referrals"));
-      document
-        .getElementById("closeModalBtn")
-        .addEventListener("click", closeModal);
-      tabBuyBtn.addEventListener("click", renderAnimalsBuy);
-      tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
-      tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
+      function openProfileModal() {
+        modalTitle.textContent = "👤 Profile";
+        modalTabs.style.display = "none";
+
+        const refLink =
+          typeof makeReferralLink === "function"
+            ? makeReferralLink()
+            : `https://t.me/${BOT_USERNAME}`;
+
+        const refs = currentState?.referrals || {};
+        const invited =
+          refs.invited ??
+          refs.count ??
+          refs.total ??
+          currentState?.referralsCount ??
+          currentState?.invited ??
+          0;
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">Farmer</div>
+              <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
+              <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">👥 Referrals</div>
+              <div class="tile-value">Invited: ${invited}</div>
+              <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
+              <div class="tile-row"><span>You get</span><span>+500 coins</span></div>
+              <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
+              <div class="tile-row"><span>You get</span><span>+5 💎</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">Referral link</div>
+              <div class="code-box" style="word-break:break-all">${refLink}</div>
+              <button class="buy-btn green" id="copyProfileRefBtn">Copy link</button>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">🎁 Milestones</div>
+              <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
+              <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
+              <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
+              <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
+              <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
+            </div>
+
+            <div class="tile full">
+              <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
+              <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        document
+          .getElementById("copyProfileRefBtn")
+          ?.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(refLink);
+              showToast("Referral link copied");
+            } catch {
+              showToast(refLink);
+            }
+          });
+
+        document
+          .getElementById("openRefsFromProfileBtn")
+          ?.addEventListener("click", () => {
+            if (typeof openRefsModal === "function") openRefsModal();
+          });
+
+        document
+          .getElementById("openTopFromProfileBtn")
+          ?.addEventListener("click", () => {
+            if (typeof openLeaderboardModal === "function")
+              openLeaderboardModal("referrals");
+          });
+      }
+
+      function safeBind(id, fn) {
+        const el = document.getElementById(id);
+        if (!el || typeof fn !== "function") return;
+
+        el.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          fn();
+        };
+      }
+
+      function bindMainButtonsSafe() {
+        safeBind("tapBtn", collect);
+        safeBind("navTapBtn", collect);
+
+        safeBind("loadStateBtn", loadState);
+        safeBind("refreshBtn", loadState);
+        safeBind("farmHomeBtn", loadState);
+
+        safeBind("animalsBtn", openAnimalsModal);
+        safeBind("animalsBtnOld", openAnimalsModal);
+
+        safeBind("storageBtn", openStorageModal);
+        safeBind("storageBtnOld", openStorageModal);
+
+        safeBind("feedBtn", openFeedModal);
+        safeBind("feedBtnOld", openFeedModal);
+        safeBind("feedSideBtn", openFeedModal);
+
+        safeBind("labBtn", openLabModal);
+        safeBind("labBtnOld", openLabModal);
+        safeBind("labSideBtn", openLabModal);
+
+        safeBind("boostBtn", openBoostersModal);
+        safeBind("boostBtnOld", openBoostersModal);
+
+        safeBind("dailyBtn", openDailyModal);
+        safeBind("dailyBtnOld", openDailyModal);
+
+        safeBind("questsBtn", openQuestsModal);
+        safeBind("questsBtnOld", openQuestsModal);
+
+        safeBind("wheelBtn", openWheelModal);
+
+        safeBind("shopBtn", openShopModal);
+        safeBind("shopBtnOld", openShopModal);
+
+        safeBind("walletBtn", openWalletModal);
+        safeBind("walletBtnOld", openWalletModal);
+
+        safeBind("profileBtn", openProfileModal);
+
+        safeBind("refsBtn", openRefsModal);
+        safeBind("refsBtnOld", openRefsModal);
+
+        safeBind("leaderboardBtn", () => openLeaderboardModal("referrals"));
+        safeBind("leaderboardBtnOld", () => openLeaderboardModal("referrals"));
+
+        safeBind("closeModalBtn", closeModal);
+
+        if (tabBuyBtn) tabBuyBtn.onclick = renderAnimalsBuy;
+        if (tabOwnedBtn) tabOwnedBtn.onclick = renderAnimalsOwned;
+        if (tabUpgradeBtn) tabUpgradeBtn.onclick = renderAnimalsUpgrade;
+      }
+
+      bindMainButtonsSafe();
+      setTimeout(bindMainButtonsSafe, 300);
+      setTimeout(bindMainButtonsSafe, 1200);
+
       loadState();
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
