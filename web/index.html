@@ -1356,6 +1356,26 @@
             }
 
             await loadState();
+
+            setTimeout(() => {
+              document.getElementById("feedSideBtn")?.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openFeedModal();
+              };
+
+              document.getElementById("profileBtn")?.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openProfileModal();
+              };
+
+              document.getElementById("closeModalBtn")?.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              };
+            }, 700);
             setStatus("ok");
           } else {
             setStatus("error");
@@ -1872,7 +1892,7 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        document.getElementById("buyVip1dBtn").onclick = async () => {
+        document.getElementById("buyVipBtn").onclick = async () => {
           if (currentState?.vip?.active) return;
           const res = await apiPost("/shop/buy", { code: "vip_1d" });
           setResult(res.data);
@@ -2754,30 +2774,21 @@
         .getElementById("walletBtn")
         .addEventListener("click", openWalletModal);
       document
-        .getElementById("refsBtn")
-        .addEventListener("click", openRefsModal);
+        .getElementById("feedSideBtn")
+        ?.addEventListener("click", openFeedModal);
+      document
+        .getElementById("profileBtn")
+        ?.addEventListener("click", openProfileModal);
       document
         .getElementById("leaderboardBtn")
         .addEventListener("click", () => openLeaderboardModal("referrals"));
       document
         .getElementById("closeModalBtn")
-        .addEventListener("click", closeModal);
+        ?.addEventListener("click", closeModal);
       tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
       loadState();
-
-      setTimeout(() => {
-        document
-          .getElementById("feedSideBtn")
-          ?.addEventListener("click", openFeedModal);
-        document
-          .getElementById("profileBtn")
-          ?.addEventListener("click", openProfileModal);
-        document
-          .getElementById("closeModalBtn")
-          ?.addEventListener("click", closeModal);
-      }, 500);
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
       (function () {
