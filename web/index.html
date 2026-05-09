@@ -1356,26 +1356,6 @@
             }
 
             await loadState();
-
-            setTimeout(() => {
-              document.getElementById("feedSideBtn")?.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openFeedModal();
-              };
-
-              document.getElementById("profileBtn")?.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openProfileModal();
-              };
-
-              document.getElementById("closeModalBtn")?.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              };
-            }, 700);
             setStatus("ok");
           } else {
             setStatus("error");
@@ -2774,17 +2754,14 @@
         .getElementById("walletBtn")
         .addEventListener("click", openWalletModal);
       document
-        .getElementById("feedSideBtn")
-        ?.addEventListener("click", openFeedModal);
-      document
-        .getElementById("profileBtn")
-        ?.addEventListener("click", openProfileModal);
+        .getElementById("refsBtn")
+        .addEventListener("click", openRefsModal);
       document
         .getElementById("leaderboardBtn")
         .addEventListener("click", () => openLeaderboardModal("referrals"));
       document
         .getElementById("closeModalBtn")
-        ?.addEventListener("click", closeModal);
+        .addEventListener("click", closeModal);
       tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
       tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
