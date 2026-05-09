@@ -586,7 +586,7 @@
         position: relative;
         z-index: 10;
         display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr;
         gap: 8px;
         padding: 10px;
         background: linear-gradient(
@@ -1008,6 +1008,14 @@
           </div>
 
           <div class="resource-box">
+            <div class="resource-icon">🏆</div>
+            <div>
+              <div class="resource-value" id="points">0</div>
+              <div class="resource-sub">points</div>
+            </div>
+           </div>
+
+          <div class="resource-box">
             <div class="resource-icon">💎</div>
             <div>
               <div class="resource-value" id="diamonds">0</div>
@@ -1058,8 +1066,9 @@
           <span>👥</span><strong>Refs</strong>
         </button>
 
-        <button class="side-btn vip" id="vipBtnUi" type="button">
-          <span>👑</span><strong>VIP</strong>
+       <button class="side-btn vip" id="labSideBtn" type="button">
+        <span>🧪</span><strong>Lab</strong>
+       </button>
         </button>
         <button class="side-btn boosts" id="boostBtn" type="button">
           <b class="notify">2</b><span>🚀</span><strong>Boosts</strong>
@@ -2797,7 +2806,7 @@
           };
 
           bindClick("farmHomeBtn", loadState);
-          bindClick("vipBtnUi", openBoostersModal);
+          bindClick("labSideBtn", openLabModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
           bindClick("storageBtnOld", openStorageModal);
