@@ -586,7 +586,7 @@
         position: relative;
         z-index: 10;
         display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr;
         gap: 8px;
         padding: 10px;
         background: linear-gradient(
@@ -978,16 +978,6 @@
           grid-template-columns: 56px 1fr 92px;
         }
       }
-
-      .stars-card {
-        background:
-          radial-gradient(
-            circle at top,
-            rgba(59, 130, 246, 0.28),
-            transparent 36%
-          ),
-          linear-gradient(180deg, #172554, #070b20) !important;
-      }
     </style>
   </head>
   <body>
@@ -1016,6 +1006,14 @@
               <div class="resource-sub">+1 / tap</div>
             </div>
           </div>
+
+          <div class="resource-box">
+            <div class="resource-icon">🏆</div>
+            <div>
+              <div class="resource-value" id="points">0</div>
+              <div class="resource-sub">points</div>
+            </div>
+           </div>
 
           <div class="resource-box">
             <div class="resource-icon">💎</div>
@@ -1068,8 +1066,9 @@
           <span>👥</span><strong>Refs</strong>
         </button>
 
-        <button class="side-btn vip" id="vipBtnUi" type="button">
-          <span>👑</span><strong>VIP</strong>
+       <button class="side-btn vip" id="labSideBtn" type="button">
+        <span>🧪</span><strong>Lab</strong>
+       </button>
         </button>
         <button class="side-btn boosts" id="boostBtn" type="button">
           <b class="notify">2</b><span>🚀</span><strong>Boosts</strong>
@@ -2807,7 +2806,7 @@
           };
 
           bindClick("farmHomeBtn", loadState);
-          bindClick("vipBtnUi", openBoostersModal);
+          bindClick("labSideBtn", openLabModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
           bindClick("storageBtnOld", openStorageModal);
@@ -2824,84 +2823,6 @@
         window.addEventListener("load", bindPremiumUi);
         setTimeout(bindPremiumUi, 300);
       })();
-
-      /* STARS + TON SHOP POLISHING */
-      window.openShopModal = function () {
-        modalTitle.textContent = "🛒 Diamond Shop";
-        modalTabs.style.display = "grid";
-        modalTabs.innerHTML = `
-    <button class="tab active" id="shopStarsTab">⭐ Stars</button>
-    <button class="tab" id="shopTonTab">💎 TON</button>
-  `;
-
-        function renderStars() {
-          modalBody.innerHTML = `
-      <div class="grid">
-        <div class="tile full stars-card">
-          <div class="tile-title">Telegram Stars</div>
-          <div class="tile-value">Instant in-app payment</div>
-        </div>
-        <div class="tile"><div class="tile-title">💎 100 Diamonds</div><div class="tile-value">50 ⭐</div><button class="buy-btn" onclick="buyStarsPack('diamonds_100')">Buy</button></div>
-        <div class="tile"><div class="tile-title">💎 500 Diamonds</div><div class="tile-value">220 ⭐</div><button class="buy-btn" onclick="buyStarsPack('diamonds_500')">Buy</button></div>
-        <div class="tile full"><div class="tile-title">💎 1200 Diamonds</div><div class="tile-value">500 ⭐ + bonus</div><button class="buy-btn gold" onclick="buyStarsPack('diamonds_1200')">Best Value</button></div>
-      </div>`;
-        }
-
-        function renderTon() {
-          modalBody.innerHTML = `
-      <div class="grid">
-        <div class="tile full stars-card">
-          <div class="tile-title">TON Payments</div>
-          <div class="tile-value">Crypto payments</div>
-        </div>
-        <div class="tile"><div class="tile-title">💎 1000 Diamonds</div><div class="tile-value">0.5 TON</div><button class="buy-btn" onclick="buyTonPack('ton_1000')">Buy</button></div>
-        <div class="tile"><div class="tile-title">💎 2500 Diamonds</div><div class="tile-value">1 TON</div><button class="buy-btn gold" onclick="buyTonPack('ton_2500')">Popular</button></div>
-        <div class="tile full"><div class="tile-title">💎 7000 Diamonds</div><div class="tile-value">2.5 TON + bonus</div><button class="buy-btn gold" onclick="buyTonPack('ton_7000')">Best Value</button></div>
-      </div>`;
-        }
-
-        showModal();
-        const starsTab = document.getElementById("shopStarsTab");
-        const tonTab = document.getElementById("shopTonTab");
-        starsTab.onclick = () => {
-          starsTab.classList.add("active");
-          tonTab.classList.remove("active");
-          renderStars();
-        };
-        tonTab.onclick = () => {
-          tonTab.classList.add("active");
-          starsTab.classList.remove("active");
-          renderTon();
-        };
-        renderStars();
-      };
-
-      window.buyStarsPack = async function (productId) {
-        try {
-          const r = await apiPost("/shopStars/createInvoice", { productId });
-          if (r?.ok && r?.data?.url) {
-            if (window.Telegram?.WebApp?.openInvoice)
-              window.Telegram.WebApp.openInvoice(r.data.url);
-            else location.href = r.data.url;
-          } else showToast(r?.data?.error || "Stars payment unavailable");
-        } catch (e) {
-          showToast("Stars payment error");
-        }
-      };
-
-      window.buyTonPack = async function (productId) {
-        try {
-          const r = await apiPost("/shopTon/createInvoice", { productId });
-          if (r?.ok && (r?.data?.paymentUrl || r?.data?.address)) {
-            if (r.data.paymentUrl) window.open(r.data.paymentUrl, "_blank");
-            else {
-              modalBody.innerHTML = `<div class="grid"><div class="tile full"><div class="tile-title">Send TON Payment</div><div class="tile-value">${r.data.amount || ""} TON</div><div style="word-break:break-all;font-size:12px;margin-top:8px">${r.data.address}</div></div></div>`;
-            }
-          } else showToast(r?.data?.error || "TON payment unavailable");
-        } catch (e) {
-          showToast("TON payment error");
-        }
-      };
     </script>
   </body>
 </html>
