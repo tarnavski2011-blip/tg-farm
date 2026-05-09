@@ -9,6 +9,13 @@ const BOT_TOKEN = process.env.BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://tg-farm-web.onrender.com";
 
+const NEW_USER_REF_BONUS_COINS = 1000;
+const NEW_USER_REF_BONUS_DIAMONDS = 10;
+
+const REFERRER_BONUS_COINS = 500;
+const REFERRER_BONUS_POINTS = 5000;
+const REFERRER_BONUS_DIAMONDS = 5;
+
 router.post("/", async (req, res) => {
   const update = req.body;
 
@@ -59,15 +66,17 @@ router.post("/", async (req, res) => {
                   prisma.user.update({
                     where: { id: user.id },
                     data: {
-                      coins: { increment: 100 },
+                      coins: { increment: NEW_USER_REF_BONUS_COINS },
+                      diamonds: { increment: NEW_USER_REF_BONUS_DIAMONDS },
                       referredById: referrer.id,
                     },
                   }),
                   prisma.user.update({
                     where: { id: referrer.id },
                     data: {
-                      coins: { increment: 50 },
-                      points: { increment: 25 },
+                      coins: { increment: REFERRER_BONUS_COINS },
+                      points: { increment: REFERRER_BONUS_POINTS },
+                      diamonds: { increment: REFERRER_BONUS_DIAMONDS },
                     },
                   }),
                   prisma.referral.create({

@@ -4,9 +4,11 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-const NEW_USER_BONUS_COINS = 100;
-const REFERRER_BONUS_COINS = 50;
-const REFERRER_BONUS_POINTS = 25;
+const NEW_USER_BONUS_COINS = 1000;
+const NEW_USER_BONUS_DIAMONDS = 10;
+const REFERRER_BONUS_COINS = 500;
+const REFERRER_BONUS_POINTS = 5000;
+const REFERRER_BONUS_DIAMONDS = 5;
 
 function makeRefCode(userId: number) {
   return `REF${userId}`;
@@ -41,8 +43,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       where: { referrerId: user.id },
     });
 
-    const earnedCoins = totalRefs * 50;
-    const earnedPoints = totalRefs * 25;
+    const earnedCoins = totalRefs * REFERRER_BONUS_COINS;
+    const earnedPoints = totalRefs * REFERRER_BONUS_POINTS;
+
+    const earnedDiamonds = totalRefs * REFERRER_BONUS_DIAMONDS;
 
     return res.json({
       ok: true,
@@ -50,6 +54,18 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       totalRefs,
       earnedCoins,
       earnedPoints,
+      earnedDiamonds,
+      bonuses: {
+        newUser: {
+          coins: NEW_USER_BONUS_COINS,
+          diamonds: NEW_USER_BONUS_DIAMONDS,
+        },
+        referrer: {
+          coins: REFERRER_BONUS_COINS,
+          points: REFERRER_BONUS_POINTS,
+          diamonds: REFERRER_BONUS_DIAMONDS,
+        },
+      },
     });
   } catch (e) {
     console.error("REFERRALS GET ERROR:", e);
@@ -113,6 +129,7 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
         where: { id: user.id },
         data: {
           coins: { increment: NEW_USER_BONUS_COINS },
+          diamonds: { increment: NEW_USER_BONUS_DIAMONDS },
           referredById: referrer.id,
         },
       }),
@@ -121,6 +138,7 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
         data: {
           coins: { increment: REFERRER_BONUS_COINS },
           points: { increment: REFERRER_BONUS_POINTS },
+          diamonds: { increment: REFERRER_BONUS_DIAMONDS },
         },
       }),
       prisma.referral.create({
@@ -133,10 +151,14 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
-      rewardYou: NEW_USER_BONUS_COINS,
+      rewardYou: {
+        coins: NEW_USER_BONUS_COINS,
+        diamonds: NEW_USER_BONUS_DIAMONDS,
+      },
       rewardReferrer: {
         coins: REFERRER_BONUS_COINS,
         points: REFERRER_BONUS_POINTS,
+        diamonds: REFERRER_BONUS_DIAMONDS,
       },
     });
   } catch (e) {
