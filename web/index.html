@@ -1013,7 +1013,7 @@
               <div class="resource-value" id="points">0</div>
               <div class="resource-sub">points</div>
             </div>
-           </div>
+          </div>
 
           <div class="resource-box">
             <div class="resource-icon">💎</div>
@@ -1062,13 +1062,12 @@
         <button class="side-btn tasks" id="questsBtn" type="button">
           <span>📋</span><strong>Tasks</strong>
         </button>
-        <button class="side-btn refs" id="refsBtn" type="button">
-          <span>👥</span><strong>Refs</strong>
+        <button class="side-btn refs" id="feedSideBtn" type="button">
+          <span>🌾</span><strong>Feed</strong>
         </button>
 
-       <button class="side-btn vip" id="labSideBtn" type="button">
-        <span>🧪</span><strong>Lab</strong>
-       </button>
+        <button class="side-btn vip" id="labSideBtn" type="button">
+          <span>🧪</span><strong>Lab</strong>
         </button>
         <button class="side-btn boosts" id="boostBtn" type="button">
           <b class="notify">2</b><span>🚀</span><strong>Boosts</strong>
@@ -2807,6 +2806,7 @@
 
           bindClick("farmHomeBtn", loadState);
           bindClick("labSideBtn", openLabModal);
+          bindClick("feedSideBtn", openFeedModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
           bindClick("storageBtnOld", openStorageModal);
@@ -2822,6 +2822,109 @@
 
         window.addEventListener("load", bindPremiumUi);
         setTimeout(bindPremiumUi, 300);
+      })();
+
+      /* PROFILE WITH REFERRALS */
+      window.openProfileModal = function () {
+        modalTitle.textContent = "👤 Profile";
+        modalTabs.style.display = "none";
+
+        const refLink = makeReferralLink();
+        const refs = currentState?.referrals || {};
+        const invited =
+          refs.invited ??
+          refs.count ??
+          currentState?.referralsCount ??
+          currentState?.invited ??
+          0;
+
+        modalBody.innerHTML = `
+    <div class="modal-grid">
+      <div class="tile full">
+        <div class="tile-title">Farmer</div>
+        <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
+        <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
+        <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
+        <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
+      </div>
+
+      <div class="tile full">
+        <div class="tile-title">👥 Referrals</div>
+        <div class="tile-value">Invited: ${invited}</div>
+        <div class="tile-row"><span>Bonus</span><span>+5000 points</span></div>
+        <div class="tile-row"><span>Coins</span><span>+500 coins</span></div>
+        <div class="tile-row"><span>Diamonds</span><span>+5 diamonds</span></div>
+      </div>
+
+      <div class="tile full">
+        <div class="tile-title">Referral link</div>
+        <div class="code-box" style="word-break:break-all">${refLink}</div>
+        <button class="buy-btn green" id="copyRefFromProfileBtn">Copy referral link</button>
+      </div>
+
+      <div class="tile full">
+        <div class="tile-title">🎁 Referral milestones</div>
+        <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
+        <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
+        <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
+        <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
+        <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
+      </div>
+
+      <div class="tile full">
+        <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
+        <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
+      </div>
+    </div>
+  `;
+
+        showModal();
+
+        const copyBtn = document.getElementById("copyRefFromProfileBtn");
+        if (copyBtn) {
+          copyBtn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(refLink);
+              showToast("Referral link copied");
+            } catch {
+              showToast(refLink);
+            }
+          };
+        }
+
+        const openRefsBtn = document.getElementById("openRefsFromProfileBtn");
+        if (openRefsBtn) openRefsBtn.onclick = openRefsModal;
+
+        const openTopBtn = document.getElementById("openTopFromProfileBtn");
+        if (openTopBtn)
+          openTopBtn.onclick = () => openLeaderboardModal("referrals");
+      };
+
+      /* FEED BUTTON BIND */
+      (function () {
+        function bindFeedProfileFix() {
+          const feed = document.getElementById("feedSideBtn");
+          if (feed) {
+            feed.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openFeedModal();
+            };
+          }
+
+          const profile = document.getElementById("profileBtn");
+          if (profile) {
+            profile.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openProfileModal();
+            };
+          }
+        }
+
+        window.addEventListener("load", bindFeedProfileFix);
+        setTimeout(bindFeedProfileFix, 300);
+        setTimeout(bindFeedProfileFix, 1200);
       })();
     </script>
   </body>
