@@ -2824,107 +2824,182 @@
         setTimeout(bindPremiumUi, 300);
       })();
 
-      /* PROFILE WITH REFERRALS */
-      window.openProfileModal = function () {
-        modalTitle.textContent = "👤 Profile";
-        modalTabs.style.display = "none";
-
-        const refLink = makeReferralLink();
-        const refs = currentState?.referrals || {};
-        const invited =
-          refs.invited ??
-          refs.count ??
-          currentState?.referralsCount ??
-          currentState?.invited ??
-          0;
-
-        modalBody.innerHTML = `
-    <div class="modal-grid">
-      <div class="tile full">
-        <div class="tile-title">Farmer</div>
-        <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-        <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-        <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-      </div>
-
-      <div class="tile full">
-        <div class="tile-title">👥 Referrals</div>
-        <div class="tile-value">Invited: ${invited}</div>
-        <div class="tile-row"><span>Bonus</span><span>+5000 points</span></div>
-        <div class="tile-row"><span>Coins</span><span>+500 coins</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>+5 diamonds</span></div>
-      </div>
-
-      <div class="tile full">
-        <div class="tile-title">Referral link</div>
-        <div class="code-box" style="word-break:break-all">${refLink}</div>
-        <button class="buy-btn green" id="copyRefFromProfileBtn">Copy referral link</button>
-      </div>
-
-      <div class="tile full">
-        <div class="tile-title">🎁 Referral milestones</div>
-        <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-        <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-        <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-        <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-        <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-      </div>
-
-      <div class="tile full">
-        <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
-        <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
-      </div>
-    </div>
-  `;
-
-        showModal();
-
-        const copyBtn = document.getElementById("copyRefFromProfileBtn");
-        if (copyBtn) {
-          copyBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(refLink);
-              showToast("Referral link copied");
-            } catch {
-              showToast(refLink);
-            }
-          };
+      /* FINAL FIX v2: Feed / Profile / Close */
+      (function () {
+        function closeGameModalFix() {
+          const modalEl = document.getElementById("modal");
+          if (modalEl) modalEl.classList.remove("show");
         }
 
-        const openRefsBtn = document.getElementById("openRefsFromProfileBtn");
-        if (openRefsBtn) openRefsBtn.onclick = openRefsModal;
+        function openProfileModalFix() {
+          const refLink =
+            typeof makeReferralLink === "function"
+              ? makeReferralLink()
+              : "https://t.me/my_farm_clicker_bot";
 
-        const openTopBtn = document.getElementById("openTopFromProfileBtn");
-        if (openTopBtn)
-          openTopBtn.onclick = () => openLeaderboardModal("referrals");
-      };
+          modalTitle.textContent = "👤 Profile";
+          modalTabs.style.display = "none";
 
-      /* FEED BUTTON BIND */
-      (function () {
-        function bindFeedProfileFix() {
-          const feed = document.getElementById("feedSideBtn");
-          if (feed) {
-            feed.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openFeedModal();
+          const refs = currentState?.referrals || {};
+          const invited =
+            refs.invited ??
+            refs.count ??
+            currentState?.referralsCount ??
+            currentState?.invited ??
+            0;
+
+          modalBody.innerHTML = `
+            <div class="modal-grid">
+              <div class="tile full">
+                <div class="tile-title">Farmer</div>
+                <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
+                <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
+                <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
+                <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
+              </div>
+
+              <div class="tile full">
+                <div class="tile-title">👥 Referrals</div>
+                <div class="tile-value">Invited: ${invited}</div>
+                <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
+                <div class="tile-row"><span>You get</span><span>+500 coins</span></div>
+                <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
+                <div class="tile-row"><span>You get</span><span>+5 💎</span></div>
+              </div>
+
+              <div class="tile full">
+                <div class="tile-title">Referral link</div>
+                <div class="code-box" style="word-break:break-all">${refLink}</div>
+                <button class="buy-btn green" id="profileCopyRefBtn">Copy link</button>
+              </div>
+
+              <div class="tile full">
+                <div class="tile-title">🎁 Milestones</div>
+                <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
+                <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
+                <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
+                <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
+                <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
+              </div>
+
+              <div class="tile full">
+                <button class="buy-btn" id="profileOpenRefsBtn">Open referrals</button>
+                <button class="buy-btn gold" id="profileOpenTopBtn">Leaderboard</button>
+              </div>
+            </div>
+          `;
+
+          showModal();
+
+          const copyBtn = document.getElementById("profileCopyRefBtn");
+          if (copyBtn) {
+            copyBtn.onclick = async function () {
+              try {
+                await navigator.clipboard.writeText(refLink);
+                showToast("Referral link copied");
+              } catch {
+                showToast(refLink);
+              }
             };
           }
+
+          const refsBtn = document.getElementById("profileOpenRefsBtn");
+          if (refsBtn && typeof openRefsModal === "function") {
+            refsBtn.onclick = openRefsModal;
+          }
+
+          const topBtn = document.getElementById("profileOpenTopBtn");
+          if (topBtn && typeof openLeaderboardModal === "function") {
+            topBtn.onclick = function () {
+              openLeaderboardModal("referrals");
+            };
+          }
+        }
+
+        function openFeedModalFix() {
+          if (typeof openFeedModal === "function") {
+            openFeedModal();
+            return;
+          }
+
+          modalTitle.textContent = "🌾 Корм";
+          modalTabs.style.display = "none";
+          modalBody.innerHTML = `
+            <div class="modal-grid">
+              <div class="tile full">
+                <div class="tile-title">🌾 Feed</div>
+                <div class="tile-value">Feed modal not found</div>
+              </div>
+            </div>
+          `;
+          showModal();
+        }
+
+        window.openProfileModal = openProfileModalFix;
+
+        function bindButtonFixes() {
+          const feed = document.getElementById("feedSideBtn");
+          if (feed) feed.onclick = openFeedModalFix;
+
+          const feedOld = document.getElementById("feedBtnOld");
+          if (feedOld) feedOld.onclick = openFeedModalFix;
+
+          const feedHidden = document.getElementById("feedBtn");
+          if (feedHidden) feedHidden.onclick = openFeedModalFix;
 
           const profile = document.getElementById("profileBtn");
-          if (profile) {
-            profile.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openProfileModal();
-            };
+          if (profile) profile.onclick = openProfileModalFix;
+
+          const closeBtn = document.getElementById("closeModalBtn");
+          if (closeBtn) closeBtn.onclick = closeGameModalFix;
+
+          const modalEl = document.getElementById("modal");
+          if (modalEl && !modalEl.dataset.finalCloseFix) {
+            modalEl.dataset.finalCloseFix = "1";
+            modalEl.addEventListener("click", function (e) {
+              if (e.target === modalEl) closeGameModalFix();
+            });
           }
         }
 
-        window.addEventListener("load", bindFeedProfileFix);
-        setTimeout(bindFeedProfileFix, 300);
-        setTimeout(bindFeedProfileFix, 1200);
+        document.addEventListener(
+          "click",
+          function (e) {
+            const target = e.target.closest?.("button");
+            if (!target) return;
+
+            if (
+              target.id === "feedSideBtn" ||
+              target.id === "feedBtnOld" ||
+              target.id === "feedBtn"
+            ) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openFeedModalFix();
+              return;
+            }
+
+            if (target.id === "profileBtn") {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openProfileModalFix();
+              return;
+            }
+
+            if (target.id === "closeModalBtn") {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              closeGameModalFix();
+              return;
+            }
+          },
+          true,
+        );
+
+        window.addEventListener("load", bindButtonFixes);
+        setTimeout(bindButtonFixes, 100);
+        setTimeout(bindButtonFixes, 700);
+        setTimeout(bindButtonFixes, 1600);
       })();
     </script>
   </body>
