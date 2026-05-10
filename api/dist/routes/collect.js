@@ -15,7 +15,7 @@ router.post("/", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
         const coinsAdded = 1;
-        const xpAdded = 1;
+        const xpAdded = 0;
         const levelResult = (0, levelSystem_1.calculateLevelProgress)(user.level ?? 1, user.xp ?? 0, xpAdded);
         await prisma_1.prisma.user.update({
             where: { id: user.id },

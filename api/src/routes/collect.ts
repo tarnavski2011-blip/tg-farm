@@ -19,7 +19,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     }
 
     const coinsAdded = 1;
-    const xpAdded = 1;
+    const xpAdded = 0;
 
     const levelResult = calculateLevelProgress(
       user.level ?? 1,
