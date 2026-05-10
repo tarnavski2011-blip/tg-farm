@@ -124,30 +124,109 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "Реферер не знайдений" });
     }
 
-    await prisma.$transaction([
-      prisma.user.update({
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: user.id },
         data: {
           coins: { increment: NEW_USER_BONUS_COINS },
           diamonds: { increment: NEW_USER_BONUS_DIAMONDS },
           referredById: referrer.id,
         },
-      }),
-      prisma.user.update({
+      });
+
+      await tx.user.update({
         where: { id: referrer.id },
         data: {
           coins: { increment: REFERRER_BONUS_COINS },
           points: { increment: REFERRER_BONUS_POINTS },
           diamonds: { increment: REFERRER_BONUS_DIAMONDS },
         },
-      }),
-      prisma.referral.create({
+      });
+
+      await tx.referral.create({
         data: {
           referrerId: referrer.id,
           referredId: user.id,
         },
-      }),
-    ]);
+      });
+
+      const totalRefs = await tx.referral.count({
+        where: { referrerId: referrer.id },
+      });
+
+      const milestoneReward: {
+        diamonds: number;
+        vipHours: number;
+        label: string | null;
+      } = {
+        diamonds: 0,
+        vipHours: 0,
+        label: null,
+      };
+
+      if (totalRefs === 1) {
+        milestoneReward.diamonds = 5;
+        milestoneReward.label = "1 referral";
+      }
+
+      if (totalRefs === 5) {
+        milestoneReward.diamonds = 25;
+        milestoneReward.label = "5 referrals";
+      }
+
+      if (totalRefs === 10) {
+        milestoneReward.vipHours = 24;
+        milestoneReward.label = "10 referrals";
+      }
+
+      if (totalRefs === 25) {
+        milestoneReward.diamonds = 100;
+        milestoneReward.label = "25 referrals";
+      }
+
+      if (totalRefs === 50) {
+        milestoneReward.vipHours = 24 * 7;
+        milestoneReward.label = "50 referrals";
+      }
+
+      if (milestoneReward.diamonds > 0 || milestoneReward.vipHours > 0) {
+        const updateData: {
+          diamonds?: { increment: number };
+          vipUntil?: Date;
+        } = {};
+
+        if (milestoneReward.diamonds > 0) {
+          updateData.diamonds = { increment: milestoneReward.diamonds };
+        }
+
+        if (milestoneReward.vipHours > 0) {
+          const currentReferrer = await tx.user.findUnique({
+            where: { id: referrer.id },
+            select: { vipUntil: true },
+          });
+
+          const now = new Date();
+          const baseDate =
+            currentReferrer?.vipUntil && currentReferrer.vipUntil > now
+              ? currentReferrer.vipUntil
+              : now;
+
+          updateData.vipUntil = new Date(
+            baseDate.getTime() + milestoneReward.vipHours * 60 * 60 * 1000,
+          );
+        }
+
+        await tx.user.update({
+          where: { id: referrer.id },
+          data: updateData,
+        });
+      }
+
+      return {
+        totalRefs,
+        milestoneReward,
+      };
+    });
 
     return res.json({
       ok: true,
@@ -160,6 +239,8 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
         points: REFERRER_BONUS_POINTS,
         diamonds: REFERRER_BONUS_DIAMONDS,
       },
+      totalRefs: result.totalRefs,
+      milestoneReward: result.milestoneReward,
     });
   } catch (e) {
     console.error("REFERRALS APPLY ERROR:", e);
