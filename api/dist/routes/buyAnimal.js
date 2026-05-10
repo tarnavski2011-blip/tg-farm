@@ -15,9 +15,9 @@ const ANIMAL_UNLOCK_LEVEL = {
     COW: 10,
 };
 const ANIMAL_LIMITS = {
-    CHICKEN: 5,
-    SHEEP: 5,
-    COW: 5,
+    CHICKEN: 2,
+    SHEEP: 2,
+    COW: 2,
 };
 router.post("/", async (req, res) => {
     try {

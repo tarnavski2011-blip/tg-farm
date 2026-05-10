@@ -1393,7 +1393,7 @@
         setResult(res.data);
 
         if (res.ok) {
-          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} coins`);
+          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} diamonds`);
           await loadState();
           renderAnimalsOwned();
         } else {
@@ -1546,7 +1546,7 @@
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.chicken ?? 0)}
-                                ${healButton("CHICKEN", animals.chicken ?? 0, 50)}
+                                ${healButton("CHICKEN", animals.chicken ?? 0, 5)}
                               </div>
 
                               <div class="tile">
@@ -1560,7 +1560,7 @@
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.sheep ?? 0)}
-                                ${healButton("SHEEP", animals.sheep ?? 0, 150)}
+                                ${healButton("SHEEP", animals.sheep ?? 0, 15)}
                               </div>
 
                               <div class="tile">
@@ -1574,7 +1574,7 @@
                                 <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
                                 <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
                                 ${animalFeedWarning(feed.cow ?? 0)}
-                                ${healButton("COW", animals.cow ?? 0, 300)}
+                                ${healButton("COW", animals.cow ?? 0, 30)}
                               </div>
 
                               <div class="tile">

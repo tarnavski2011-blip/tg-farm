@@ -19,9 +19,9 @@ const ANIMAL_UNLOCK_LEVEL: Record<AnimalType, number> = {
 };
 
 const ANIMAL_LIMITS: Record<AnimalType, number> = {
-  CHICKEN: 5,
-  SHEEP: 5,
-  COW: 5,
+  CHICKEN: 2,
+  SHEEP: 2,
+  COW: 2,
 };
 
 router.post("/", async (req: TgAuthedRequest, res) => {

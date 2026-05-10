@@ -3,10 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
-const HEAL_PRICES = {
-    CHICKEN: 50,
-    SHEEP: 150,
-    COW: 300,
+const HEAL_COST_DIAMONDS = {
+    CHICKEN: 5,
+    SHEEP: 15,
+    COW: 30,
+    ALL: 50,
 };
 function isAnimalType(value) {
     return value === "CHICKEN" || value === "SHEEP" || value === "COW";
@@ -17,15 +18,15 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const telegramId = BigInt(req.telegramUser.id);
-        const typeRaw = String(req.body?.type ?? "").trim();
+        const typeRaw = String(req.body?.type ?? "")
+            .trim()
+            .toUpperCase();
         if (!typeRaw) {
             return res.status(400).json({ error: "Animal type is required" });
         }
         const user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
-            include: {
-                animals: true,
-            },
+            include: { animals: true },
         });
         if (!user) {
             return res.status(404).json({ error: "User not found" });
@@ -36,18 +37,19 @@ router.post("/", async (req, res) => {
                 ? user.animals.filter((animal) => animal.type === typeRaw)
                 : [];
         if (animalsToHeal.length <= 0) {
-            return res.status(400).json({
-                error: "No animals to heal",
-            });
+            return res.status(400).json({ error: "No animals to heal" });
         }
-        const totalCost = animalsToHeal.reduce((sum, animal) => {
-            return sum + HEAL_PRICES[animal.type];
-        }, 0);
-        if (user.coins < totalCost) {
+        const totalCost = typeRaw === "ALL"
+            ? HEAL_COST_DIAMONDS.ALL
+            : animalsToHeal.reduce((sum, animal) => {
+                return (sum +
+                    HEAL_COST_DIAMONDS[animal.type]);
+            }, 0);
+        if (user.diamonds < totalCost) {
             return res.status(400).json({
-                error: "Not enough coins",
+                error: "Not enough diamonds",
                 need: totalCost,
-                have: user.coins,
+                have: user.diamonds,
             });
         }
         const now = new Date();
@@ -56,10 +58,10 @@ router.post("/", async (req, res) => {
             const updatedUser = await tx.user.update({
                 where: { id: user.id },
                 data: {
-                    coins: { decrement: totalCost },
+                    diamonds: { decrement: totalCost },
                 },
                 select: {
-                    coins: true,
+                    diamonds: true,
                 },
             });
             await tx.animal.updateMany({
@@ -79,7 +81,7 @@ router.post("/", async (req, res) => {
             healed: animalsToHeal.length,
             type: typeRaw,
             cost: totalCost,
-            coins: result.coins,
+            diamonds: result.diamonds,
         });
     }
     catch (e) {

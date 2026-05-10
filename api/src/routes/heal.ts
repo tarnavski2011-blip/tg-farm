@@ -4,15 +4,16 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
-const HEAL_PRICES = {
-  CHICKEN: 50,
-  SHEEP: 150,
-  COW: 300,
+const HEAL_COST_DIAMONDS = {
+  CHICKEN: 5,
+  SHEEP: 15,
+  COW: 30,
+  ALL: 50,
 } as const;
 
-type AnimalType = keyof typeof HEAL_PRICES;
+type AnimalType = keyof typeof HEAL_COST_DIAMONDS;
 
-function isAnimalType(value: string): value is AnimalType {
+function isAnimalType(value: string): value is Exclude<AnimalType, "ALL"> {
   return value === "CHICKEN" || value === "SHEEP" || value === "COW";
 }
 
@@ -23,7 +24,9 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     }
 
     const telegramId = BigInt(req.telegramUser.id);
-    const typeRaw = String(req.body?.type ?? "").trim();
+    const typeRaw = String(req.body?.type ?? "")
+      .trim()
+      .toUpperCase();
 
     if (!typeRaw) {
       return res.status(400).json({ error: "Animal type is required" });
@@ -31,9 +34,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      include: {
-        animals: true,
-      },
+      include: { animals: true },
     });
 
     if (!user) {
@@ -48,20 +49,24 @@ router.post("/", async (req: TgAuthedRequest, res) => {
           : [];
 
     if (animalsToHeal.length <= 0) {
-      return res.status(400).json({
-        error: "No animals to heal",
-      });
+      return res.status(400).json({ error: "No animals to heal" });
     }
 
-    const totalCost = animalsToHeal.reduce((sum, animal) => {
-      return sum + HEAL_PRICES[animal.type as AnimalType];
-    }, 0);
+    const totalCost =
+      typeRaw === "ALL"
+        ? HEAL_COST_DIAMONDS.ALL
+        : animalsToHeal.reduce((sum, animal) => {
+            return (
+              sum +
+              HEAL_COST_DIAMONDS[animal.type as Exclude<AnimalType, "ALL">]
+            );
+          }, 0);
 
-    if (user.coins < totalCost) {
+    if (user.diamonds < totalCost) {
       return res.status(400).json({
-        error: "Not enough coins",
+        error: "Not enough diamonds",
         need: totalCost,
-        have: user.coins,
+        have: user.diamonds,
       });
     }
 
@@ -72,10 +77,10 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: {
-          coins: { decrement: totalCost },
+          diamonds: { decrement: totalCost },
         },
         select: {
-          coins: true,
+          diamonds: true,
         },
       });
 
@@ -98,7 +103,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       healed: animalsToHeal.length,
       type: typeRaw,
       cost: totalCost,
-      coins: result.coins,
+      diamonds: result.diamonds,
     });
   } catch (e) {
     console.error("HEAL ERROR:", e);
