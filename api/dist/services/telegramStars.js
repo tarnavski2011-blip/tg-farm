@@ -1,53 +1,58 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createStarsInvoiceLink = createStarsInvoiceLink;
-exports.answerPreCheckoutQuery = answerPreCheckoutQuery;
 exports.parsePayload = parsePayload;
+exports.answerPreCheckoutQuery = answerPreCheckoutQuery;
+exports.createStarsInvoiceLink = createStarsInvoiceLink;
+const axios_1 = __importDefault(require("axios"));
 const BOT_TOKEN = process.env.BOT_TOKEN;
-function telegramApiUrl(method) {
-  if (!BOT_TOKEN) {
-    throw new Error("Missing BOT_TOKEN");
-  }
-  return `https://api.telegram.org/bot${BOT_TOKEN}/${method}`;
+if (!BOT_TOKEN) {
+    throw new Error("BOT_TOKEN not set");
 }
-async function createStarsInvoiceLink(args) {
-  const res = await fetch(telegramApiUrl("createInvoiceLink"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: args.title,
-      description: args.description,
-      payload: args.payload,
-      currency: "XTR",
-      prices: [{ label: args.title, amount: args.starsAmount }],
-    }),
-  });
-  const json = await res.json();
-  if (!json?.ok || !json?.result) {
-    throw new Error(json?.description || "Failed to create invoice link");
-  }
-  return json.result;
-}
-async function answerPreCheckoutQuery(preCheckoutQueryId, ok, errorMessage) {
-  const res = await fetch(telegramApiUrl("answerPreCheckoutQuery"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      pre_checkout_query_id: preCheckoutQueryId,
-      ok,
-      error_message: errorMessage,
-    }),
-  });
-  const json = await res.json();
-  if (!json?.ok) {
-    throw new Error(json?.description || "Failed to answer pre_checkout_query");
-  }
-}
+const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 function parsePayload(payload) {
-  const parts = String(payload || "").split(":");
-  if (parts.length !== 3 || parts[0] !== "stars") return null;
-  return {
-    userId: Number(parts[1]),
-    paymentId: Number(parts[2]),
-  };
+    try {
+        const parts = payload.split(":");
+        if (parts.length !== 3)
+            return null;
+        if (parts[0] !== "stars")
+            return null;
+        const userId = Number(parts[1]);
+        const paymentId = Number(parts[2]);
+        if (!Number.isFinite(userId) || !Number.isFinite(paymentId)) {
+            return null;
+        }
+        return { userId, paymentId };
+    }
+    catch {
+        return null;
+    }
+}
+async function answerPreCheckoutQuery(id, ok, errorMessage) {
+    await axios_1.default.post(`${TG_API}/answerPreCheckoutQuery`, {
+        pre_checkout_query_id: id,
+        ok,
+        error_message: errorMessage,
+    });
+}
+async function createStarsInvoiceLink(params) {
+    const res = await axios_1.default.post(`${TG_API}/createInvoiceLink`, {
+        title: params.title,
+        description: params.description,
+        payload: params.payload,
+        provider_token: "",
+        currency: "XTR",
+        prices: [
+            {
+                label: params.title,
+                amount: params.starsAmount,
+            },
+        ],
+    });
+    if (!res.data?.ok || !res.data?.result) {
+        throw new Error("Telegram createInvoiceLink failed");
+    }
+    return res.data.result;
 }

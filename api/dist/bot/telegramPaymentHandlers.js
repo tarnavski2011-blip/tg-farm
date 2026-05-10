@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleTelegramPaymentUpdate = handleTelegramPaymentUpdate;
 const prisma_1 = require("../prisma");
 const telegramStars_1 = require("../services/telegramStars");
-const paymentGrant_1 = require("../services/paymentGrant");
 async function handleTelegramPaymentUpdate(update) {
     if (update?.pre_checkout_query) {
         const q = update.pre_checkout_query;
@@ -41,8 +40,26 @@ async function handleTelegramPaymentUpdate(update) {
                 providerPaymentChargeId: successfulPayment.provider_payment_charge_id ?? null,
             },
         });
-        await (0, paymentGrant_1.grantPremiumPurchase)(payment.id);
-        return { handled: true };
+        const amount = payment.amount;
+        await prisma_1.prisma.user.update({
+            where: { id: payment.userId },
+            data: {
+                diamonds: {
+                    increment: amount,
+                },
+            },
+        });
+        await prisma_1.prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+                status: "paid",
+                paidAt: new Date(),
+            },
+        });
+        return {
+            handled: true,
+            creditedDiamonds: amount,
+        };
     }
     return { handled: false };
 }

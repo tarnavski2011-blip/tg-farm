@@ -2,14 +2,36 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
+const questProgress_1 = require("../lib/questProgress");
 const router = (0, express_1.Router)();
 const SHOP_ITEMS = {
-    feed_pack_small: {
-        code: "feed_pack_small",
-        title: "Малий корм-пак",
+    chicken_feed_10: {
+        code: "chicken_feed_10",
+        title: "Корм для курки x10",
         currency: "coins",
-        price: 100,
-        effect: "feed_30m",
+        price: 50,
+        effect: "chicken_feed_10",
+    },
+    sheep_feed_10: {
+        code: "sheep_feed_10",
+        title: "Корм для вівці x10",
+        currency: "coins",
+        price: 120,
+        effect: "sheep_feed_10",
+    },
+    cow_feed_10: {
+        code: "cow_feed_10",
+        title: "Корм для корови x10",
+        currency: "coins",
+        price: 250,
+        effect: "cow_feed_10",
+    },
+    feed_all_10: {
+        code: "feed_all_10",
+        title: "Feed All x10",
+        currency: "coins",
+        price: 420,
+        effect: "feed_all_10",
     },
     boost_1h: {
         code: "boost_1h",
@@ -27,10 +49,17 @@ const SHOP_ITEMS = {
     },
     vip_1d: {
         code: "vip_1d",
-        title: "VIP на 1 день",
+        title: "VIP на 24 години",
         currency: "diamonds",
-        price: 50,
+        price: 150,
         effect: "vip_1d",
+    },
+    vip_7d: {
+        code: "vip_7d",
+        title: "VIP на 7 днів",
+        currency: "diamonds",
+        price: 800,
+        effect: "vip_7d",
     },
 };
 router.get("/", async (_req, res) => {
@@ -52,6 +81,17 @@ router.post("/buy", async (req, res) => {
         const item = SHOP_ITEMS[code];
         const user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
+            select: {
+                id: true,
+                coins: true,
+                diamonds: true,
+                boostUntil: true,
+                autoCollectUntil: true,
+                vipUntil: true,
+                chickenFeed: true,
+                sheepFeed: true,
+                cowFeed: true,
+            },
         });
         if (!user) {
             return res.status(404).json({ error: "User not found" });
@@ -71,16 +111,26 @@ router.post("/buy", async (req, res) => {
             });
         }
         const now = Date.now();
-        let data = {};
+        const data = {};
         if (item.currency === "coins") {
             data.coins = { decrement: item.price };
         }
         if (item.currency === "diamonds") {
             data.diamonds = { decrement: item.price };
         }
-        if (item.effect === "feed_30m") {
-            data.feedUntil = new Date(now + 30 * 60 * 1000);
-            data.feedActivatedAt = new Date(now);
+        if (item.effect === "chicken_feed_10") {
+            data.chickenFeed = { increment: 10 };
+        }
+        if (item.effect === "sheep_feed_10") {
+            data.sheepFeed = { increment: 10 };
+        }
+        if (item.effect === "cow_feed_10") {
+            data.cowFeed = { increment: 10 };
+        }
+        if (item.effect === "feed_all_10") {
+            data.chickenFeed = { increment: 10 };
+            data.sheepFeed = { increment: 10 };
+            data.cowFeed = { increment: 10 };
         }
         if (item.effect === "boost_1h") {
             const base = user.boostUntil && user.boostUntil.getTime() > now
@@ -95,10 +145,12 @@ router.post("/buy", async (req, res) => {
             data.autoCollectUntil = new Date(base + 60 * 60 * 1000);
         }
         if (item.effect === "vip_1d") {
-            const base = user.vipUntil && user.vipUntil.getTime() > now
-                ? user.vipUntil.getTime()
-                : now;
-            data.vipUntil = new Date(base + 24 * 60 * 60 * 1000);
+            data.vipUntil = new Date(Math.max(Date.now(), user.vipUntil ? new Date(user.vipUntil).getTime() : 0) +
+                1 * 24 * 60 * 60 * 1000);
+        }
+        if (item.effect === "vip_7d") {
+            data.vipUntil = new Date(Math.max(Date.now(), user.vipUntil ? new Date(user.vipUntil).getTime() : 0) +
+                7 * 24 * 60 * 60 * 1000);
         }
         const updated = await prisma_1.prisma.user.update({
             where: { telegramId },
@@ -106,12 +158,20 @@ router.post("/buy", async (req, res) => {
             select: {
                 coins: true,
                 diamonds: true,
+                chickenFeed: true,
+                sheepFeed: true,
+                cowFeed: true,
                 boostUntil: true,
                 autoCollectUntil: true,
                 vipUntil: true,
-                feedUntil: true,
             },
         });
+        if (code === "chicken_feed_10" ||
+            code === "sheep_feed_10" ||
+            code === "cow_feed_10" ||
+            code === "feed_all_10") {
+            await (0, questProgress_1.addFeedBuyToday)(user.id, 1);
+        }
         return res.json({
             ok: true,
             item,

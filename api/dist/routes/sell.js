@@ -2,7 +2,21 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
+const questProgress_1 = require("../lib/questProgress");
+const xp_1 = require("../lib/xp");
 const router = (0, express_1.Router)();
+const PRICES = {
+    eggs: 6,
+    wool: 15,
+    milk: 30,
+};
+function pointsRate(level, lvl4Rate, lvl5Rate) {
+    if (level >= 5)
+        return lvl5Rate;
+    if (level >= 4)
+        return lvl4Rate;
+    return 0;
+}
 router.post("/", async (req, res) => {
     try {
         if (!req.telegramUser?.id) {
@@ -11,7 +25,10 @@ router.post("/", async (req, res) => {
         const telegramId = BigInt(req.telegramUser.id);
         const user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
-            include: { storage: true },
+            include: {
+                storage: true,
+                animals: true,
+            },
         });
         if (!user || !user.storage) {
             return res.status(404).json({ error: "Storage not found" });
@@ -19,18 +36,29 @@ router.post("/", async (req, res) => {
         const eggs = user.storage.eggs ?? 0;
         const wool = user.storage.wool ?? 0;
         const milk = user.storage.milk ?? 0;
-        const total = eggs + wool + milk;
-        if (total <= 0) {
+        const totalCoins = eggs * PRICES.eggs + wool * PRICES.wool + milk * PRICES.milk;
+        const chickenLevel = user.animals.find((a) => a.type === "CHICKEN")?.level ?? 0;
+        const sheepLevel = user.animals.find((a) => a.type === "SHEEP")?.level ?? 0;
+        const cowLevel = user.animals.find((a) => a.type === "COW")?.level ?? 0;
+        const eggsPoints = eggs * pointsRate(chickenLevel, 1, 3);
+        const woolPoints = wool * pointsRate(sheepLevel, 2, 6);
+        const milkPoints = milk * pointsRate(cowLevel, 3, 10);
+        const totalPoints = eggsPoints + woolPoints + milkPoints;
+        if (totalCoins <= 0 && totalPoints <= 0) {
             return res.json({
                 ok: true,
-                sold: 0,
+                sold: { eggs, wool, milk },
+                earned: 0,
+                earnedPoints: 0,
                 totalCoins: user.coins,
+                totalPoints: user.points,
             });
         }
         const updated = await prisma_1.prisma.user.update({
             where: { telegramId },
             data: {
-                coins: { increment: total },
+                coins: { increment: totalCoins },
+                points: { increment: totalPoints },
                 storage: {
                     update: {
                         eggs: 0,
@@ -39,11 +67,32 @@ router.post("/", async (req, res) => {
                     },
                 },
             },
+            select: {
+                coins: true,
+                points: true,
+            },
         });
+        await (0, questProgress_1.addSellToday)(user.id, 1);
+        const xpResult = await (0, xp_1.addXp)(user.id, Math.floor(totalCoins / 20));
         return res.json({
             ok: true,
-            sold: total,
+            sold: { eggs, wool, milk },
+            prices: PRICES,
+            earned: totalCoins,
+            earnedPoints: totalPoints,
             totalCoins: updated.coins,
+            totalPoints: updated.points,
+            pointsBreakdown: {
+                eggs: eggsPoints,
+                wool: woolPoints,
+                milk: milkPoints,
+            },
+            animalLevels: {
+                chicken: chickenLevel,
+                sheep: sheepLevel,
+                cow: cowLevel,
+            },
+            xp: xpResult,
         });
     }
     catch (e) {

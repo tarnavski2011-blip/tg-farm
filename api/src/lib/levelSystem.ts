@@ -5,10 +5,10 @@ export function getXpNeeded(level: number) {
 }
 
 export function getLevelReward(level: number) {
-  let rewardCoins = level * 100;
+  let rewardCoins = level * 10;
   let rewardDiamonds = 0;
 
-  if (level % 5 === 0) {
+  if (level % 10 === 0) {
     rewardDiamonds += 5;
   }
 

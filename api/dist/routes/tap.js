@@ -6,9 +6,10 @@ const antiSpam_1 = require("../middleware/antiSpam");
 const requestLock_1 = require("../middleware/requestLock");
 const router = (0, express_1.Router)();
 const TAP_COOLDOWN_MS = 1000;
-router.post("/", (0, antiSpam_1.antiSpamPerUser)(1000, 8), // максимум 8 тапів за секунду
-(0, requestLock_1.requestLockByUser)(120), // блокує подвійний клік
-async (req, res) => {
+function getXpNeeded(level) {
+    return 100 + level * 50;
+}
+router.post("/", (0, antiSpam_1.antiSpamPerUser)(1000, 8), (0, requestLock_1.requestLockByUser)(120), async (req, res) => {
     const telegramIdStr = String(req.body?.telegramId ?? "");
     if (!telegramIdStr) {
         return res.status(400).json({ error: "telegramId is required" });
@@ -33,17 +34,41 @@ async (req, res) => {
     if (now - lastTap < TAP_COOLDOWN_MS) {
         return res.status(400).json({ error: "Tap cooldown" });
     }
+    let xp = user.xp + 1;
+    let level = user.level;
+    let coinsBonus = 0;
+    let diamondsBonus = 0;
+    // 🔥 LEVEL UP
+    while (xp >= getXpNeeded(level)) {
+        xp -= getXpNeeded(level);
+        level++;
+        coinsBonus += 25;
+        if (level % 5 === 0) {
+            diamondsBonus += 5;
+        }
+        if (level % 10 === 0) {
+            diamondsBonus += 15;
+        }
+    }
     const updated = await prisma_1.prisma.user.update({
         where: { telegramId },
         data: {
-            coins: { increment: 1 },
+            coins: { increment: 1 + coinsBonus },
+            diamonds: { increment: diamondsBonus },
+            xp,
+            level,
             lastTapAt: new Date(),
-            xp: { increment: 1 },
         },
     });
     return res.json({
         coins: updated.coins,
         xp: updated.xp,
+        level: updated.level,
+        levelUp: coinsBonus > 0 || diamondsBonus > 0,
+        reward: {
+            coins: coinsBonus,
+            diamonds: diamondsBonus,
+        },
     });
 });
 exports.default = router;
