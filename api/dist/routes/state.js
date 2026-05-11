@@ -246,7 +246,8 @@ router.get("/", async (req, res) => {
             if (user.vipUntil && user.vipUntil > now) {
                 earnedPoints = Math.ceil(earnedPoints * 1.2);
             }
-            pointsAdd += earnedPoints;
+            // Normal production does NOT add points directly.
+            // Points are added only when resources are sold.
             if (animal.type === "CHICKEN")
                 chickenFeedLeft -= usedCycles;
             if (animal.type === "SHEEP")
@@ -320,7 +321,7 @@ router.get("/", async (req, res) => {
                 sheepFeed: sheepFeedLeft,
                 cowFeed: cowFeedLeft,
                 coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-                points: { increment: pointsAdd + autoSellPointsAdd },
+                points: { increment: autoSellPointsAdd },
                 lastSeenAt: now,
             },
         });
@@ -513,7 +514,7 @@ router.get("/", async (req, res) => {
                     eggs: eggsAdd,
                     wool: woolAdd,
                     milk: milkAdd,
-                    points: pointsAdd,
+                    points: 0,
                     autoFeedCoinsSpent,
                     autoSellCoins: autoSellCoinsAdd,
                     autoSellPoints: autoSellPointsAdd,

@@ -305,7 +305,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         earnedPoints = Math.ceil(earnedPoints * 1.2);
       }
 
-      pointsAdd += earnedPoints;
+      // Normal production does NOT add points directly.
+      // Points are added only when resources are sold.
 
       if (animal.type === "CHICKEN") chickenFeedLeft -= usedCycles;
       if (animal.type === "SHEEP") sheepFeedLeft -= usedCycles;
@@ -402,7 +403,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
         coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-        points: { increment: pointsAdd + autoSellPointsAdd },
+        points: { increment: autoSellPointsAdd },
         lastSeenAt: now,
       },
     });
@@ -690,7 +691,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           eggs: eggsAdd,
           wool: woolAdd,
           milk: milkAdd,
-          points: pointsAdd,
+          points: 0,
           autoFeedCoinsSpent,
           autoSellCoins: autoSellCoinsAdd,
           autoSellPoints: autoSellPointsAdd,
