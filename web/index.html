@@ -1388,12 +1388,23 @@
           showToast(res.data?.error || "Помилка");
         }
       }
+
       async function healAnimals(type) {
         const res = await apiPost("/heal", { type });
         setResult(res.data);
 
         if (res.ok) {
-          showToast(`❤️ Лікування: -${res.data?.cost ?? 0} diamonds`);
+          const coins = res.data?.costCoins ?? 0;
+          const points = res.data?.costPoints ?? 0;
+
+          if (coins > 0 && points > 0) {
+            showToast(`❤️ Лікування: -${coins} coins / -${points} points`);
+          } else if (points > 0) {
+            showToast(`❤️ Лікування: -${points} points`);
+          } else {
+            showToast(`❤️ Лікування: -${coins} coins`);
+          }
+
           await loadState();
           renderAnimalsOwned();
         } else {
@@ -1413,52 +1424,52 @@
           const unlocked = level >= unlockLevel;
 
           return `
-                  <div class="tile">
-                    <div class="tile-title">${emoji} ${title}</div>
-                    <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
-                    <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
-                    <div class="tile-row">
-                      <span>Прогрес</span>
-                      <span class="unlock-progress">${Math.min(level, unlockLevel)} / ${unlockLevel}</span>
-                    </div>
-                    <div class="tile-row"><span>Відкривається</span><span>LVL ${unlockLevel}</span></div>
-                    ${
-                      unlocked
-                        ? `<button class="buy-btn" data-animal="${type}">Купити</button>`
-                        : `<button class="buy-btn gold" disabled>Потрібен LVL ${unlockLevel}</button>`
-                    }
-                  </div>
-                `;
+                        <div class="tile">
+                          <div class="tile-title">${emoji} ${title}</div>
+                          <div class="tile-value">${unlocked ? `${price} coins` : `🔒 LVL ${unlockLevel}`}</div>
+                          <div class="tile-row"><span>Ресурс</span><span>${resource}</span></div>
+                          <div class="tile-row">
+                            <span>Прогрес</span>
+                            <span class="unlock-progress">${Math.min(level, unlockLevel)} / ${unlockLevel}</span>
+                          </div>
+                          <div class="tile-row"><span>Відкривається</span><span>LVL ${unlockLevel}</span></div>
+                          ${
+                            unlocked
+                              ? `<button class="buy-btn" data-animal="${type}">Купити</button>`
+                              : `<button class="buy-btn gold" disabled>Потрібен LVL ${unlockLevel}</button>`
+                          }
+                        </div>
+                      `;
         }
 
         modalBody.innerHTML = `
-                <div class="modal-grid">
-                  ${animalBuyCard({
-                    emoji: "🐔",
-                    title: "Курка",
-                    price: 100,
-                    resource: "Яйця",
-                    type: "CHICKEN",
-                    unlockLevel: 1,
-                  })}
-                  ${animalBuyCard({
-                    emoji: "🐑",
-                    title: "Вівця",
-                    price: 500,
-                    resource: "Шерсть",
-                    type: "SHEEP",
-                    unlockLevel: 5,
-                  })}
-                  ${animalBuyCard({
-                    emoji: "🐄",
-                    title: "Корова",
-                    price: 1000,
-                    resource: "Молоко",
-                    type: "COW",
-                    unlockLevel: 10,
-                  })}
-                </div>
-              `;
+                      <div class="modal-grid">
+                        ${animalBuyCard({
+                          emoji: "🐔",
+                          title: "Курка",
+                          price: 100,
+                          resource: "Яйця",
+                          type: "CHICKEN",
+                          unlockLevel: 1,
+                        })}
+                        ${animalBuyCard({
+                          emoji: "🐑",
+                          title: "Вівця",
+                          price: 500,
+                          resource: "Шерсть",
+                          type: "SHEEP",
+                          unlockLevel: 5,
+                        })}
+                        ${animalBuyCard({
+                          emoji: "🐄",
+                          title: "Корова",
+                          price: 1000,
+                          resource: "Молоко",
+                          type: "COW",
+                          unlockLevel: 10,
+                        })}
+                      </div>
+                    `;
 
         modalBody.querySelectorAll("[data-animal]").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -1524,76 +1535,110 @@
           const perHourOne = (3600 / cycleSeconds(type)) * perCycle;
           return Math.floor(perHourOne * count);
         }
+        function getHealInfo(type, level, count) {
+          const safeLevel = Math.max(1, Math.min(5, Number(level || 1)));
+          const safeCount = Number(count || 0);
 
-        function healButton(type, count, price) {
+          const costs = {
+            CHICKEN: {
+              coins: { 1: 500, 2: 1000, 3: 2000 },
+              points: { 4: 5000, 5: 12000 },
+            },
+            SHEEP: {
+              coins: { 1: 1500, 2: 3000, 3: 6000 },
+              points: { 4: 15000, 5: 35000 },
+            },
+            COW: {
+              coins: { 1: 5000, 2: 10000, 3: 20000 },
+              points: { 4: 30000, 5: 70000 },
+            },
+          };
+
+          if (safeLevel <= 3) {
+            const oneCost =
+              costs[type].coins[safeLevel] ?? costs[type].coins[1];
+            return { label: `${oneCost * safeCount} coins` };
+          }
+
+          const pointLevel = safeLevel === 4 ? 4 : 5;
+          const oneCost =
+            costs[type].points[pointLevel] ?? costs[type].points[5];
+          return { label: `${oneCost * safeCount} points` };
+        }
+
+        function healButton(type, count, level) {
           if (!count || count <= 0) {
             return `<button class="buy-btn gold" disabled>Немає тварин</button>`;
           }
 
-          return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${count * price} diamonds)</button>`;
+          const heal = getHealInfo(type, level, count);
+          return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${heal.label})</button>`;
         }
 
-        modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile">
-                                <div class="tile-title">🐔 Курки</div>
-                                <div class="tile-value">${animals.chicken ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.chicken ?? 0)}
-                                ${healButton("CHICKEN", animals.chicken ?? 0, 5)}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">🐑 Вівці</div>
-                                <div class="tile-value">${animals.sheep ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.sheep ?? 0)}
-                                ${healButton("SHEEP", animals.sheep ?? 0, 15)}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">🐄 Корови</div>
-                                <div class="tile-value">${animals.cow ?? 0}</div>
-                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
-                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
-                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
-                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
-                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
-                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
-                                ${animalFeedWarning(feed.cow ?? 0)}
-                                ${healButton("COW", animals.cow ?? 0, 30)}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">⚙ Статус</div>
-                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
-                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
-                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
-                                <button class="buy-btn gold" data-heal="ALL">❤️ Лікувати всіх</button>
-                              </div>
-                            </div>
-                          `;
-
-        modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
-          btn.onclick = async () => {
-            const type = btn.getAttribute("data-heal");
-            await healAnimals(type);
-          };
-        });
+        return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${count * price} coins)</button>`;
       }
+
+      modalBody.innerHTML = `
+                                  <div class="modal-grid">
+                                    <div class="tile">
+                                      <div class="tile-title">🐔 Курки</div>
+                                      <div class="tile-value">${animals.chicken ?? 0}</div>
+                                      <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
+                                      <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                      <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
+                                      <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
+                                      <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+                                      ${animalFeedWarning(feed.chicken ?? 0)}
+                                      ${healButton("CHICKEN", animals.chicken ?? 0, 50)}
+                                    </div>
+
+                                    <div class="tile">
+                                      <div class="tile-title">🐑 Вівці</div>
+                                      <div class="tile-value">${animals.sheep ?? 0}</div>
+                                      <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
+                                      <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
+                                      <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
+                                      <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
+                                      <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+                                      ${animalFeedWarning(feed.sheep ?? 0)}
+                                      ${healButton("SHEEP", animals.sheep ?? 0, 150)}
+                                    </div>
+
+                                    <div class="tile">
+                                      <div class="tile-title">🐄 Корови</div>
+                                      <div class="tile-value">${animals.cow ?? 0}</div>
+                                      <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
+                                      <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
+                                      <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
+                                      <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
+                                      <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
+                                      <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+                                      ${animalFeedWarning(feed.cow ?? 0)}
+                                      ${healButton("COW", animals.cow ?? 0, 300)}
+                                    </div>
+
+                                    <div class="tile">
+                                      <div class="tile-title">⚙ Статус</div>
+                                      <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+                                      <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+                                      <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                                      <button class="buy-btn gold" data-heal="ALL">❤️ Лікувати всіх</button>
+                                    </div>
+                                  </div>
+                                `;
+
+      modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
+        btn.onclick = async () => {
+          const type = btn.getAttribute("data-heal");
+          await healAnimals(type);
+        };
+      });
+
       function renderAnimalsUpgrade() {
         openLabModal();
       }
@@ -1639,61 +1684,62 @@
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">📊 Заповнення</div>
-                                <div class="tile-value">${total} / ${capacity}</div>
-                                <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
-                                ${warning}
-                              </div>
+                                  <div class="modal-grid">
+                                    <div class="tile full">
+                                      <div class="tile-title">📊 Заповнення</div>
+                                      <div class="tile-value">${total} / ${capacity}</div>
+                                      <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
+                                      ${warning}
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🥚 Яйця</div>
-                                <div class="tile-value">${eggs}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🥚 Яйця</div>
+                                      <div class="tile-value">${eggs}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🧶 Шерсть</div>
-                                <div class="tile-value">${wool}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🧶 Шерсть</div>
+                                      <div class="tile-value">${wool}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
+                                    </div>
 
-                              <div class="tile">
-                                <div class="tile-title">🥛 Молоко</div>
-                                <div class="tile-value">${milk}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
-                              </div>
+                                    <div class="tile">
+                                      <div class="tile-title">🥛 Молоко</div>
+                                      <div class="tile-value">${milk}</div>
+                                      <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
+                                    </div>
 
-                              <div class="tile full">
-                                <div class="tile-title">💰 Продаж</div>
-                                <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
-                               <span>+${totalCoins} coins 💰</span>
-                               <span>+${
-                                 (currentState?.animals?.chickenLevel >= 4
-                                   ? eggs *
-                                     (currentState.animals.chickenLevel >= 5
-                                       ? 3
-                                       : 1)
-                                   : 0) +
-                                 (currentState?.animals?.sheepLevel >= 4
-                                   ? wool *
-                                     (currentState.animals.sheepLevel >= 5
-                                       ? 8
-                                       : 3)
-                                   : 0) +
-                                 (currentState?.animals?.cowLevel >= 4
-                                   ? milk *
-                                     (currentState.animals.cowLevel >= 5
-                                       ? 20
-                                       : 8)
-                                   : 0)
-                               } points ⭐</span>
-                               </div>
-                                <button class="buy-btn green" id="sellAllBtn">Продати все</button>
-                              </div>
-                            </div>
-                          `;
+                                    <div class="tile full">
+                                      <div class="tile-title">💰 Продаж</div>
+                                      <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
+                                     <span>+${totalCoins} coins 💰</span>
+                                     <span>+${
+                                       (currentState?.animals?.chickenLevel >= 4
+                                         ? eggs *
+                                           (currentState.animals.chickenLevel >=
+                                           5
+                                             ? 3
+                                             : 1)
+                                         : 0) +
+                                       (currentState?.animals?.sheepLevel >= 4
+                                         ? wool *
+                                           (currentState.animals.sheepLevel >= 5
+                                             ? 8
+                                             : 3)
+                                         : 0) +
+                                       (currentState?.animals?.cowLevel >= 4
+                                         ? milk *
+                                           (currentState.animals.cowLevel >= 5
+                                             ? 20
+                                             : 8)
+                                         : 0)
+                                     } points ⭐</span>
+                                     </div>
+                                      <button class="buy-btn green" id="sellAllBtn">Продати все</button>
+                                    </div>
+                                  </div>
+                                `;
 
         showModal();
 
@@ -1721,44 +1767,44 @@
         modalTitle.textContent = "🌾 Корм";
         modalTabs.style.display = "none";
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👑 VIP Auto</div>
-              <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
-              <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
-              <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full">
+                    <div class="tile-title">👑 VIP Auto</div>
+                    <div class="tile-value">${currentState?.vip?.active ? "ON" : "OFF"}</div>
+                    <div class="tile-row"><span>Auto Feed</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+                    <div class="tile-row"><span>Auto Sell</span><span>${currentState?.vip?.active ? "ON" : "VIP only"}</span></div>
+                    <div class="note">VIP автоматично докуповує корм, якщо він закінчився, і продає склад, якщо він заповнюється.</div>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">🌾 Feed All</div>
-              <div class="tile-value">+10 / +10 / +10</div>
-              <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
-              <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">🌾 Feed All</div>
+                    <div class="tile-value">+10 / +10 / +10</div>
+                    <div class="tile-row"><span>Ціна</span><span>420 coins</span></div>
+                    <button class="buy-btn green" data-feed="feed_all_10">Нагодувати всіх</button>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">🐔 Корм для курки</div>
-              <div class="tile-value">${feed.chicken ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
-              <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">🐔 Корм для курки</div>
+                    <div class="tile-value">${feed.chicken ?? 0} шт</div>
+                    <div class="tile-row"><span>Пак</span><span>10 за 50 coins</span></div>
+                    <button class="buy-btn" data-feed="chicken_feed_10">Купити</button>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">🐑 Корм для вівці</div>
-              <div class="tile-value">${feed.sheep ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
-              <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">🐑 Корм для вівці</div>
+                    <div class="tile-value">${feed.sheep ?? 0} шт</div>
+                    <div class="tile-row"><span>Пак</span><span>10 за 120 coins</span></div>
+                    <button class="buy-btn" data-feed="sheep_feed_10">Купити</button>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">🐄 Корм для корови</div>
-              <div class="tile-value">${feed.cow ?? 0} шт</div>
-              <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
-              <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
-            </div>
-          </div>
-        `;
+                  <div class="tile">
+                    <div class="tile-title">🐄 Корм для корови</div>
+                    <div class="tile-value">${feed.cow ?? 0} шт</div>
+                    <div class="tile-row"><span>Пак</span><span>10 за 250 coins</span></div>
+                    <button class="buy-btn" data-feed="cow_feed_10">Купити</button>
+                  </div>
+                </div>
+              `;
         showModal();
         modalBody.querySelectorAll("[data-feed]").forEach((btn) => {
           btn.onclick = async () => {
@@ -1781,72 +1827,72 @@
         modalTitle.textContent = "⚡ Boosters";
         modalTabs.style.display = "none";
         modalBody.innerHTML = `
-  <div class="modal-grid">
+        <div class="modal-grid">
 
-    <div class="tile">
-      <div class="tile-title">⚡ Boost x2</div>
-      <div class="tile-value">
-        ${currentState?.boost?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
-        id="buyBoostBtn"
-      >
-        ${currentState?.boost?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+          <div class="tile">
+            <div class="tile-title">⚡ Boost x2</div>
+            <div class="tile-value">
+              ${currentState?.boost?.active ? "ON" : "10 diamonds"}
+            </div>
+            <button
+              class="buy-btn ${currentState?.boost?.active ? "green" : ""}"
+              id="buyBoostBtn"
+            >
+              ${currentState?.boost?.active ? "ON" : "Купити"}
+            </button>
+          </div>
 
-    <div class="tile">
-      <div class="tile-title">💰 Auto Sell</div>
-      <div class="tile-value">
-        ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
-      </div>
-      <button
-        class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
-        id="buyAutoBtn"
-      >
-        ${currentState?.autoCollect?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+          <div class="tile">
+            <div class="tile-title">💰 Auto Sell</div>
+            <div class="tile-value">
+              ${currentState?.autoCollect?.active ? "ON" : "10 diamonds"}
+            </div>
+            <button
+              class="buy-btn ${currentState?.autoCollect?.active ? "green" : ""}"
+              id="buyAutoBtn"
+            >
+              ${currentState?.autoCollect?.active ? "ON" : "Купити"}
+            </button>
+          </div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 24h</div>
-      <div class="tile-value">
-        ${currentState?.vip?.active ? "ON" : "150 diamonds"}
-      </div>
-      <div class="tile-row">
-        <span>Auto Feed</span><span>ON</span>
-      </div>
-      <div class="tile-row">
-        <span>Auto Sell</span><span>ON</span>
-      </div>
-      <button
-        class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
-        id="buyVip1dBtn"
-      >
-        ${currentState?.vip?.active ? "ON" : "Купити"}
-      </button>
-    </div>
+          <div class="tile">
+            <div class="tile-title">👑 VIP 24h</div>
+            <div class="tile-value">
+              ${currentState?.vip?.active ? "ON" : "150 diamonds"}
+            </div>
+            <div class="tile-row">
+              <span>Auto Feed</span><span>ON</span>
+            </div>
+            <div class="tile-row">
+              <span>Auto Sell</span><span>ON</span>
+            </div>
+            <button
+              class="buy-btn gold ${currentState?.vip?.active ? "green" : ""}"
+              id="buyVip1dBtn"
+            >
+              ${currentState?.vip?.active ? "ON" : "Купити"}
+            </button>
+          </div>
 
-    <div class="tile">
-      <div class="tile-title">👑 VIP 7d</div>
-      <div class="tile-value">800 diamonds</div>
-      <div class="tile-row">
-        <span>VIP Premium</span><span>7 днів</span>
-      </div>
-      <div class="tile-row">
-        <span>Економія</span><span>вигідніше</span>
-      </div>
-      <button
-        class="buy-btn gold"
-        id="buyVip7dBtn"
-      >
-        Купити
-      </button>
-    </div>
+          <div class="tile">
+            <div class="tile-title">👑 VIP 7d</div>
+            <div class="tile-value">800 diamonds</div>
+            <div class="tile-row">
+              <span>VIP Premium</span><span>7 днів</span>
+            </div>
+            <div class="tile-row">
+              <span>Економія</span><span>вигідніше</span>
+            </div>
+            <button
+              class="buy-btn gold"
+              id="buyVip7dBtn"
+            >
+              Купити
+            </button>
+          </div>
 
-  </div>
-`;
+        </div>
+      `;
         showModal();
         document.getElementById("buyBoostBtn").onclick = async () => {
           if (currentState?.boost?.active) return;
@@ -1872,20 +1918,18 @@
             showToast(res.data?.error || "Помилка");
           }
         };
-        const buyVip1dBtn = document.getElementById("buyVip1dBtn");
-        if (buyVip1dBtn)
-          buyVip1dBtn.onclick = async () => {
-            if (currentState?.vip?.active) return;
-            const res = await apiPost("/shop/buy", { code: "vip_1d" });
-            setResult(res.data);
-            if (res.ok) {
-              showToast("VIP куплено");
-              await loadState();
-              openBoostersModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
-            }
-          };
+        document.getElementById("buyVipBtn").onclick = async () => {
+          if (currentState?.vip?.active) return;
+          const res = await apiPost("/shop/buy", { code: "vip_1d" });
+          setResult(res.data);
+          if (res.ok) {
+            showToast("VIP куплено");
+            await loadState();
+            openBoostersModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
+          }
+        };
       }
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
@@ -1899,11 +1943,11 @@
 
         if (!res.ok) {
           modalBody.innerHTML = `
-                              <div class="tile full">
-                                <div class="tile-title">Лабораторія</div>
-                                <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
-                              </div>
-                            `;
+                                    <div class="tile full">
+                                      <div class="tile-title">Лабораторія</div>
+                                      <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
+                                    </div>
+                                  `;
           showModal();
           return;
         }
@@ -1920,98 +1964,98 @@
         function animalCard(title, emoji, item, type) {
           if (!item || item.owned <= 0) {
             return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">0 шт</div>
-                                  <div class="warn">Спочатку купи тварин</div>
-                                </div>
-                              `;
+                                      <div class="tile">
+                                        <div class="tile-title">${emoji} ${title}</div>
+                                        <div class="tile-value">0 шт</div>
+                                        <div class="warn">Спочатку купи тварин</div>
+                                      </div>
+                                    `;
           }
 
           if (item.maxed) {
             return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">LVL ${item.currentLevel}</div>
-                                  <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
+                                      <div class="tile">
+                                        <div class="tile-title">${emoji} ${title}</div>
+                                        <div class="tile-value">LVL ${item.currentLevel}</div>
+                                        <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                                        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                                        <button class="buy-btn green" disabled>MAX</button>
+                                      </div>
+                                    `;
           }
 
           const chance = item.successChance ?? 0;
           const fails = item.upgradeFails ?? 0;
 
           return `
-                              <div class="tile">
-                                <div class="tile-title">${emoji} ${title}</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
+                                    <div class="tile">
+                                      <div class="tile-title">${emoji} ${title}</div>
+                                      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                                      <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
+                                      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                                      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                                      <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                                      <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+                                      ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
+                                      ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+                                      <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
+                                        ${item.canUpgrade ? "Покращити" : "Не вистачає"}
+                                      </button>
+                                    </div>
+                                  `;
         }
 
         function storageCard(item) {
           if (!item || item.maxed) {
             return `
-                                <div class="tile full">
-                                  <div class="tile-title">📦 Склад</div>
-                                  <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
-                                  <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? 0}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
+                                      <div class="tile full">
+                                        <div class="tile-title">📦 Склад</div>
+                                        <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
+                                        <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? 0}</span></div>
+                                        <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                                        <button class="buy-btn green" disabled>MAX</button>
+                                      </div>
+                                    `;
           }
 
           const chance = item.successChance ?? 0;
           const fails = item.upgradeFails ?? 0;
 
           return `
-                              <div class="tile full">
-                                <div class="tile-title">📦 Склад</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
+                                    <div class="tile full">
+                                      <div class="tile-title">📦 Склад</div>
+                                      <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+                                      <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
+                                      <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+                                      <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+                                      <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+                                      <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+                                      ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+                                      <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
+                                        ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
+                                      </button>
+                                    </div>
+                                  `;
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">🐾 Upgrade тварин</div>
-                                <div class="note">
-                                  ⭐ Points відкриваються з LVL 4 тварин.<br>
-                                  Чим вищий рівень тварини — тим більше Points вона дає.<br>
-                                  У майбутньому Points можна буде обмінювати на TON.
-                                </div>
-                              </div>
+                                  <div class="modal-grid">
+                                    <div class="tile full">
+                                      <div class="tile-title">🐾 Upgrade тварин</div>
+                                      <div class="note">
+                                        ⭐ Points відкриваються з LVL 4 тварин.<br>
+                                        Чим вищий рівень тварини — тим більше Points вона дає.<br>
+                                        У майбутньому Points можна буде обмінювати на TON.
+                                      </div>
+                                    </div>
 
-                              ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
-                              ${animalCard("Вівці", "🐑", animals.sheep, "SHEEP")}
-                              ${animalCard("Корови", "🐄", animals.cow, "COW")}
+                                    ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
+                                    ${animalCard("Вівці", "🐑", animals.sheep, "SHEEP")}
+                                    ${animalCard("Корови", "🐄", animals.cow, "COW")}
 
-                              ${storageCard(storage)}
-                            </div>
-                          `;
+                                    ${storageCard(storage)}
+                                  </div>
+                                `;
 
         showModal();
 
@@ -2102,35 +2146,35 @@
         ];
 
         modalBody.innerHTML = `
-                      <div class="daily-grid">
-                        ${rewards
-                          .map((r, i) => {
-                            const d = i + 1;
+                            <div class="daily-grid">
+                              ${rewards
+                                .map((r, i) => {
+                                  const d = i + 1;
 
-                            let text = "";
-                            if (r.coins) text += `💰 ${r.coins}`;
-                            if (r.diamonds) text += `💎 ${r.diamonds}`;
+                                  let text = "";
+                                  if (r.coins) text += `💰 ${r.coins}`;
+                                  if (r.diamonds) text += `💎 ${r.diamonds}`;
 
-                            let cls = "daily-item";
+                                  let cls = "daily-item";
 
-                            if (d < day) cls += " done";
-                            if (d === day) cls += " active";
-                            if (claimed && d === day) cls += " done";
+                                  if (d < day) cls += " done";
+                                  if (d === day) cls += " active";
+                                  if (claimed && d === day) cls += " done";
 
-                            return `
-                            <div class="${cls}">
-                              <div class="day">Day ${d}</div>
-                              <div class="reward">${text}</div>
+                                  return `
+                                  <div class="${cls}">
+                                    <div class="day">Day ${d}</div>
+                                    <div class="reward">${text}</div>
+                                  </div>
+                                `;
+                                })
+                                .join("")}
                             </div>
-                          `;
-                          })
-                          .join("")}
-                      </div>
 
-                      <button class="buy-btn" id="dailyBtn" ${claimed ? "disabled" : ""}>
-                        ${claimed ? "Вже забрано" : "Забрати"}
-                      </button>
-                    `;
+                            <button class="buy-btn" id="dailyBtn" ${claimed ? "disabled" : ""}>
+                              ${claimed ? "Вже забрано" : "Забрати"}
+                            </button>
+                          `;
 
         showModal();
 
@@ -2184,16 +2228,16 @@
               : "";
 
           return `
-            <div class="tile">
-              <div class="tile-title">${q.title}</div>
-              <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
-              ${progress}
-              <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
-              <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
-                ${q.claimed ? "Забрано" : "Забрати"}
-              </button>
-            </div>
-          `;
+                  <div class="tile">
+                    <div class="tile-title">${q.title}</div>
+                    <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
+                    ${progress}
+                    <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
+                    <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
+                      ${q.claimed ? "Забрано" : "Забрати"}
+                    </button>
+                  </div>
+                `;
         }
 
         function renderGroup(groupKey) {
@@ -2205,15 +2249,15 @@
         }
 
         modalBody.innerHTML = `
-          <div class="quest-tabs">
-            <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
-            <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
-            <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
-          </div>
-          <div class="modal-grid">
-            ${renderGroup(activeGroup)}
-          </div>
-        `;
+                <div class="quest-tabs">
+                  <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
+                  <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
+                  <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
+                </div>
+                <div class="modal-grid">
+                  ${renderGroup(activeGroup)}
+                </div>
+              `;
 
         showModal();
 
@@ -2254,45 +2298,45 @@
         }
 
         modalBody.innerHTML = `
-                                  <div class="wheel-wrap">
-                                    <div class="wheel-pointer"></div>
+                                        <div class="wheel-wrap">
+                                          <div class="wheel-pointer"></div>
 
-                                    <div style="display:flex; justify-content:center;">
-                                      <svg width="260" height="260" viewBox="0 0 260 260">
+                                          <div style="display:flex; justify-content:center;">
+                                            <svg width="260" height="260" viewBox="0 0 260 260">
 
-                                        <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
+                                              <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
 
-                                          <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
-                                          <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
-                                          <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
-                                          <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
-                                          <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
-                                          <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
-                                          <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
-                                          <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
+                                                <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
+                                                <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
+                                                <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
+                                                <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
+                                                <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
+                                                <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
+                                                <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
+                                                <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
 
-                                          <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
-                                          <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
-                                          <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
-                                          <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
-                                          <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
-                                          <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
-                                          <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
-                                          <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
+                                                <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
+                                                <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
+                                                <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
+                                                <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
+                                                <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
+                                                <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
+                                                <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
+                                                <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
 
-                                        </g>
+                                              </g>
 
-                                        <circle cx="130" cy="130" r="40" fill="#0f172a"/>
-                                        <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
+                                              <circle cx="130" cy="130" r="40" fill="#0f172a"/>
+                                              <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
 
-                                      </svg>
-                                    </div>
+                                            </svg>
+                                          </div>
 
-                                    <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
-                                      ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
-                                    </button>
-                                  </div>
-                                `;
+                                          <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
+                                            ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
+                                          </button>
+                                        </div>
+                                      `;
 
         showModal();
 
@@ -2350,66 +2394,66 @@
         const wallet = walletRes.ok ? walletRes.data || {} : {};
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">👛 TON Баланс</div>
-              <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full">
+                    <div class="tile-title">👛 TON Баланс</div>
+                    <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
+                    <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">⭐ Telegram Stars</div>
-              <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">⭐ Telegram Stars</div>
+                    <div class="note">Швидка покупка Diamonds через Telegram Stars</div>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">Малий пакет</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">Малий пакет</div>
+                    <div class="tile-value">50 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>25 Stars</span></div>
+                    <button class="buy-btn" data-stars-product="diamonds_small">Купити</button>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">Середній пакет</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">Середній пакет</div>
+                    <div class="tile-value">120 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>50 Stars</span></div>
+                    <button class="buy-btn" data-stars-product="diamonds_medium">Купити</button>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">Великий пакет</div>
-              <div class="tile-value">300 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
-              <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">Великий пакет</div>
+                    <div class="tile-value">300 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>100 Stars</span></div>
+                    <button class="buy-btn" data-stars-product="diamonds_large">Купити</button>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">💎 Diamonds за TON</div>
-              <div class="note">Покупка йде з TON балансу у гаманці</div>
-            </div>
+                  <div class="tile full">
+                    <div class="tile-title">💎 Diamonds за TON</div>
+                    <div class="note">Покупка йде з TON балансу у гаманці</div>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">TON Small</div>
-              <div class="tile-value">50 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="small">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">TON Small</div>
+                    <div class="tile-value">50 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
+                    <button class="buy-btn" data-wallet-buy="small">Купити</button>
+                  </div>
 
-            <div class="tile">
-              <div class="tile-title">TON Medium</div>
-              <div class="tile-value">120 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
-              <button class="buy-btn" data-wallet-buy="medium">Купити</button>
-            </div>
+                  <div class="tile">
+                    <div class="tile-title">TON Medium</div>
+                    <div class="tile-value">120 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
+                    <button class="buy-btn" data-wallet-buy="medium">Купити</button>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">TON Large</div>
-              <div class="tile-value">700 💎</div>
-              <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
-              <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <div class="tile-title">TON Large</div>
+                    <div class="tile-value">700 💎</div>
+                    <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
+                    <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
+                  </div>
+                </div>
+              `;
 
         showModal();
 
@@ -2460,7 +2504,6 @@
           };
         });
       }
-
       async function openWalletModal() {
         modalTitle.textContent = "👛 Гаманець";
         modalTabs.style.display = "none";
@@ -2480,71 +2523,37 @@
           availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">💰 TON Баланс</div>
-              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-              <div class="tile-row"><span>Points</span><span>${points}</span></div>
-            </div>
+                <div class="modal-grid">
+                  <div class="tile full">
+                    <div class="tile-title">💰 TON Баланс</div>
+                    <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+                    <div class="tile-row"><span>Points</span><span>${points}</span></div>
+                  </div>
 
-            <div class="tile full">
-              <div class="tile-title">📥 Поповнення TON</div>
-              <div class="note">Надішли TON на адресу:</div>
+                  <div class="tile full">
+                    <div class="tile-title">📥 Поповнення TON</div>
+                    <div class="note">Надішли TON на адресу:</div>
+                    <input class="code-box" value="${data.depositWallet}" readonly />
+                    <div class="note" style="margin-top:8px;">
+                      Коментар платежу: USER_${getMyTelegramId()}
+                    </div>
+                  </div>
 
-              <div style="margin-top:10px;">
-                <div
-                  id="depositAddress"
-                  style="
-                    width:100%;
-                    padding:12px;
-                    border-radius:12px;
-                    background:#1e293b;
-                    color:white;
-                    font-size:14px;
-                    word-break:break-all;
-                    white-space:normal;
-                    overflow-wrap:anywhere;
-                    border:1px solid rgba(148,163,184,0.18);
-                  "
-                >${data.depositWallet ?? ""}</div>
-
-                <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
-                  📋 Копіювати адресу
-                </button>
-              </div>
-
-              <div class="note" style="margin-top:8px;">
-                Коментар платежу: USER_${getMyTelegramId()}
-              </div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">⭐ Points → TON</div>
-              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
-              <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-              <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
-              <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
-              <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
-            </div>
-          </div>
-        `;
+                  <div class="tile full">
+                    <div class="tile-title">⭐ Points → TON</div>
+                    <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+                    <div class="tile-row"><span>Комісія</span><span>5%</span></div>
+                    <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
+                    <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
+                    <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
+                    <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
+                    <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
+                    <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
+                  </div>
+                </div>
+              `;
 
         showModal();
-
-        const copyDepositBtn = document.getElementById("copyDepositBtn");
-        if (copyDepositBtn) {
-          copyDepositBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(data.depositWallet ?? "");
-              showToast("TON адреса скопійована");
-            } catch {
-              showToast("Помилка копіювання");
-            }
-          };
-        }
 
         const withdrawBtn = document.getElementById("requestWithdrawBtn");
         if (withdrawBtn) {
@@ -2555,7 +2564,7 @@
               document.getElementById("withdrawPointsAmount").value,
             );
 
-            const resp = await apiPost("/wallet/withdraw", {
+            const resp = await apiPost("/wallet/request-withdraw", {
               tonAddress,
               pointsAmount,
             });
@@ -2563,11 +2572,13 @@
             setResult(resp.data);
 
             if (resp.ok) {
-              showToast("Заявку на вивід створено");
+              showToast("✅ Заявку створено");
               await loadState();
               await openWalletModal();
             } else {
-              showToast(resp.data?.error || "Помилка");
+              showToast(
+                resp.data?.error || "Потрібно підключити backend withdraw",
+              );
             }
           };
         }
@@ -2580,8 +2591,8 @@
           data = res.data || {},
           shareLink = makeReferralLink();
         modalBody.innerHTML = `<div class="tile"><div class="tile-title">Мій код</div><div class="tile-value">${data.myCode ?? "-"}</div><div class="tile-row"><span>Запрошено</span><span>${data.totalRefs ?? 0}</span></div>
-      <div class="tile-row"><span>Заробив coins</span><span>${data.earnedCoins ?? 0}</span></div>
-      <div class="tile-row"><span>Заробив points</span><span>${data.earnedPoints ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
+            <div class="tile-row"><span>Заробив coins</span><span>${data.earnedCoins ?? 0}</span></div>
+            <div class="tile-row"><span>Заробив points</span><span>${data.earnedPoints ?? 0}</span></div></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Моя силка</div><div class="share-row"><input id="refLinkInput" class="code-box" value="${shareLink}" readonly /><button class="buy-btn" id="copyRefBtn" style="width:auto;margin-top:0;padding:12px 14px;">Копія</button></div><button class="buy-btn" id="shareRefBtn">Поділитися</button></div><div class="tile" style="margin-top:12px;"><div class="tile-title">Ввести код</div><input id="refCodeInput" class="input-box" placeholder="Введи код друга" /><button class="buy-btn" id="applyRefBtn">Застосувати</button></div>`;
         showModal();
         document.getElementById("copyRefBtn").onclick = async () => {
           await navigator.clipboard.writeText(shareLink);
@@ -2625,21 +2636,21 @@
         modalTabs.style.display = "none";
 
         modalBody.innerHTML = `
-                <div class="quest-tabs">
-                  ${tabs
-                    .map(
-                      (t) => `
-                        <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                          ${t.label}
-                        </button>
-                      `,
-                    )
-                    .join("")}
-                </div>
-                <div class="tile full">
-                  <div class="note">Завантаження рейтингу...</div>
-                </div>
-              `;
+                      <div class="quest-tabs">
+                        ${tabs
+                          .map(
+                            (t) => `
+                              <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                ${t.label}
+                              </button>
+                            `,
+                          )
+                          .join("")}
+                      </div>
+                      <div class="tile full">
+                        <div class="note">Завантаження рейтингу...</div>
+                      </div>
+                    `;
 
         showModal();
 
@@ -2653,19 +2664,19 @@
 
           if (!data.ok) {
             modalBody.innerHTML = `
-                    <div class="quest-tabs">
-                      ${tabs
-                        .map(
-                          (t) => `
-                            <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                              ${t.label}
-                            </button>
-                          `,
-                        )
-                        .join("")}
-                    </div>
-                    <div class="warn">Помилка завантаження топу</div>
-                  `;
+                          <div class="quest-tabs">
+                            ${tabs
+                              .map(
+                                (t) => `
+                                  <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                    ${t.label}
+                                  </button>
+                                `,
+                              )
+                              .join("")}
+                          </div>
+                          <div class="warn">Помилка завантаження топу</div>
+                        `;
 
             modalBody
               .querySelectorAll("[data-leaderboard-tab]")
@@ -2692,35 +2703,35 @@
           const rows = (data.leaderboard || [])
             .map(
               (user) => `
-                      <div class="tile full">
-                        <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
-                        ${valueLine(user)}
-                        <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
-                        <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
-                        <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
-                        <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
-                      </div>
-                    `,
+                            <div class="tile full">
+                              <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
+                              ${valueLine(user)}
+                              <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
+                              <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
+                              <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
+                              <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
+                            </div>
+                          `,
             )
             .join("");
 
           modalBody.innerHTML = `
-                  <div class="quest-tabs">
-                    ${tabs
-                      .map(
-                        (t) => `
-                          <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                            ${t.label}
-                          </button>
-                        `,
-                      )
-                      .join("")}
-                  </div>
+                        <div class="quest-tabs">
+                          ${tabs
+                            .map(
+                              (t) => `
+                                <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                  ${t.label}
+                                </button>
+                              `,
+                            )
+                            .join("")}
+                        </div>
 
-                  <div class="modal-grid">
-                    ${rows || `<div class="tile full"><div class="note">Поки немає даних</div></div>`}
-                  </div>
-                `;
+                        <div class="modal-grid">
+                          ${rows || `<div class="tile full"><div class="note">Поки немає даних</div></div>`}
+                        </div>
+                      `;
 
           modalBody
             .querySelectorAll("[data-leaderboard-tab]")
@@ -2730,19 +2741,19 @@
             });
         } catch (e) {
           modalBody.innerHTML = `
-                  <div class="quest-tabs">
-                    ${tabs
-                      .map(
-                        (t) => `
-                          <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
-                            ${t.label}
-                          </button>
-                        `,
-                      )
-                      .join("")}
-                  </div>
-                  <div class="warn">Помилка завантаження топу</div>
-                `;
+                        <div class="quest-tabs">
+                          ${tabs
+                            .map(
+                              (t) => `
+                                <button class="quest-tab-btn ${activeTab === t.key ? "active" : ""}" data-leaderboard-tab="${t.key}">
+                                  ${t.label}
+                                </button>
+                              `,
+                            )
+                            .join("")}
+                        </div>
+                        <div class="warn">Помилка завантаження топу</div>
+                      `;
 
           modalBody
             .querySelectorAll("[data-leaderboard-tab]")
@@ -2753,161 +2764,53 @@
         }
       }
 
-      function openProfileModal() {
-        modalTitle.textContent = "👤 Profile";
-        modalTabs.style.display = "none";
-
-        const refLink =
-          typeof makeReferralLink === "function"
-            ? makeReferralLink()
-            : `https://t.me/${BOT_USERNAME}`;
-
-        const refs = currentState?.referrals || {};
-        const invited =
-          refs.invited ??
-          refs.count ??
-          refs.total ??
-          currentState?.referralsCount ??
-          currentState?.invited ??
-          0;
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">Farmer</div>
-              <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-              <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-              <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-              <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">👥 Referrals</div>
-              <div class="tile-value">Invited: ${invited}</div>
-              <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
-              <div class="tile-row"><span>You get</span><span>+500 coins</span></div>
-              <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
-              <div class="tile-row"><span>You get</span><span>+5 💎</span></div>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">Referral link</div>
-              <div class="code-box" style="word-break:break-all">${refLink}</div>
-              <button class="buy-btn green" id="copyProfileRefBtn">Copy link</button>
-            </div>
-
-            <div class="tile full">
-              <div class="tile-title">🎁 Milestones</div>
-              <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-              <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-              <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-              <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-              <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-            </div>
-
-            <div class="tile full">
-              <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
-              <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
-            </div>
-          </div>
-        `;
-
-        showModal();
-
-        document
-          .getElementById("copyProfileRefBtn")
-          ?.addEventListener("click", async () => {
-            try {
-              await navigator.clipboard.writeText(refLink);
-              showToast("Referral link copied");
-            } catch {
-              showToast(refLink);
-            }
-          });
-
-        document
-          .getElementById("openRefsFromProfileBtn")
-          ?.addEventListener("click", () => {
-            if (typeof openRefsModal === "function") openRefsModal();
-          });
-
-        document
-          .getElementById("openTopFromProfileBtn")
-          ?.addEventListener("click", () => {
-            if (typeof openLeaderboardModal === "function")
-              openLeaderboardModal("referrals");
-          });
-      }
-
-      function safeBind(id, fn) {
-        const el = document.getElementById(id);
-        if (!el || typeof fn !== "function") return;
-
-        el.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          fn();
-        };
-      }
-
-      function bindMainButtonsSafe() {
-        safeBind("tapBtn", collect);
-        safeBind("navTapBtn", collect);
-
-        safeBind("loadStateBtn", loadState);
-        safeBind("refreshBtn", loadState);
-        safeBind("farmHomeBtn", loadState);
-
-        safeBind("animalsBtn", openAnimalsModal);
-        safeBind("animalsBtnOld", openAnimalsModal);
-
-        safeBind("storageBtn", openStorageModal);
-        safeBind("storageBtnOld", openStorageModal);
-
-        safeBind("feedBtn", openFeedModal);
-        safeBind("feedBtnOld", openFeedModal);
-        safeBind("feedSideBtn", openFeedModal);
-
-        safeBind("labBtn", openLabModal);
-        safeBind("labBtnOld", openLabModal);
-        safeBind("labSideBtn", openLabModal);
-
-        safeBind("boostBtn", openBoostersModal);
-        safeBind("boostBtnOld", openBoostersModal);
-
-        safeBind("dailyBtn", openDailyModal);
-        safeBind("dailyBtnOld", openDailyModal);
-
-        safeBind("questsBtn", openQuestsModal);
-        safeBind("questsBtnOld", openQuestsModal);
-
-        safeBind("wheelBtn", openWheelModal);
-
-        safeBind("shopBtn", openShopModal);
-        safeBind("shopBtnOld", openShopModal);
-
-        safeBind("walletBtn", openWalletModal);
-        safeBind("walletBtnOld", openWalletModal);
-
-        safeBind("profileBtn", openProfileModal);
-
-        safeBind("refsBtn", openRefsModal);
-        safeBind("refsBtnOld", openRefsModal);
-
-        safeBind("leaderboardBtn", () => openLeaderboardModal("referrals"));
-        safeBind("leaderboardBtnOld", () => openLeaderboardModal("referrals"));
-
-        safeBind("closeModalBtn", closeModal);
-
-        if (tabBuyBtn) tabBuyBtn.onclick = renderAnimalsBuy;
-        if (tabOwnedBtn) tabOwnedBtn.onclick = renderAnimalsOwned;
-        if (tabUpgradeBtn) tabUpgradeBtn.onclick = renderAnimalsUpgrade;
-      }
-
-      bindMainButtonsSafe();
-      setTimeout(bindMainButtonsSafe, 300);
-      setTimeout(bindMainButtonsSafe, 1200);
-
+      document.getElementById("tapBtn").addEventListener("click", collect);
+      document
+        .getElementById("loadStateBtn")
+        .addEventListener("click", loadState);
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", loadState);
+      document
+        .getElementById("animalsBtn")
+        .addEventListener("click", openAnimalsModal);
+      document
+        .getElementById("storageBtn")
+        .addEventListener("click", openStorageModal);
+      document
+        .getElementById("feedBtn")
+        .addEventListener("click", openFeedModal);
+      document.getElementById("labBtn").addEventListener("click", openLabModal);
+      document
+        .getElementById("boostBtn")
+        .addEventListener("click", openBoostersModal);
+      document
+        .getElementById("dailyBtn")
+        .addEventListener("click", openDailyModal);
+      document
+        .getElementById("questsBtn")
+        .addEventListener("click", openQuestsModal);
+      document
+        .getElementById("wheelBtn")
+        .addEventListener("click", openWheelModal);
+      document
+        .getElementById("shopBtn")
+        .addEventListener("click", openShopModal);
+      document
+        .getElementById("walletBtn")
+        .addEventListener("click", openWalletModal);
+      document
+        .getElementById("refsBtn")
+        .addEventListener("click", openRefsModal);
+      document
+        .getElementById("leaderboardBtn")
+        .addEventListener("click", () => openLeaderboardModal("referrals"));
+      document
+        .getElementById("closeModalBtn")
+        .addEventListener("click", closeModal);
+      tabBuyBtn.addEventListener("click", renderAnimalsBuy);
+      tabOwnedBtn.addEventListener("click", renderAnimalsOwned);
+      tabUpgradeBtn.addEventListener("click", renderAnimalsUpgrade);
       loadState();
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
@@ -2982,44 +2885,44 @@
           0;
 
         modalBody.innerHTML = `
-    <div class="modal-grid">
-      <div class="tile full">
-        <div class="tile-title">Farmer</div>
-        <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-        <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-        <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-      </div>
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">Farmer</div>
+              <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
+              <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
+              <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
+            </div>
 
-      <div class="tile full">
-        <div class="tile-title">👥 Referrals</div>
-        <div class="tile-value">Invited: ${invited}</div>
-        <div class="tile-row"><span>Bonus</span><span>+5000 points</span></div>
-        <div class="tile-row"><span>Coins</span><span>+500 coins</span></div>
-        <div class="tile-row"><span>Diamonds</span><span>+5 diamonds</span></div>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">👥 Referrals</div>
+              <div class="tile-value">Invited: ${invited}</div>
+              <div class="tile-row"><span>Bonus</span><span>+5000 points</span></div>
+              <div class="tile-row"><span>Coins</span><span>+500 coins</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>+5 diamonds</span></div>
+            </div>
 
-      <div class="tile full">
-        <div class="tile-title">Referral link</div>
-        <div class="code-box" style="word-break:break-all">${refLink}</div>
-        <button class="buy-btn green" id="copyRefFromProfileBtn">Copy referral link</button>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">Referral link</div>
+              <div class="code-box" style="word-break:break-all">${refLink}</div>
+              <button class="buy-btn green" id="copyRefFromProfileBtn">Copy referral link</button>
+            </div>
 
-      <div class="tile full">
-        <div class="tile-title">🎁 Referral milestones</div>
-        <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-        <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-        <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-        <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-        <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">🎁 Referral milestones</div>
+              <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
+              <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
+              <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
+              <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
+              <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
+            </div>
 
-      <div class="tile full">
-        <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
-        <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
-      </div>
-    </div>
-  `;
+            <div class="tile full">
+              <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
+              <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
+            </div>
+          </div>
+        `;
 
         showModal();
 
