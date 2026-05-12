@@ -65,11 +65,11 @@ function getAnimalPointsPerCycle(type, level) {
 }
 function getAnimalLifeDays(type) {
     if (type === "CHICKEN")
-        return 7;
+        return 5;
     if (type === "SHEEP")
-        return 10;
+        return 7;
     if (type === "COW")
-        return 15;
+        return 10;
     return 1;
 }
 function getAnimalEfficiency(animal) {

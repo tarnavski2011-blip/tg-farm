@@ -71,9 +71,9 @@ function getAnimalPointsPerCycle(
 }
 
 function getAnimalLifeDays(type: "CHICKEN" | "SHEEP" | "COW") {
-  if (type === "CHICKEN") return 7;
-  if (type === "SHEEP") return 10;
-  if (type === "COW") return 15;
+  if (type === "CHICKEN") return 5;
+  if (type === "SHEEP") return 7;
+  if (type === "COW") return 10;
   return 1;
 }
 
