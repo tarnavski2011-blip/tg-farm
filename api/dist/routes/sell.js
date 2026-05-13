@@ -10,11 +10,24 @@ const PRICES = {
     wool: 15,
     milk: 30,
 };
-function pointsRate(level, lvl4Rate, lvl5Rate) {
-    if (level >= 5)
-        return lvl5Rate;
-    if (level >= 4)
-        return lvl4Rate;
+function producedPerCycle(type, level) {
+    if (type === "CHICKEN")
+        return 1 + (level - 1);
+    if (type === "SHEEP")
+        return 3 + (level - 1);
+    if (type === "COW")
+        return 7 + (level - 1) * 2;
+    return 1;
+}
+function pointsPerCycle(type, level) {
+    if (level < 4)
+        return 0;
+    if (type === "CHICKEN")
+        return level >= 5 ? 3 : 2;
+    if (type === "SHEEP")
+        return level >= 5 ? 6 : 4;
+    if (type === "COW")
+        return level >= 5 ? 10 : 7;
     return 0;
 }
 router.post("/", async (req, res) => {
@@ -40,9 +53,16 @@ router.post("/", async (req, res) => {
         const chickenLevel = user.animals.find((a) => a.type === "CHICKEN")?.level ?? 0;
         const sheepLevel = user.animals.find((a) => a.type === "SHEEP")?.level ?? 0;
         const cowLevel = user.animals.find((a) => a.type === "COW")?.level ?? 0;
-        const eggsPoints = eggs * pointsRate(chickenLevel, 1, 3);
-        const woolPoints = wool * pointsRate(sheepLevel, 2, 6);
-        const milkPoints = milk * pointsRate(cowLevel, 3, 10);
+        const chickenCycles = chickenLevel > 0
+            ? Math.floor(eggs / producedPerCycle("CHICKEN", chickenLevel))
+            : 0;
+        const sheepCycles = sheepLevel > 0
+            ? Math.floor(wool / producedPerCycle("SHEEP", sheepLevel))
+            : 0;
+        const cowCycles = cowLevel > 0 ? Math.floor(milk / producedPerCycle("COW", cowLevel)) : 0;
+        const eggsPoints = chickenCycles * pointsPerCycle("CHICKEN", chickenLevel);
+        const woolPoints = sheepCycles * pointsPerCycle("SHEEP", sheepLevel);
+        const milkPoints = cowCycles * pointsPerCycle("COW", cowLevel);
         const totalPoints = eggsPoints + woolPoints + milkPoints;
         if (totalCoins <= 0 && totalPoints <= 0) {
             return res.json({
@@ -86,6 +106,11 @@ router.post("/", async (req, res) => {
                 eggs: eggsPoints,
                 wool: woolPoints,
                 milk: milkPoints,
+            },
+            cycles: {
+                chicken: chickenCycles,
+                sheep: sheepCycles,
+                cow: cowCycles,
             },
             animalLevels: {
                 chicken: chickenLevel,
