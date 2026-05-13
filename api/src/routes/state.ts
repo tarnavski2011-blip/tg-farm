@@ -71,9 +71,9 @@ function getAnimalPointsPerCycle(
 }
 
 function getAnimalLifeDays(type: "CHICKEN" | "SHEEP" | "COW") {
-  if (type === "CHICKEN") return 5;
-  if (type === "SHEEP") return 7;
-  if (type === "COW") return 10;
+  if (type === "CHICKEN") return 3;
+  if (type === "SHEEP") return 5;
+  if (type === "COW") return 7;
   return 1;
 }
 
@@ -301,12 +301,15 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       let earnedPoints =
         usedCycles * getAnimalPointsPerCycle(animal.type, animal.level);
 
+      earnedPoints = Math.floor(
+        earnedPoints * (animalStats.efficiencyPercent / 100),
+      );
+
       if (user.vipUntil && user.vipUntil > now) {
         earnedPoints = Math.ceil(earnedPoints * 1.2);
       }
 
-      // Normal production does NOT add points directly.
-      // Points are added only when resources are sold.
+      pointsAdd += earnedPoints;
 
       if (animal.type === "CHICKEN") chickenFeedLeft -= usedCycles;
       if (animal.type === "SHEEP") sheepFeedLeft -= usedCycles;
@@ -403,7 +406,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
         coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-        points: { increment: autoSellPointsAdd },
+        points: { increment: pointsAdd + autoSellPointsAdd },
         lastSeenAt: now,
       },
     });
@@ -442,60 +445,69 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
     const cowAnimals = user.animals.filter((a) => a.type === "COW");
 
-    const eggsReady = chickenAnimals.reduce((sum, animal) => {
+    function getReadyForAnimal(
+      animal: {
+        type: "CHICKEN" | "SHEEP" | "COW";
+        level: number;
+        lastClaim: Date;
+        bornAt: Date;
+        lastFedAt: Date;
+      },
+      feedCycles: number,
+    ) {
+      const stats = getAnimalEfficiency({
+        type: animal.type,
+        bornAt: animal.bornAt,
+        lastFedAt: animal.lastFedAt,
+      });
+
+      if (stats.lifePercent <= 0 || stats.efficiencyPercent <= 0) {
+        return 0;
+      }
+
       const passedSec = Math.floor(
         (Date.now() - animal.lastClaim.getTime()) / 1000,
       );
-      const fullCycles = Math.floor(
-        Math.max(0, passedSec) / ANIMAL_PRODUCTION.CHICKEN.seconds,
-      );
-      const feedCycles = Math.floor((user!.chickenFeed ?? 0) / 1);
 
-      return (
-        sum +
-        Math.min(fullCycles, feedCycles) *
-          (user!.vipUntil && user!.vipUntil > new Date()
-            ? Math.ceil(
-                getAnimalProducedPerCycle("CHICKEN", animal.level) * 1.2,
-              )
-            : getAnimalProducedPerCycle("CHICKEN", animal.level))
+      const fullCycles = Math.floor(
+        Math.max(0, passedSec) / ANIMAL_PRODUCTION[animal.type].seconds,
       );
+
+      const usedCycles = Math.min(fullCycles, feedCycles);
+
+      if (usedCycles <= 0) {
+        return 0;
+      }
+
+      let produced =
+        usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
+
+      produced = Math.floor(produced * (stats.efficiencyPercent / 100));
+
+      if (user!.boostUntil && user!.boostUntil > new Date()) {
+        produced *= 2;
+      }
+
+      if (user!.vipUntil && user!.vipUntil > new Date()) {
+        produced = Math.ceil(produced * 1.2);
+      }
+
+      return produced;
+    }
+
+    const eggsReady = chickenAnimals.reduce((sum, animal) => {
+      const feedCycles = Math.floor((user!.chickenFeed ?? 0) / 1);
+      return sum + getReadyForAnimal(animal, feedCycles);
     }, 0);
 
     const woolReady = sheepAnimals.reduce((sum, animal) => {
-      const passedSec = Math.floor(
-        (Date.now() - animal.lastClaim.getTime()) / 1000,
-      );
-      const fullCycles = Math.floor(
-        Math.max(0, passedSec) / ANIMAL_PRODUCTION.SHEEP.seconds,
-      );
       const feedCycles = Math.floor((user!.sheepFeed ?? 0) / 1);
-
-      return (
-        sum +
-        Math.min(fullCycles, feedCycles) *
-          (user!.vipUntil && user!.vipUntil > new Date()
-            ? Math.ceil(getAnimalProducedPerCycle("SHEEP", animal.level) * 1.2)
-            : getAnimalProducedPerCycle("SHEEP", animal.level))
-      );
+      return sum + getReadyForAnimal(animal, feedCycles);
     }, 0);
 
     const milkReady = cowAnimals.reduce((sum, animal) => {
-      const passedSec = Math.floor(
-        (Date.now() - animal.lastClaim.getTime()) / 1000,
-      );
-      const fullCycles = Math.floor(
-        Math.max(0, passedSec) / ANIMAL_PRODUCTION.COW.seconds,
-      );
       const feedCycles = Math.floor((user!.cowFeed ?? 0) / 1);
-
-      return (
-        sum +
-        Math.min(fullCycles, feedCycles) *
-          (user!.vipUntil && user!.vipUntil > new Date()
-            ? Math.ceil(getAnimalProducedPerCycle("COW", animal.level) * 1.2)
-            : getAnimalProducedPerCycle("COW", animal.level))
-      );
+      return sum + getReadyForAnimal(animal, feedCycles);
     }, 0);
 
     const storageTotal =
@@ -510,6 +522,46 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       0,
       Math.min(100, Math.round((xp / xpNeeded) * 100)),
     );
+
+    function getEffectivePerHour(
+      type: "CHICKEN" | "SHEEP" | "COW",
+      animals: {
+        type: "CHICKEN" | "SHEEP" | "COW";
+        level: number;
+        bornAt: Date;
+        lastFedAt: Date;
+      }[],
+    ) {
+      if (animals.length <= 0) return 0;
+
+      return animals.reduce((sum, animal) => {
+        const stats = getAnimalEfficiency({
+          type: animal.type,
+          bornAt: animal.bornAt,
+          lastFedAt: animal.lastFedAt,
+        });
+
+        if (stats.lifePercent <= 0 || stats.efficiencyPercent <= 0) {
+          return sum;
+        }
+
+        const cyclesPerHour = 3600 / ANIMAL_PRODUCTION[type].seconds;
+        let produced =
+          cyclesPerHour * getAnimalProducedPerCycle(type, animal.level);
+
+        produced = Math.floor(produced * (stats.efficiencyPercent / 100));
+
+        if (user!.boostUntil && user!.boostUntil > new Date()) {
+          produced *= 2;
+        }
+
+        if (user!.vipUntil && user!.vipUntil > new Date()) {
+          produced = Math.ceil(produced * 1.2);
+        }
+
+        return sum + produced;
+      }, 0);
+    }
 
     return res.json({
       ok: true,
@@ -626,6 +678,16 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               ) / cowAnimals.length,
             )
           : 0,
+
+        chickenProductionPerHour: Math.floor(
+          getEffectivePerHour("CHICKEN", chickenAnimals),
+        ),
+        sheepProductionPerHour: Math.floor(
+          getEffectivePerHour("SHEEP", sheepAnimals),
+        ),
+        cowProductionPerHour: Math.floor(
+          getEffectivePerHour("COW", cowAnimals),
+        ),
       },
 
       storage: {
@@ -691,7 +753,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           eggs: eggsAdd,
           wool: woolAdd,
           milk: milkAdd,
-          points: 0,
+          points: pointsAdd,
           autoFeedCoinsSpent,
           autoSellCoins: autoSellCoinsAdd,
           autoSellPoints: autoSellPointsAdd,
