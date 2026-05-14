@@ -35,6 +35,7 @@ const walletWithdraw_1 = __importDefault(require("./routes/walletWithdraw"));
 const adminWithdrawals_1 = __importDefault(require("./routes/adminWithdrawals"));
 const heal_1 = __importDefault(require("./routes/heal"));
 const unlockSlot_1 = __importDefault(require("./routes/unlockSlot"));
+const upgradeAnimal_1 = __importDefault(require("./routes/upgradeAnimal"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -75,6 +76,7 @@ app.use("/api/wallet/request-withdraw", walletWithdraw_1.default);
 app.use("/admin", adminWithdrawals_1.default);
 app.use("/api/heal", heal_1.default);
 app.use("/api/unlock-slot", unlockSlot_1.default);
+app.use("/api/upgrade-animal", upgradeAnimal_1.default);
 // test routes
 app.use("/test-payment", testPayment_1.default);
 const port = Number(process.env.PORT ?? 3000);
