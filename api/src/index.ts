@@ -32,6 +32,7 @@ import walletWithdrawRouter from "./routes/walletWithdraw";
 import adminWithdrawalsRouter from "./routes/adminWithdrawals";
 import healRouter from "./routes/heal";
 import unlockSlotRouter from "./routes/unlockSlot";
+import upgradeAnimalRouter from "./routes/upgradeAnimal";
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use("/api/wallet/request-withdraw", walletWithdrawRouter);
 app.use("/admin", adminWithdrawalsRouter);
 app.use("/api/heal", healRouter);
 app.use("/api/unlock-slot", unlockSlotRouter);
+app.use("/api/upgrade-animal", upgradeAnimalRouter);
 
 // test routes
 app.use("/test-payment", testPaymentRouter);
