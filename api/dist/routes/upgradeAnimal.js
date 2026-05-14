@@ -3,16 +3,44 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
+const UPGRADE_COSTS = {
+    CHICKEN: {
+        1: { coins: 5000, diamonds: 0 },
+        2: { coins: 25000, diamonds: 0 },
+        3: { coins: 100000, diamonds: 5 },
+        4: { coins: 500000, diamonds: 25 },
+    },
+    SHEEP: {
+        1: { coins: 25000, diamonds: 0 },
+        2: { coins: 100000, diamonds: 5 },
+        3: { coins: 500000, diamonds: 25 },
+        4: { coins: 1500000, diamonds: 75 },
+    },
+    COW: {
+        1: { coins: 100000, diamonds: 5 },
+        2: { coins: 500000, diamonds: 25 },
+        3: { coins: 1500000, diamonds: 75 },
+        4: { coins: 3000000, diamonds: 150 },
+    },
+};
+const RARITY_MULTIPLIER = {
+    normal: 1,
+    rare: 1.25,
+    epic: 1.6,
+    legendary: 2.2,
+};
 function getUpgradeCost(type, level, rarity) {
-    const rarityMultiplier = rarity === "legendary"
-        ? 3
-        : rarity === "epic"
-            ? 2
-            : rarity === "rare"
-                ? 1.5
-                : 1;
-    const base = type === "CHICKEN" ? 100 : type === "SHEEP" ? 500 : 1000;
-    return Math.floor(base * level * rarityMultiplier);
+    const safeType = type;
+    const safeLevel = Math.max(1, Math.min(4, level));
+    const base = UPGRADE_COSTS[safeType]?.[safeLevel];
+    if (!base) {
+        return null;
+    }
+    const multiplier = RARITY_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
+    return {
+        coins: Math.floor(base.coins * multiplier),
+        diamonds: Math.floor(base.diamonds * multiplier),
+    };
 }
 router.post("/", async (req, res) => {
     try {
@@ -39,11 +67,21 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Max level reached" });
         }
         const cost = getUpgradeCost(animal.type, animal.level ?? 1, animal.rarity || "normal");
-        if ((user.coins ?? 0) < cost) {
+        if (!cost) {
+            return res.status(400).json({ error: "Upgrade cost not found" });
+        }
+        if ((user.coins ?? 0) < cost.coins) {
             return res.status(400).json({
                 error: "Not enough coins",
-                need: cost,
-                have: user.coins ?? 0,
+                needCoins: cost.coins,
+                haveCoins: user.coins ?? 0,
+            });
+        }
+        if ((user.diamonds ?? 0) < cost.diamonds) {
+            return res.status(400).json({
+                error: "Not enough diamonds",
+                needDiamonds: cost.diamonds,
+                haveDiamonds: user.diamonds ?? 0,
             });
         }
         const result = await prisma_1.prisma.$transaction(async (tx) => {
@@ -59,11 +97,15 @@ router.post("/", async (req, res) => {
                 where: { id: user.id },
                 data: {
                     coins: {
-                        decrement: cost,
+                        decrement: cost.coins,
+                    },
+                    diamonds: {
+                        decrement: cost.diamonds,
                     },
                 },
                 select: {
                     coins: true,
+                    diamonds: true,
                 },
             });
             return {
@@ -75,6 +117,7 @@ router.post("/", async (req, res) => {
             ok: true,
             animal: result.animal,
             coins: result.user.coins,
+            diamonds: result.user.diamonds,
             spent: cost,
             message: `Animal upgraded to LVL ${result.animal.level}`,
         });
@@ -86,5 +129,12 @@ router.post("/", async (req, res) => {
             details: String(e),
         });
     }
+});
+router.get("/costs", async (_req, res) => {
+    return res.json({
+        ok: true,
+        costs: UPGRADE_COSTS,
+        rarityMultiplier: RARITY_MULTIPLIER,
+    });
 });
 exports.default = router;

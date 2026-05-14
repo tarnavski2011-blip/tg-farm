@@ -4,19 +4,50 @@ import type { TgAuthedRequest } from "../middleware/telegramAuth";
 
 const router = Router();
 
+const UPGRADE_COSTS = {
+  CHICKEN: {
+    1: { coins: 5000, diamonds: 0 },
+    2: { coins: 25000, diamonds: 0 },
+    3: { coins: 100000, diamonds: 5 },
+    4: { coins: 500000, diamonds: 25 },
+  },
+  SHEEP: {
+    1: { coins: 25000, diamonds: 0 },
+    2: { coins: 100000, diamonds: 5 },
+    3: { coins: 500000, diamonds: 25 },
+    4: { coins: 1500000, diamonds: 75 },
+  },
+  COW: {
+    1: { coins: 100000, diamonds: 5 },
+    2: { coins: 500000, diamonds: 25 },
+    3: { coins: 1500000, diamonds: 75 },
+    4: { coins: 3000000, diamonds: 150 },
+  },
+} as const;
+
+const RARITY_MULTIPLIER: Record<string, number> = {
+  normal: 1,
+  rare: 1.25,
+  epic: 1.6,
+  legendary: 2.2,
+};
+
 function getUpgradeCost(type: string, level: number, rarity: string) {
-  const rarityMultiplier =
-    rarity === "legendary"
-      ? 3
-      : rarity === "epic"
-        ? 2
-        : rarity === "rare"
-          ? 1.5
-          : 1;
+  const safeType = type as "CHICKEN" | "SHEEP" | "COW";
+  const safeLevel = Math.max(1, Math.min(4, level)) as 1 | 2 | 3 | 4;
+  const base = UPGRADE_COSTS[safeType]?.[safeLevel];
 
-  const base = type === "CHICKEN" ? 100 : type === "SHEEP" ? 500 : 1000;
+  if (!base) {
+    return null;
+  }
 
-  return Math.floor(base * level * rarityMultiplier);
+  const multiplier =
+    RARITY_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
+
+  return {
+    coins: Math.floor(base.coins * multiplier),
+    diamonds: Math.floor(base.diamonds * multiplier),
+  };
 }
 
 router.post("/", async (req: TgAuthedRequest, res) => {
@@ -57,11 +88,23 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       (animal as any).rarity || "normal",
     );
 
-    if ((user.coins ?? 0) < cost) {
+    if (!cost) {
+      return res.status(400).json({ error: "Upgrade cost not found" });
+    }
+
+    if ((user.coins ?? 0) < cost.coins) {
       return res.status(400).json({
         error: "Not enough coins",
-        need: cost,
-        have: user.coins ?? 0,
+        needCoins: cost.coins,
+        haveCoins: user.coins ?? 0,
+      });
+    }
+
+    if ((user.diamonds ?? 0) < cost.diamonds) {
+      return res.status(400).json({
+        error: "Not enough diamonds",
+        needDiamonds: cost.diamonds,
+        haveDiamonds: user.diamonds ?? 0,
       });
     }
 
@@ -79,11 +122,15 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         where: { id: user.id },
         data: {
           coins: {
-            decrement: cost,
+            decrement: cost.coins,
+          },
+          diamonds: {
+            decrement: cost.diamonds,
           },
         },
         select: {
           coins: true,
+          diamonds: true,
         },
       });
 
@@ -97,6 +144,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       ok: true,
       animal: result.animal,
       coins: result.user.coins,
+      diamonds: result.user.diamonds,
       spent: cost,
       message: `Animal upgraded to LVL ${result.animal.level}`,
     });
@@ -107,6 +155,14 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       details: String(e),
     });
   }
+});
+
+router.get("/costs", async (_req, res) => {
+  return res.json({
+    ok: true,
+    costs: UPGRADE_COSTS,
+    rarityMultiplier: RARITY_MULTIPLIER,
+  });
 });
 
 export default router;

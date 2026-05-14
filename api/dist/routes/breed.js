@@ -3,143 +3,138 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
+const BREED_COSTS = {
+    CHICKEN: { coins: 500000, diamonds: 50 },
+    SHEEP: { coins: 1500000, diamonds: 150 },
+    COW: { coins: 3000000, diamonds: 300 },
+};
+function getBreedResult() {
+    const roll = Math.random() * 100;
+    if (roll <= 5) {
+        return {
+            rarity: "legendary",
+            breedBonus: 1.35,
+        };
+    }
+    if (roll <= 30) {
+        return {
+            rarity: "epic",
+            breedBonus: 1.2,
+        };
+    }
+    return {
+        rarity: "rare",
+        breedBonus: 1.1,
+    };
+}
 router.post("/", async (req, res) => {
     try {
-        const telegramId = BigInt(req.user.id);
-        const animalType = req.body.animalType;
-        const animalIds = req.body.animalIds;
-        if (!animalType || !Array.isArray(animalIds) || animalIds.length !== 2) {
+        if (!req.telegramUser?.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const telegramId = BigInt(req.telegramUser.id);
+        const animalType = String(req.body?.animalType ?? "").trim();
+        const rawAnimalIds = req.body?.animalIds;
+        if (!animalType || !["CHICKEN", "SHEEP", "COW"].includes(animalType)) {
+            return res.status(400).json({ error: "Wrong animal type" });
+        }
+        if (!Array.isArray(rawAnimalIds) || rawAnimalIds.length !== 2) {
             return res.status(400).json({ error: "Need exactly 2 animals" });
         }
+        const animalIds = rawAnimalIds.map((id) => Number(id));
+        if (animalIds.length !== 2 ||
+            !animalIds[0] ||
+            !animalIds[1] ||
+            animalIds[0] === animalIds[1]) {
+            return res.status(400).json({ error: "Wrong animal ids" });
+        }
+        const cost = BREED_COSTS[animalType];
         const user = await prisma_1.prisma.user.findUnique({
-            where: {
-                telegramId: telegramId,
+            where: { telegramId },
+            include: {
+                animals: true,
             },
         });
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        const animals = await prisma_1.prisma.animal.findMany({
-            where: {
-                id: {
-                    in: animalIds,
-                },
-                userId: user.id,
-                type: animalType,
-            },
-        });
-        if (animals.length !== 2) {
+        if ((user.coins ?? 0) < cost.coins) {
+            return res.status(400).json({
+                error: "Not enough coins",
+                need: cost.coins,
+                have: user.coins ?? 0,
+            });
+        }
+        if ((user.diamonds ?? 0) < cost.diamonds) {
+            return res.status(400).json({
+                error: "Not enough diamonds",
+                need: cost.diamonds,
+                have: user.diamonds ?? 0,
+            });
+        }
+        const parents = user.animals.filter((animal) => animalIds.includes(animal.id) &&
+            animal.type === animalType &&
+            animal.userId === user.id);
+        if (parents.length !== 2) {
             return res.status(400).json({ error: "Animals not found" });
         }
-        const hasLowLevel = animals.some((animal) => animal.level < 5);
-        if (hasLowLevel) {
-            return res.status(400).json({ error: "Animals must be level 5" });
+        if (parents.some((animal) => (animal.level ?? 1) < 5)) {
+            return res.status(400).json({ error: "Both animals must be LVL 5" });
         }
-        let coinCost = 0;
-        let diamondCost = 0;
-        if (animalType === "CHICKEN") {
-            coinCost = 500000;
-            diamondCost = 50;
-        }
-        else if (animalType === "SHEEP") {
-            coinCost = 1500000;
-            diamondCost = 150;
-        }
-        else if (animalType === "COW") {
-            coinCost = 3000000;
-            diamondCost = 300;
-        }
-        else {
-            return res.status(400).json({ error: "Wrong animal type" });
-        }
-        if (user.coins < coinCost) {
-            return res.status(400).json({ error: "Not enough coins" });
-        }
-        if (user.diamonds < diamondCost) {
-            return res.status(400).json({ error: "Not enough diamonds" });
-        }
-        const roll = Math.random() * 100;
-        let rarity = "rare";
-        let breedBonus = 1.1;
-        if (roll <= 5) {
-            rarity = "legendary";
-            breedBonus = 1.35;
-        }
-        else if (roll <= 30) {
-            rarity = "epic";
-            breedBonus = 1.2;
-        }
-        const userAny = user;
-        let slotLimit = 2;
-        if (animalType === "CHICKEN") {
-            slotLimit = userAny.chickenSlots ?? 2;
-        }
-        if (animalType === "SHEEP") {
-            slotLimit = userAny.sheepSlots ?? 2;
-        }
-        if (animalType === "COW") {
-            slotLimit = userAny.cowSlots ?? 2;
-        }
-        const existingAnimals = await prisma_1.prisma.animal.findMany({
-            where: {
-                userId: user.id,
-                type: animalType,
-            },
-            orderBy: {
-                slotIndex: "asc",
-            },
-        });
-        let freeSlot = 1;
-        for (let i = 1; i <= slotLimit; i++) {
-            const used = existingAnimals.find((animal) => animal.slotIndex === i);
-            if (!used) {
-                freeSlot = i;
-                break;
-            }
-        }
-        await prisma_1.prisma.$transaction([
-            prisma_1.prisma.user.update({
-                where: {
-                    id: user.id,
-                },
+        const parentSlots = parents.map((animal) => animal.slotIndex ?? 1);
+        const newSlotIndex = Math.min(...parentSlots);
+        const result = getBreedResult();
+        const now = new Date();
+        const created = await prisma_1.prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { id: user.id },
                 data: {
-                    coins: {
-                        decrement: coinCost,
-                    },
-                    diamonds: {
-                        decrement: diamondCost,
-                    },
+                    coins: { decrement: cost.coins },
+                    diamonds: { decrement: cost.diamonds },
                 },
-            }),
-            prisma_1.prisma.animal.deleteMany({
+            });
+            await tx.animal.deleteMany({
                 where: {
                     id: {
                         in: animalIds,
                     },
+                    userId: user.id,
                 },
-            }),
-            prisma_1.prisma.animal.create({
+            });
+            const newAnimal = await tx.animal.create({
                 data: {
                     userId: user.id,
                     type: animalType,
                     level: 1,
-                    rarity: rarity,
-                    breedBonus: breedBonus,
-                    slotIndex: freeSlot,
+                    rarity: result.rarity,
+                    breedBonus: result.breedBonus,
+                    slotIndex: newSlotIndex,
                     hp: 100,
+                    bornAt: now,
+                    lastFedAt: now,
+                    lastClaim: now,
                 },
-            }),
-        ]);
+            });
+            return newAnimal;
+        });
         return res.json({
+            ok: true,
             success: true,
-            rarity: rarity,
-            breedBonus: breedBonus,
-            slotIndex: freeSlot,
+            animal: created,
+            type: animalType,
+            rarity: result.rarity,
+            breedBonus: result.breedBonus,
+            slotIndex: newSlotIndex,
+            spent: cost,
+            message: `New ${result.rarity} animal created`,
         });
     }
     catch (error) {
-        console.error("Breed error:", error);
-        return res.status(500).json({ error: "Breed failed" });
+        console.error("BREED ERROR:", error);
+        return res.status(500).json({
+            error: "Breed failed",
+            details: String(error),
+        });
     }
 });
 exports.default = router;
