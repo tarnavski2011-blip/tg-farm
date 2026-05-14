@@ -18,6 +18,7 @@ import shopRouter from "./routes/shop";
 import walletRouter from "./routes/wallet";
 import referralsRouter from "./routes/referrals";
 import tapRouter from "./routes/tap";
+import breedRouter from "./routes/breed";
 import upgradeRouter from "./routes/upgrade";
 // import shopStarsRouter from "./routes/shopStars";
 import paymentsRouter from "./routes/payments";
@@ -30,6 +31,7 @@ import adminWalletRouter from "./routes/adminWallet";
 import walletWithdrawRouter from "./routes/walletWithdraw";
 import adminWithdrawalsRouter from "./routes/adminWithdrawals";
 import healRouter from "./routes/heal";
+import unlockSlotRouter from "./routes/unlockSlot";
 
 const app = express();
 
@@ -69,6 +71,7 @@ app.use("/api/shop", shopRouter);
 app.use("/api/wallet", walletRouter);
 app.use("/api/referrals", referralsRouter);
 app.use("/api/tap", tapRouter);
+app.use("/api/breed", breedRouter);
 app.use("/api/upgrade", upgradeRouter);
 // app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
@@ -77,6 +80,7 @@ app.use("/admin", adminWalletRouter);
 app.use("/api/wallet/request-withdraw", walletWithdrawRouter);
 app.use("/admin", adminWithdrawalsRouter);
 app.use("/api/heal", healRouter);
+app.use("/api/unlock-slot", unlockSlotRouter);
 
 // test routes
 app.use("/test-payment", testPaymentRouter);

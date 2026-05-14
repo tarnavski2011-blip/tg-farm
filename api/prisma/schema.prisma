@@ -41,9 +41,13 @@ model User {
   dailyStreak       Int      @default(0)
 
   warehouseLevel    Int      @default(1)
-  storageUpgradeFails Int      @default(0)
+  storageUpgradeFails Int    @default(0)
   labLevel          Int      @default(1)
   labMultiplier     Float    @default(1)
+
+  chickenSlots      Int      @default(2)
+  sheepSlots        Int      @default(2)
+  cowSlots          Int      @default(2)
 
   lastWheelSpinAt   DateTime?
 
@@ -65,7 +69,7 @@ model User {
   storage           Storage?
   achievementClaims AchievementClaim[]
   leaderboardRewards LeaderboardReward[]
-  withdrawals WithdrawalRequest[]
+  withdrawals       WithdrawalRequest[]
 }
 
 model Storage {
@@ -81,19 +85,24 @@ model Storage {
 }
 
 model Animal {
-  id        Int        @id @default(autoincrement())
-  userId    Int
-  type      AnimalType
-  level     Int        @default(1)
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  type         AnimalType
+  level        Int        @default(1)
   upgradeFails Int        @default(0)
 
-  bornAt    DateTime @default(now())
-  lastFedAt DateTime @default(now())
-  lastClaim DateTime   @default(now())
+  rarity       String     @default("normal")
+  breedBonus   Float      @default(1.0)
+  slotIndex    Int        @default(1)
+  hp           Int        @default(100)
 
-  createdAt DateTime   @default(now())
+  bornAt       DateTime   @default(now())
+  lastFedAt    DateTime   @default(now())
+  lastClaim    DateTime   @default(now())
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
 }
@@ -174,8 +183,8 @@ model LeaderboardReward {
 
 model WithdrawalRequest {
   id          Int      @id @default(autoincrement())
-  userId       Int
-  user         User     @relation(fields: [userId], references: [id])
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
 
   pointsAmount Int
   tonAmount    Float

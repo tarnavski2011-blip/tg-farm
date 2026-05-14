@@ -14,11 +14,23 @@ const ANIMAL_UNLOCK_LEVEL = {
     SHEEP: 5,
     COW: 10,
 };
-const ANIMAL_LIMITS = {
-    CHICKEN: 2,
-    SHEEP: 2,
-    COW: 2,
-};
+function getSlotLimit(user, type) {
+    if (type === "CHICKEN")
+        return user.chickenSlots ?? 2;
+    if (type === "SHEEP")
+        return user.sheepSlots ?? 2;
+    if (type === "COW")
+        return user.cowSlots ?? 2;
+    return 2;
+}
+function getFreeSlot(animals, slotLimit) {
+    for (let i = 1; i <= slotLimit; i++) {
+        const used = animals.some((animal) => animal.slotIndex === i);
+        if (!used)
+            return i;
+    }
+    return null;
+}
 router.post("/", async (req, res) => {
     try {
         if (!req.telegramUser?.id) {
@@ -31,10 +43,7 @@ router.post("/", async (req, res) => {
         const telegramId = BigInt(req.telegramUser.id);
         const user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
-            select: {
-                id: true,
-                level: true,
-                coins: true,
+            include: {
                 animals: true,
             },
         });
@@ -49,14 +58,15 @@ router.post("/", async (req, res) => {
                 yourLevel: user.level ?? 1,
             });
         }
-        const ownedCount = user.animals.filter((a) => a.type === type).length;
-        const maxCount = ANIMAL_LIMITS[type];
-        if (ownedCount >= maxCount) {
+        const sameTypeAnimals = user.animals.filter((animal) => animal.type === type);
+        const slotLimit = getSlotLimit(user, type);
+        const freeSlot = getFreeSlot(sameTypeAnimals, slotLimit);
+        if (!freeSlot) {
             return res.status(400).json({
-                error: `Максимум ${maxCount} тварин цього типу`,
+                error: `Немає вільного слота. Відкрий новий слот для цієї тварини.`,
                 type,
-                ownedCount,
-                maxCount,
+                ownedCount: sameTypeAnimals.length,
+                maxCount: slotLimit,
             });
         }
         const price = ANIMAL_PRICES[type];
@@ -74,6 +84,10 @@ router.post("/", async (req, res) => {
                     userId: user.id,
                     type,
                     level: 1,
+                    rarity: "normal",
+                    breedBonus: 1,
+                    slotIndex: freeSlot,
+                    hp: 100,
                     bornAt: now,
                     lastFedAt: now,
                     lastClaim: now,
@@ -97,8 +111,9 @@ router.post("/", async (req, res) => {
             spent: price,
             limit: {
                 type,
-                ownedCount: ownedCount + 1,
-                maxCount,
+                ownedCount: sameTypeAnimals.length + 1,
+                maxCount: slotLimit,
+                slotIndex: freeSlot,
             },
             xp: xpResult,
         });

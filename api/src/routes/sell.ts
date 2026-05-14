@@ -61,6 +61,13 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const sheepLevel = user.animals.find((a) => a.type === "SHEEP")?.level ?? 0;
     const cowLevel = user.animals.find((a) => a.type === "COW")?.level ?? 0;
 
+    const chickenBreedBonus =
+      user.animals.find((a) => a.type === "CHICKEN")?.breedBonus ?? 1;
+    const sheepBreedBonus =
+      user.animals.find((a) => a.type === "SHEEP")?.breedBonus ?? 1;
+    const cowBreedBonus =
+      user.animals.find((a) => a.type === "COW")?.breedBonus ?? 1;
+
     const chickenCycles =
       chickenLevel > 0
         ? Math.floor(eggs / producedPerCycle("CHICKEN", chickenLevel))
@@ -74,9 +81,17 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const cowCycles =
       cowLevel > 0 ? Math.floor(milk / producedPerCycle("COW", cowLevel)) : 0;
 
-    const eggsPoints = chickenCycles * pointsPerCycle("CHICKEN", chickenLevel);
-    const woolPoints = sheepCycles * pointsPerCycle("SHEEP", sheepLevel);
-    const milkPoints = cowCycles * pointsPerCycle("COW", cowLevel);
+    const eggsPoints = Math.floor(
+      chickenCycles *
+        pointsPerCycle("CHICKEN", chickenLevel) *
+        chickenBreedBonus,
+    );
+    const woolPoints = Math.floor(
+      sheepCycles * pointsPerCycle("SHEEP", sheepLevel) * sheepBreedBonus,
+    );
+    const milkPoints = Math.floor(
+      cowCycles * pointsPerCycle("COW", cowLevel) * cowBreedBonus,
+    );
 
     const totalPoints = eggsPoints + woolPoints + milkPoints;
 

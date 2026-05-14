@@ -18,11 +18,21 @@ const ANIMAL_UNLOCK_LEVEL: Record<AnimalType, number> = {
   COW: 10,
 };
 
-const ANIMAL_LIMITS: Record<AnimalType, number> = {
-  CHICKEN: 2,
-  SHEEP: 2,
-  COW: 2,
-};
+function getSlotLimit(user: any, type: AnimalType) {
+  if (type === "CHICKEN") return user.chickenSlots ?? 2;
+  if (type === "SHEEP") return user.sheepSlots ?? 2;
+  if (type === "COW") return user.cowSlots ?? 2;
+  return 2;
+}
+
+function getFreeSlot(animals: any[], slotLimit: number) {
+  for (let i = 1; i <= slotLimit; i++) {
+    const used = animals.some((animal) => animal.slotIndex === i);
+    if (!used) return i;
+  }
+
+  return null;
+}
 
 router.post("/", async (req: TgAuthedRequest, res) => {
   try {
@@ -40,10 +50,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
-      select: {
-        id: true,
-        level: true,
-        coins: true,
+      include: {
         animals: true,
       },
     });
@@ -62,15 +69,18 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       });
     }
 
-    const ownedCount = user.animals.filter((a) => a.type === type).length;
-    const maxCount = ANIMAL_LIMITS[type];
+    const sameTypeAnimals = user.animals.filter(
+      (animal) => animal.type === type,
+    );
+    const slotLimit = getSlotLimit(user, type);
+    const freeSlot = getFreeSlot(sameTypeAnimals, slotLimit);
 
-    if (ownedCount >= maxCount) {
+    if (!freeSlot) {
       return res.status(400).json({
-        error: `Максимум ${maxCount} тварин цього типу`,
+        error: `Немає вільного слота. Відкрий новий слот для цієї тварини.`,
         type,
-        ownedCount,
-        maxCount,
+        ownedCount: sameTypeAnimals.length,
+        maxCount: slotLimit,
       });
     }
 
@@ -92,10 +102,14 @@ router.post("/", async (req: TgAuthedRequest, res) => {
           userId: user.id,
           type,
           level: 1,
+          rarity: "normal",
+          breedBonus: 1,
+          slotIndex: freeSlot,
+          hp: 100,
           bornAt: now,
           lastFedAt: now,
           lastClaim: now,
-        },
+        } as any,
       }),
       prisma.user.update({
         where: { id: user.id },
@@ -117,8 +131,9 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       spent: price,
       limit: {
         type,
-        ownedCount: ownedCount + 1,
-        maxCount,
+        ownedCount: sameTypeAnimals.length + 1,
+        maxCount: slotLimit,
+        slotIndex: freeSlot,
       },
       xp: xpResult,
     });
