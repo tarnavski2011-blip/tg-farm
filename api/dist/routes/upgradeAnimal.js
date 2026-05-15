@@ -29,6 +29,12 @@ const RARITY_MULTIPLIER = {
     epic: 1.6,
     legendary: 2.2,
 };
+const SUCCESS_CHANCE = {
+    1: 95,
+    2: 80,
+    3: 60,
+    4: 40,
+};
 function getUpgradeCost(type, level, rarity) {
     const safeType = type;
     const safeLevel = Math.max(1, Math.min(4, level));
@@ -41,6 +47,12 @@ function getUpgradeCost(type, level, rarity) {
         coins: Math.floor(base.coins * multiplier),
         diamonds: Math.floor(base.diamonds * multiplier),
     };
+}
+function getSuccessChance(level, fails) {
+    if (fails >= 5)
+        return 100;
+    const safeLevel = Math.max(1, Math.min(4, level));
+    return SUCCESS_CHANCE[safeLevel] ?? 40;
 }
 router.post("/", async (req, res) => {
     try {
@@ -66,7 +78,9 @@ router.post("/", async (req, res) => {
         if ((animal.level ?? 1) >= 5) {
             return res.status(400).json({ error: "Max level reached" });
         }
-        const cost = getUpgradeCost(animal.type, animal.level ?? 1, animal.rarity || "normal");
+        const rarity = animal.rarity || "normal";
+        const upgradeFails = animal.upgradeFails ?? 0;
+        const cost = getUpgradeCost(animal.type, animal.level ?? 1, rarity);
         if (!cost) {
             return res.status(400).json({ error: "Upgrade cost not found" });
         }
@@ -84,29 +98,31 @@ router.post("/", async (req, res) => {
                 haveDiamonds: user.diamonds ?? 0,
             });
         }
+        const chance = getSuccessChance(animal.level ?? 1, upgradeFails);
+        const roll = Math.random() * 100;
+        const success = roll <= chance;
         const result = await prisma_1.prisma.$transaction(async (tx) => {
-            const updatedAnimal = await tx.animal.update({
-                where: { id: animal.id },
-                data: {
-                    level: {
-                        increment: 1,
-                    },
-                },
-            });
             const updatedUser = await tx.user.update({
                 where: { id: user.id },
                 data: {
-                    coins: {
-                        decrement: cost.coins,
-                    },
-                    diamonds: {
-                        decrement: cost.diamonds,
-                    },
+                    coins: { decrement: cost.coins },
+                    diamonds: { decrement: cost.diamonds },
                 },
                 select: {
                     coins: true,
                     diamonds: true,
                 },
+            });
+            const updatedAnimal = await tx.animal.update({
+                where: { id: animal.id },
+                data: success
+                    ? {
+                        level: { increment: 1 },
+                        upgradeFails: 0,
+                    }
+                    : {
+                        upgradeFails: { increment: 1 },
+                    },
             });
             return {
                 animal: updatedAnimal,
@@ -115,11 +131,17 @@ router.post("/", async (req, res) => {
         });
         return res.json({
             ok: true,
+            success,
             animal: result.animal,
             coins: result.user.coins,
             diamonds: result.user.diamonds,
             spent: cost,
-            message: `Animal upgraded to LVL ${result.animal.level}`,
+            chance,
+            roll: Math.round(roll),
+            upgradeFails: result.animal.upgradeFails ?? 0,
+            message: success
+                ? `✅ Animal upgraded to LVL ${result.animal.level}`
+                : `❌ Upgrade failed (${result.animal.upgradeFails ?? 0}/5)`,
         });
     }
     catch (e) {
@@ -135,6 +157,7 @@ router.get("/costs", async (_req, res) => {
         ok: true,
         costs: UPGRADE_COSTS,
         rarityMultiplier: RARITY_MULTIPLIER,
+        successChance: SUCCESS_CHANCE,
     });
 });
 exports.default = router;
