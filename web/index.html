@@ -1770,6 +1770,12 @@
         const feed = currentState?.feedStock || {};
         const MAX_SLOTS = 6;
 
+        const selectedForBreed = {
+          CHICKEN: [],
+          SHEEP: [],
+          COW: [],
+        };
+
         function emojiByType(type) {
           if (type === "CHICKEN") return "🐔";
           if (type === "SHEEP") return "🐑";
@@ -1782,6 +1788,24 @@
           if (type === "SHEEP") return "Вівці";
           if (type === "COW") return "Корови";
           return "Тварини";
+        }
+
+        function resourceByType(type) {
+          if (type === "CHICKEN") return "eggs";
+          if (type === "SHEEP") return "wool";
+          if (type === "COW") return "milk";
+          return "-";
+        }
+
+        function slotPrice(nextSlot) {
+          const prices = {
+            3: { coins: 25000, diamonds: 0 },
+            4: { coins: 150000, diamonds: 25 },
+            5: { coins: 750000, diamonds: 100 },
+            6: { coins: 2500000, diamonds: 300 },
+          };
+
+          return prices[nextSlot] || null;
         }
 
         function rarityClass(rarity) {
@@ -1800,25 +1824,7 @@
           return "Normal";
         }
 
-        function slotPrice(nextSlot) {
-          const prices = {
-            3: { coins: 25000, diamonds: 0 },
-            4: { coins: 150000, diamonds: 25 },
-            5: { coins: 750000, diamonds: 100 },
-            6: { coins: 2500000, diamonds: 300 },
-          };
-
-          return prices[nextSlot] || { coins: "-", diamonds: 0 };
-        }
-
-        function getBreedCost(type) {
-          if (type === "CHICKEN") return { coins: 500000, diamonds: 50 };
-          if (type === "SHEEP") return { coins: 1500000, diamonds: 150 };
-          if (type === "COW") return { coins: 3000000, diamonds: 300 };
-          return { coins: 0, diamonds: 0 };
-        }
-
-        function getFeedLeft(type) {
+        function feedLeftByType(type) {
           if (type === "CHICKEN") return feed.chicken ?? 0;
           if (type === "SHEEP") return feed.sheep ?? 0;
           if (type === "COW") return feed.cow ?? 0;
@@ -1830,7 +1836,6 @@
 
           if (!unlocked) {
             const price = slotPrice(slotIndex);
-
             return `
               <div class="animal-card locked">
                 <div class="animal-card-head">
@@ -1838,11 +1843,9 @@
                   <span class="rarity-badge rarity-normal">LOCKED</span>
                 </div>
                 <div class="animal-card-title">${emoji} Slot ${slotIndex}</div>
-                <div class="tile-row"><span>Coins</span><span>${price.coins}</span></div>
-                <div class="tile-row"><span>Diamonds</span><span>${price.diamonds}</span></div>
-                <button class="animal-small-btn gold" data-unlock-slot="${type}">
-                  🔓 Відкрити слот
-                </button>
+                <div class="tile-row"><span>Coins</span><span>${price?.coins ?? "-"}</span></div>
+                <div class="tile-row"><span>Diamonds</span><span>${price?.diamonds ?? 0}</span></div>
+                <button class="animal-small-btn gold" data-unlock-slot="${type}">🔓 Відкрити слот</button>
               </div>
             `;
           }
@@ -1855,10 +1858,8 @@
                   <span class="rarity-badge rarity-normal">EMPTY</span>
                 </div>
                 <div class="animal-card-title">Slot ${slotIndex}</div>
-                <div class="note">Вільний слот. Можеш купити тварину.</div>
-                <button class="animal-small-btn green" data-buy-from-slot="${type}">
-                  + Купити
-                </button>
+                <div class="note">Вільний слот. Можеш купити тварину в вкладці “Купити”.</div>
+                <button class="animal-small-btn green" data-buy-from-slot="${type}">+ Купити</button>
               </div>
             `;
           }
@@ -1867,32 +1868,22 @@
             0,
             Math.min(100, Number(card.hp ?? card.lifePercent ?? 100)),
           );
-
           const efficiency = Math.max(
             0,
             Math.min(100, Number(card.efficiencyPercent ?? 100)),
           );
-
           const canBreed = Number(card.level ?? 1) >= 5;
 
           return `
             <div class="animal-card">
               <div class="animal-card-head">
                 <div class="animal-emoji">${emoji}</div>
-                <span class="rarity-badge ${rarityClass(card.rarity)}">
-                  ${rarityLabel(card.rarity)}
-                </span>
+                <span class="rarity-badge ${rarityClass(card.rarity)}">${rarityLabel(card.rarity)}</span>
               </div>
 
-              <div class="animal-card-title">
-                Slot ${slotIndex} — LVL ${card.level ?? 1}
-              </div>
+              <div class="animal-card-title">Slot ${slotIndex} — LVL ${card.level ?? 1}</div>
 
-              <div class="tile-row">
-                <span>🧬 Bonus</span>
-                <span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span>
-              </div>
-
+              <div class="tile-row"><span>🧬 Bonus</span><span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span></div>
               <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
 
               <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
@@ -1901,29 +1892,35 @@
               <div class="tile-row"><span>⚡ Efficiency</span><span>${efficiency}%</span></div>
               <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
 
-              <div class="animal-actions">
-                ${
-                  Number(card.level ?? 1) < 5
-                    ? `<button class="animal-small-btn" data-upgrade-one="${card.id}">
-                        ⬆️ Upgrade
-                      </button>`
-                    : `<button class="animal-small-btn green" disabled>
-                        ✅ MAX LVL
-                      </button>`
-                }
+              ${
+                Number(card.level ?? 1) >= 5
+                  ? `<div class="animal-actions">
+                      <button class="animal-small-btn green" disabled>✅ MAX LVL</button>
+                      <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
+                    </div>`
+                  : (() => {
+                      const upgradeCost = getAnimalUpgradeCostPreview(
+                        type,
+                        card.level ?? 1,
+                        card.rarity,
+                      );
+                      const canUpgrade = canPayUpgrade(upgradeCost);
 
-                <button class="animal-small-btn gold" data-heal-one="${card.id}">
-                  ❤️ Heal
-                </button>
-              </div>
+                      return `<div class="tile-row"><span>⬆️ Upgrade</span><span>LVL ${card.level ?? 1} → ${Number(card.level ?? 1) + 1}</span></div>
+                        <div class="tile-row"><span>Coins</span><span>${upgradeCost?.coins ?? 0}</span></div>
+                        <div class="tile-row"><span>Diamonds</span><span>${upgradeCost?.diamonds ?? 0}</span></div>
+                        <div class="tile-row"><span>Rarity x</span><span>${Number(upgradeCost?.multiplier ?? 1).toFixed(2)}</span></div>
+                        <div class="animal-actions">
+                          <button class="animal-small-btn ${canUpgrade ? "" : "gold"}" data-upgrade-one="${card.id}" ${canUpgrade ? "" : "disabled"}>
+                            ${canUpgrade ? "⬆️ Upgrade" : "Не вистачає"}
+                          </button>
+                          <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
+                        </div>`;
+                    })()
+              }
 
               <label class="breed-check">
-                <input
-                  type="checkbox"
-                  data-breed-pick="${type}"
-                  value="${card.id}"
-                  ${canBreed ? "" : "disabled"}
-                />
+                <input type="checkbox" data-breed-pick="${type}" value="${card.id}" ${canBreed ? "" : "disabled"} />
                 <span>${canBreed ? "Select for breed" : "Breed з LVL 5"}</span>
               </label>
             </div>
@@ -1935,14 +1932,12 @@
             (a, b) => Number(a.slotIndex || 1) - Number(b.slotIndex || 1),
           );
 
-          const breedCost = getBreedCost(type);
           const slotsHtml = [];
 
           for (let i = 1; i <= MAX_SLOTS; i++) {
             const card = sortedCards.find(
               (a) => Number(a.slotIndex || 1) === i,
             );
-
             slotsHtml.push(cardHtml(type, i, card, i <= slots));
           }
 
@@ -1954,23 +1949,16 @@
               </div>
 
               <div class="breed-panel">
-                <div class="tile-row">
-                  <span>🌾 Feed</span>
-                  <span>${getFeedLeft(type)}</span>
-                </div>
-
-                <div class="tile-row">
-                  <span>🧬 Breed cost</span>
-                  <span>${breedCost.coins} coins + ${breedCost.diamonds} 💎</span>
-                </div>
-
-                <div class="note" style="margin-top:8px;">
-                  Вибери 2 тварини одного типу з LVL 5.
-                </div>
-
-                <button class="buy-btn gold" data-breed-type="${type}">
-                  🧬 Breed selected 2
-                </button>
+                <div class="tile-row"><span>🌾 Feed</span><span>${feedLeftByType(type)}</span></div>
+                <div class="tile-row"><span>📦 Resource</span><span>${resourceByType(type)}</span></div>
+                <div class="tile-row"><span>🧬 Breed cost</span><span>${
+                  type === "CHICKEN"
+                    ? "500k coins + 50 💎"
+                    : type === "SHEEP"
+                      ? "1.5M coins + 150 💎"
+                      : "3M coins + 300 💎"
+                }</span></div>
+                <button class="buy-btn gold" data-breed-type="${type}">🧬 Breed selected 2</button>
               </div>
 
               <div class="animal-slot-grid">
@@ -1985,7 +1973,7 @@
             <div class="tile full">
               <div class="tile-title">🐾 My Animals</div>
               <div class="note">
-                Тварини показані карточками. Схрещення працює прямо тут: вибери 2 тварини LVL 5 одного типу.
+                Вибери 2 тварини одного типу з LVL 5 і натисни Breed. Після схрещення старі 2 тварини зникають, а нова отримує rarity bonus.
               </div>
             </div>
 
@@ -2031,34 +2019,28 @@
             if (checked.length > 2) {
               input.checked = false;
               showToast("Максимум 2 тварини");
+              return;
             }
+
+            selectedForBreed[type] = checked.map((x) => x.value);
           };
         });
 
         modalBody.querySelectorAll("[data-breed-type]").forEach((btn) => {
           btn.onclick = async () => {
             const type = btn.getAttribute("data-breed-type");
-
             const ids = [
               ...modalBody.querySelectorAll(
                 `[data-breed-pick="${type}"]:checked`,
               ),
-            ].map((x) => Number(x.value));
-
-            if (ids.length !== 2) {
-              showToast("Вибери 2 тварини");
-              return;
-            }
-
-            btn.disabled = true;
+            ].map((x) => x.value);
             await breedAnimals(type, ids);
-            btn.disabled = false;
           };
         });
       }
 
       function renderAnimalsUpgrade() {
-        renderAnimalsOwned();
+        openLabModal();
       }
 
       function openAnimalsModal() {
@@ -2438,7 +2420,7 @@
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
         modalTabs.style.display = "none";
-        tabUpgradeBtn.style.display = "none";
+        tabUpgradeBtn.style.display = "";
 
         modalBody.innerHTML = `<div class="note">loading...</div>`;
 
@@ -3617,56 +3599,6 @@
         setTimeout(bindFeedProfileFix, 300);
         setTimeout(bindFeedProfileFix, 1200);
       })();
-
-      /* ANIMALS CARD ACTIONS HARD FIX */
-      if (modalBody) {
-        modalBody.addEventListener("click", async (e) => {
-          const buyBtn = e.target.closest(
-            "[data-animal], [data-buy-from-slot]",
-          );
-          if (buyBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const type =
-              buyBtn.getAttribute("data-animal") ||
-              buyBtn.getAttribute("data-buy-from-slot");
-
-            if (!type) return;
-
-            buyBtn.disabled = true;
-            await buyAnimal(type);
-            setTimeout(() => {
-              buyBtn.disabled = false;
-            }, 800);
-            return;
-          }
-
-          const breedBtn = e.target.closest("[data-breed-type]");
-          if (breedBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const type = breedBtn.getAttribute("data-breed-type");
-            const ids = [
-              ...modalBody.querySelectorAll(
-                `[data-breed-pick="${type}"]:checked`,
-              ),
-            ].map((x) => Number(x.value));
-
-            if (ids.length !== 2) {
-              showToast("Вибери 2 тварини");
-              return;
-            }
-
-            breedBtn.disabled = true;
-            await breedAnimals(type, ids);
-            setTimeout(() => {
-              breedBtn.disabled = false;
-            }, 800);
-          }
-        });
-      }
 
       function bindButton(id, handler) {
         const el = document.getElementById(id);
