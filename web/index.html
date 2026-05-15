@@ -960,165 +960,6 @@
       .buy-btn.gold {
         background: linear-gradient(135deg, #ff8a00, #ffcf25) !important;
       }
-
-      .animal-slots-section {
-        grid-column: 1 / -1;
-        display: grid;
-        gap: 12px;
-      }
-
-      .animal-section-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px 2px;
-        color: #f8fafc;
-        font-weight: 1000;
-        font-size: 17px;
-      }
-
-      .animal-slot-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
-      .animal-card {
-        position: relative;
-        border-radius: 20px;
-        padding: 14px;
-        background: linear-gradient(180deg, #142f4f, #08182b);
-        border: 1px solid rgba(125, 211, 252, 0.2);
-        box-shadow:
-          0 12px 24px rgba(0, 0, 0, 0.25),
-          inset 0 2px 0 rgba(255, 255, 255, 0.07);
-      }
-
-      .animal-card.locked {
-        opacity: 0.78;
-        background: linear-gradient(180deg, #1f2937, #0f172a);
-      }
-
-      .animal-card.empty {
-        border-style: dashed;
-        opacity: 0.9;
-      }
-
-      .animal-card-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 10px;
-      }
-
-      .animal-emoji {
-        font-size: 34px;
-        line-height: 1;
-      }
-
-      .rarity-badge {
-        border-radius: 999px;
-        padding: 5px 8px;
-        font-size: 10px;
-        font-weight: 1000;
-        text-transform: uppercase;
-        color: white;
-        background: #64748b;
-      }
-
-      .rarity-normal {
-        background: #64748b;
-      }
-
-      .rarity-rare {
-        background: #2563eb;
-      }
-
-      .rarity-epic {
-        background: #9333ea;
-      }
-
-      .rarity-legendary {
-        background: linear-gradient(135deg, #f59e0b, #facc15);
-        color: #111827;
-      }
-
-      .animal-card-title {
-        color: #f8fafc;
-        font-size: 15px;
-        font-weight: 1000;
-        margin-bottom: 8px;
-      }
-
-      .mini-bar {
-        height: 9px;
-        border-radius: 999px;
-        background: rgba(0, 0, 0, 0.48);
-        overflow: hidden;
-        margin-top: 5px;
-      }
-
-      .mini-bar span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, #22c55e, #facc15);
-      }
-
-      .breed-check {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        margin-top: 10px;
-        font-size: 12px;
-        font-weight: 900;
-        color: #dbeafe;
-      }
-
-      .breed-check input {
-        width: 18px;
-        height: 18px;
-      }
-
-      .animal-actions {
-        display: grid;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .animal-small-btn {
-        width: 100%;
-        border: none;
-        border-radius: 12px;
-        padding: 9px 8px;
-        color: white;
-        font-size: 12px;
-        font-weight: 1000;
-        background: linear-gradient(135deg, #10b5ff, #1764ff);
-      }
-
-      .animal-small-btn.gold {
-        background: linear-gradient(135deg, #ff8a00, #ffcf25);
-        color: #111827;
-      }
-
-      .animal-small-btn.green {
-        background: linear-gradient(135deg, #22c55e, #73f052);
-      }
-
-      .animal-small-btn:disabled {
-        opacity: 0.55;
-      }
-
-      .breed-panel {
-        grid-column: 1 / -1;
-        border-radius: 18px;
-        padding: 13px;
-        background: rgba(2, 8, 18, 0.55);
-        border: 1px solid rgba(125, 211, 252, 0.18);
-      }
-
       @media (max-width: 390px) {
         .resource-box {
           grid-template-columns: 32px 1fr;
@@ -1643,328 +1484,161 @@
           ? `<div class="tile-row"><span>Корм</span><span>${v}</span></div>`
           : `<div class="warn">Немає корму ❌</div>`;
       }
-
-      async function unlockAnimalSlot(type) {
-        const res = await apiPost("/unlock-slot", { type });
-        setResult(res.data);
-
-        if (res.ok) {
-          showToast(`🔓 Slot ${res.data?.unlockedSlot ?? ""} opened`);
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка відкриття слота");
-        }
-      }
-
-      async function breedAnimals(type, ids) {
-        if (!Array.isArray(ids) || ids.length !== 2) {
-          showToast("Вибери 2 тварини LVL 5");
-          return;
-        }
-
-        const res = await apiPost("/breed", {
-          animalType: type,
-          animalIds: ids.map((id) => Number(id)),
-        });
-
-        setResult(res.data);
-
-        if (res.ok || res.data?.success) {
-          showToast(
-            `🧬 ${res.data?.rarity ?? "rare"} x${res.data?.breedBonus ?? 1}`,
-          );
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка схрещення");
-        }
-      }
-
-      async function upgradeOneAnimal(animalId) {
-        const res = await apiPost("/upgrade-animal", {
-          animalId: Number(animalId),
-        });
-        setResult(res.data);
-
-        if (res.ok) {
-          showToast(res.data?.message || "⬆️ Upgraded");
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Upgrade ще не підключений");
-        }
-      }
-
-      async function healOneAnimal(animalId) {
-        const res = await apiPost("/heal", { animalId: Number(animalId) });
-        setResult(res.data);
-
-        if (res.ok) {
-          showToast("❤️ Лікування виконано");
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка лікування");
-        }
-      }
-
       function renderAnimalsOwned() {
         tabBuyBtn.classList.remove("active");
         tabOwnedBtn.classList.add("active");
         tabUpgradeBtn.classList.remove("active");
 
         const animals = currentState?.animals || {};
+        const ready = currentState?.ready || {};
         const feed = currentState?.feedStock || {};
-        const MAX_SLOTS = 6;
 
-        const selectedForBreed = {
-          CHICKEN: [],
-          SHEEP: [],
-          COW: [],
-        };
+        function productionPerCycle(type, level) {
+          if (!level) return 0;
 
-        function emojiByType(type) {
-          if (type === "CHICKEN") return "🐔";
-          if (type === "SHEEP") return "🐑";
-          if (type === "COW") return "🐄";
-          return "🐾";
-        }
+          if (type === "CHICKEN") return 1 + (level - 1);
+          if (type === "SHEEP") return 3 + (level - 1);
+          if (type === "COW") return 7 + (level - 1) * 2;
 
-        function titleByType(type) {
-          if (type === "CHICKEN") return "Курки";
-          if (type === "SHEEP") return "Вівці";
-          if (type === "COW") return "Корови";
-          return "Тварини";
-        }
-
-        function resourceByType(type) {
-          if (type === "CHICKEN") return "eggs";
-          if (type === "SHEEP") return "wool";
-          if (type === "COW") return "milk";
-          return "-";
-        }
-
-        function slotPrice(nextSlot) {
-          const prices = {
-            3: { coins: 25000, diamonds: 0 },
-            4: { coins: 150000, diamonds: 25 },
-            5: { coins: 750000, diamonds: 100 },
-            6: { coins: 2500000, diamonds: 300 },
-          };
-
-          return prices[nextSlot] || null;
-        }
-
-        function rarityClass(rarity) {
-          const r = String(rarity || "normal").toLowerCase();
-          if (r === "legendary") return "rarity-legendary";
-          if (r === "epic") return "rarity-epic";
-          if (r === "rare") return "rarity-rare";
-          return "rarity-normal";
-        }
-
-        function rarityLabel(rarity) {
-          const r = String(rarity || "normal").toLowerCase();
-          if (r === "legendary") return "Legendary";
-          if (r === "epic") return "Epic";
-          if (r === "rare") return "Rare";
-          return "Normal";
-        }
-
-        function feedLeftByType(type) {
-          if (type === "CHICKEN") return feed.chicken ?? 0;
-          if (type === "SHEEP") return feed.sheep ?? 0;
-          if (type === "COW") return feed.cow ?? 0;
           return 0;
         }
 
-        function cardHtml(type, slotIndex, card, unlocked) {
-          const emoji = emojiByType(type);
+        function pointsPerCycle(type, level) {
+          if (!level || level < 4) return 0;
 
-          if (!unlocked) {
-            const price = slotPrice(slotIndex);
-            return `
-              <div class="animal-card locked">
-                <div class="animal-card-head">
-                  <div class="animal-emoji">🔒</div>
-                  <span class="rarity-badge rarity-normal">LOCKED</span>
-                </div>
-                <div class="animal-card-title">${emoji} Slot ${slotIndex}</div>
-                <div class="tile-row"><span>Coins</span><span>${price?.coins ?? "-"}</span></div>
-                <div class="tile-row"><span>Diamonds</span><span>${price?.diamonds ?? 0}</span></div>
-                <button class="animal-small-btn gold" data-unlock-slot="${type}">🔓 Відкрити слот</button>
-              </div>
-            `;
-          }
+          if (type === "CHICKEN") return level === 4 ? 1 : 3;
+          if (type === "SHEEP") return level === 4 ? 3 : 8;
+          if (type === "COW") return level === 4 ? 8 : 20;
 
-          if (!card) {
-            return `
-              <div class="animal-card empty">
-                <div class="animal-card-head">
-                  <div class="animal-emoji">${emoji}</div>
-                  <span class="rarity-badge rarity-normal">EMPTY</span>
-                </div>
-                <div class="animal-card-title">Slot ${slotIndex}</div>
-                <div class="note">Вільний слот. Можеш купити тварину в вкладці “Купити”.</div>
-                <button class="animal-small-btn green" data-buy-from-slot="${type}">+ Купити</button>
-              </div>
-            `;
-          }
-
-          const hp = Math.max(
-            0,
-            Math.min(100, Number(card.hp ?? card.lifePercent ?? 100)),
-          );
-          const efficiency = Math.max(
-            0,
-            Math.min(100, Number(card.efficiencyPercent ?? 100)),
-          );
-          const canBreed = Number(card.level ?? 1) >= 5;
-
-          return `
-            <div class="animal-card">
-              <div class="animal-card-head">
-                <div class="animal-emoji">${emoji}</div>
-                <span class="rarity-badge ${rarityClass(card.rarity)}">${rarityLabel(card.rarity)}</span>
-              </div>
-
-              <div class="animal-card-title">Slot ${slotIndex} — LVL ${card.level ?? 1}</div>
-
-              <div class="tile-row"><span>🧬 Bonus</span><span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span></div>
-              <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
-
-              <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
-              <div class="mini-bar"><span style="width:${hp}%"></span></div>
-
-              <div class="tile-row"><span>⚡ Efficiency</span><span>${efficiency}%</span></div>
-              <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
-
-              <div class="animal-actions">
-                <button class="animal-small-btn" data-upgrade-one="${card.id}">⬆️ Upgrade</button>
-                <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
-              </div>
-
-              <label class="breed-check">
-                <input type="checkbox" data-breed-pick="${type}" value="${card.id}" ${canBreed ? "" : "disabled"} />
-                <span>${canBreed ? "Select for breed" : "Breed з LVL 5"}</span>
-              </label>
-            </div>
-          `;
+          return 0;
         }
 
-        function renderType(type, cards, slots) {
-          const sortedCards = [...(cards || [])].sort(
-            (a, b) => Number(a.slotIndex || 1) - Number(b.slotIndex || 1),
-          );
+        function pointsText(type, level) {
+          const points = pointsPerCycle(type, level);
+          return points > 0 ? `+${points} / цикл` : "з LVL 4";
+        }
 
-          const slotsHtml = [];
+        function cycleSeconds(type) {
+          if (type === "CHICKEN") return 20;
+          if (type === "SHEEP") return 45;
+          if (type === "COW") return 90;
+          return 1;
+        }
 
-          for (let i = 1; i <= MAX_SLOTS; i++) {
-            const card = sortedCards.find(
-              (a) => Number(a.slotIndex || 1) === i,
-            );
-            slotsHtml.push(cardHtml(type, i, card, i <= slots));
+        function productionText(type, level) {
+          const perCycle = productionPerCycle(type, level);
+          return perCycle > 0 ? `${perCycle} / цикл` : "-";
+        }
+
+        function productionPerHour(type, level, count) {
+          if (!level || !count) return 0;
+
+          const perCycle = productionPerCycle(type, level);
+          const perHourOne = (3600 / cycleSeconds(type)) * perCycle;
+          return Math.floor(perHourOne * count);
+        }
+
+        function getHealInfo(type, level, count) {
+          const safeLevel = Math.max(1, Math.min(5, Number(level || 1)));
+          const safeCount = Number(count || 0);
+
+          const costs = {
+            CHICKEN: {
+              coins: { 1: 500, 2: 1000, 3: 2000 },
+              points: { 4: 5000, 5: 12000 },
+            },
+            SHEEP: {
+              coins: { 1: 1500, 2: 3000, 3: 6000 },
+              points: { 4: 15000, 5: 35000 },
+            },
+            COW: {
+              coins: { 1: 5000, 2: 10000, 3: 20000 },
+              points: { 4: 30000, 5: 70000 },
+            },
+          };
+
+          if (safeLevel <= 3) {
+            const oneCost =
+              costs[type].coins[safeLevel] ?? costs[type].coins[1];
+            return { label: `${oneCost * safeCount} coins` };
           }
 
-          return `
-            <div class="animal-slots-section">
-              <div class="animal-section-title">
-                <span>${emojiByType(type)} ${titleByType(type)}</span>
-                <span>${sortedCards.length}/${slots} slots</span>
-              </div>
+          const pointLevel = safeLevel === 4 ? 4 : 5;
+          const oneCost =
+            costs[type].points[pointLevel] ?? costs[type].points[5];
+          return { label: `${oneCost * safeCount} points` };
+        }
 
-              <div class="breed-panel">
-                <div class="tile-row"><span>🌾 Feed</span><span>${feedLeftByType(type)}</span></div>
-                <div class="tile-row"><span>📦 Resource</span><span>${resourceByType(type)}</span></div>
-                <div class="tile-row"><span>🧬 Breed cost</span><span>${
-                  type === "CHICKEN"
-                    ? "500k coins + 50 💎"
-                    : type === "SHEEP"
-                      ? "1.5M coins + 150 💎"
-                      : "3M coins + 300 💎"
-                }</span></div>
-                <button class="buy-btn gold" data-breed-type="${type}">🧬 Breed selected 2</button>
-              </div>
+        function healButton(type, count, level) {
+          if (!count || count <= 0) {
+            return `<button class="buy-btn gold" disabled>Немає тварин</button>`;
+          }
 
-              <div class="animal-slot-grid">
-                ${slotsHtml.join("")}
-              </div>
-            </div>
-          `;
+          const heal = getHealInfo(type, level, count);
+          return `<button class="buy-btn gold" data-heal="${type}">❤️ Лікувати (${heal.label})</button>`;
         }
 
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">🐾 My Animals</div>
-              <div class="note">
-                Вибери 2 тварини одного типу з LVL 5 і натисни Breed. Після схрещення старі 2 тварини зникають, а нова отримує rarity bonus.
-              </div>
-            </div>
+                            <div class="modal-grid">
+                              <div class="tile">
+                                <div class="tile-title">🐔 Курки</div>
+                                <div class="tile-value">${animals.chicken ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.chickenLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.chickenLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.chickenEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("CHICKEN", animals.chickenLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("CHICKEN", animals.chickenLevel ?? 0, animals.chicken ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.eggsReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.chicken ?? 0)}
+                                ${healButton("CHICKEN", animals.chicken ?? 0, animals.chickenLevel ?? 1)}
+                              </div>
 
-            ${renderType("CHICKEN", animals.chickenCards || [], animals.chickenSlots ?? 2)}
-            ${renderType("SHEEP", animals.sheepCards || [], animals.sheepSlots ?? 2)}
-            ${renderType("COW", animals.cowCards || [], animals.cowSlots ?? 2)}
-          </div>
-        `;
+                              <div class="tile">
+                                <div class="tile-title">🐑 Вівці</div>
+                                <div class="tile-value">${animals.sheep ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.sheepLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.sheepLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.sheepEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("SHEEP", animals.sheepLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("SHEEP", animals.sheepLevel ?? 0, animals.sheep ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.woolReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.sheep ?? 0)}
+                                ${healButton("SHEEP", animals.sheep ?? 0, animals.sheepLevel ?? 1)}
+                              </div>
 
-        modalBody.querySelectorAll("[data-unlock-slot]").forEach((btn) => {
+                              <div class="tile">
+                                <div class="tile-title">🐄 Корови</div>
+                                <div class="tile-value">${animals.cow ?? 0}</div>
+                                <div class="tile-row"><span>LVL</span><span>${animals.cowLevel ?? 0}</span></div>
+                                <div class="tile-row"><span>❤️ Життя</span><span>${animals.cowLife ?? 100}%</span></div>
+                                <div class="tile-row"><span>⚡ Ефективність</span><span>${animals.cowEfficiency ?? 100}%</span></div>
+                                <div class="tile-row"><span>Продуктивність</span><span>${productionText("COW", animals.cowLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>⭐ Points</span><span>${pointsText("COW", animals.cowLevel ?? 0)}</span></div>
+                                <div class="tile-row"><span>За годину</span><span>${productionPerHour("COW", animals.cowLevel ?? 0, animals.cow ?? 0)}</span></div>
+                                <div class="tile-row"><span>Готово</span><span>${ready.milkReady ?? 0}</span></div>
+                                ${animalFeedWarning(feed.cow ?? 0)}
+                                ${healButton("COW", animals.cow ?? 0, animals.cowLevel ?? 1)}
+                              </div>
+
+                              <div class="tile">
+                                <div class="tile-title">⚙ Статус</div>
+                                <div class="tile-value">${currentState?.vip?.active ? "VIP ON" : "VIP OFF"}</div>
+                                <div class="tile-row"><span>Boost</span><span>${currentState?.boost?.active ? "ON" : "OFF"}</span></div>
+                                <div class="tile-row"><span>Auto</span><span>${currentState?.autoCollect?.active ? "ON" : "OFF"}</span></div>
+                                <button class="buy-btn gold" data-heal="ALL">❤️ Лікувати всіх</button>
+                              </div>
+                            </div>
+                          `;
+
+        modalBody.querySelectorAll("[data-heal]").forEach((btn) => {
           btn.onclick = async () => {
-            await unlockAnimalSlot(btn.getAttribute("data-unlock-slot"));
-          };
-        });
-
-        modalBody.querySelectorAll("[data-buy-from-slot]").forEach((btn) => {
-          btn.onclick = async () => {
-            await buyAnimal(btn.getAttribute("data-buy-from-slot"));
-          };
-        });
-
-        modalBody.querySelectorAll("[data-upgrade-one]").forEach((btn) => {
-          btn.onclick = async () => {
-            await upgradeOneAnimal(btn.getAttribute("data-upgrade-one"));
-          };
-        });
-
-        modalBody.querySelectorAll("[data-heal-one]").forEach((btn) => {
-          btn.onclick = async () => {
-            await healOneAnimal(btn.getAttribute("data-heal-one"));
-          };
-        });
-
-        modalBody.querySelectorAll("[data-breed-pick]").forEach((input) => {
-          input.onchange = () => {
-            const type = input.getAttribute("data-breed-pick");
-            const checked = [
-              ...modalBody.querySelectorAll(
-                `[data-breed-pick="${type}"]:checked`,
-              ),
-            ];
-
-            if (checked.length > 2) {
-              input.checked = false;
-              showToast("Максимум 2 тварини");
-              return;
-            }
-
-            selectedForBreed[type] = checked.map((x) => x.value);
-          };
-        });
-
-        modalBody.querySelectorAll("[data-breed-type]").forEach((btn) => {
-          btn.onclick = async () => {
-            const type = btn.getAttribute("data-breed-type");
-            const ids = [
-              ...modalBody.querySelectorAll(
-                `[data-breed-pick="${type}"]:checked`,
-              ),
-            ].map((x) => x.value);
-            await breedAnimals(type, ids);
+            const type = btn.getAttribute("data-heal");
+            await healAnimals(type);
           };
         });
       }
-
       function renderAnimalsUpgrade() {
         openLabModal();
       }
@@ -3462,30 +3136,6 @@
         setTimeout(bindFeedProfileFix, 300);
         setTimeout(bindFeedProfileFix, 1200);
       })();
-
-      /* BUY BUTTON HARD FIX */
-      if (modalBody) {
-        modalBody.addEventListener("click", async (e) => {
-          const btn = e.target.closest("[data-animal], [data-buy-from-slot]");
-          if (!btn) return;
-
-          e.preventDefault();
-          e.stopPropagation();
-
-          const type =
-            btn.getAttribute("data-animal") ||
-            btn.getAttribute("data-buy-from-slot");
-
-          if (!type) return;
-
-          btn.disabled = true;
-          await buyAnimal(type);
-
-          setTimeout(() => {
-            btn.disabled = false;
-          }, 800);
-        });
-      }
 
       function bindButton(id, handler) {
         const el = document.getElementById(id);
