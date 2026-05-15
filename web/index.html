@@ -1709,153 +1709,6 @@
         }
       }
 
-      function getAnimalUpgradeCostPreview(type, level, rarity) {
-        const costs = {
-          CHICKEN: {
-            1: { coins: 5000, diamonds: 0 },
-            2: { coins: 25000, diamonds: 0 },
-            3: { coins: 100000, diamonds: 5 },
-            4: { coins: 500000, diamonds: 25 },
-          },
-          SHEEP: {
-            1: { coins: 25000, diamonds: 0 },
-            2: { coins: 100000, diamonds: 5 },
-            3: { coins: 500000, diamonds: 25 },
-            4: { coins: 1500000, diamonds: 75 },
-          },
-          COW: {
-            1: { coins: 100000, diamonds: 5 },
-            2: { coins: 500000, diamonds: 25 },
-            3: { coins: 1500000, diamonds: 75 },
-            4: { coins: 3000000, diamonds: 150 },
-          },
-        };
-
-        const multipliers = {
-          normal: 1,
-          rare: 1.25,
-          epic: 1.6,
-          legendary: 2.2,
-        };
-
-        const safeLevel = Math.max(1, Math.min(4, Number(level || 1)));
-        const base = costs[type]?.[safeLevel];
-
-        if (!base) return null;
-
-        const multiplier =
-          multipliers[String(rarity || "normal").toLowerCase()] ?? 1;
-
-        return {
-          coins: Math.floor(base.coins * multiplier),
-          diamonds: Math.floor(base.diamonds * multiplier),
-          multiplier,
-        };
-      }
-
-      function getAnimalUpgradeChance(level, fails = 0) {
-        if (Number(fails || 0) >= 5) return 100;
-
-        const chances = {
-          1: 95,
-          2: 80,
-          3: 60,
-          4: 40,
-        };
-
-        return chances[Math.max(1, Math.min(4, Number(level || 1)))] ?? 40;
-      }
-
-      function canPayUpgrade(cost) {
-        if (!cost) return false;
-        return (
-          Number(currentState?.coins ?? 0) >= Number(cost.coins ?? 0) &&
-          Number(currentState?.diamonds ?? 0) >= Number(cost.diamonds ?? 0)
-        );
-      }
-
-      function openAnimalUpgradeModal(card, type) {
-        if (!card) return;
-
-        modalTitle.textContent = "⬆️ Upgrade Animal";
-        modalTabs.style.display = "none";
-
-        const level = Number(card.level ?? 1);
-        const rarity = String(card.rarity ?? "normal").toLowerCase();
-        const fails = Number(card.upgradeFails ?? 0);
-
-        if (level >= 5) {
-          modalBody.innerHTML = `
-            <div class="modal-grid">
-              <div class="tile full">
-                <div class="tile-title">✅ MAX LEVEL</div>
-                <div class="tile-value">LVL ${level}</div>
-                <div class="note">Ця тварина вже має максимальний рівень.</div>
-              </div>
-            </div>
-          `;
-          showModal();
-          return;
-        }
-
-        const cost = getAnimalUpgradeCostPreview(type, level, rarity);
-        const chance = getAnimalUpgradeChance(level, fails);
-        const canUpgrade = canPayUpgrade(cost);
-
-        modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">${type === "CHICKEN" ? "🐔 Chicken" : type === "SHEEP" ? "🐑 Sheep" : "🐄 Cow"}</div>
-              <div class="tile-value">LVL ${level} → ${level + 1}</div>
-              <div class="tile-row"><span>Rarity</span><span>${rarity.toUpperCase()}</span></div>
-              <div class="tile-row"><span>Rarity multiplier</span><span>x${Number(cost?.multiplier ?? 1).toFixed(2)}</span></div>
-              <div class="tile-row"><span>🪙 Coins</span><span>${cost?.coins ?? 0}</span></div>
-              <div class="tile-row"><span>💎 Diamonds</span><span>${cost?.diamonds ?? 0}</span></div>
-              <div class="tile-row"><span>🎲 Success chance</span><span class="${chance >= 80 ? "chance-green" : chance >= 50 ? "chance-gold" : "chance-danger"}">${chance}%</span></div>
-              <div class="tile-row"><span>❌ Fails</span><span>${fails}/5</span></div>
-              ${fails >= 5 ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-              ${canUpgrade ? "" : `<div class="warn">Не вистачає ресурсів для апгрейду</div>`}
-              <button class="buy-btn ${canUpgrade ? "green" : "gold"}" id="confirmAnimalUpgradeBtn" ${canUpgrade ? "" : "disabled"}>
-                ${canUpgrade ? "Підтвердити Upgrade" : "Не вистачає"}
-              </button>
-            </div>
-          </div>
-        `;
-
-        showModal();
-
-        const confirmBtn = document.getElementById("confirmAnimalUpgradeBtn");
-        if (confirmBtn) {
-          confirmBtn.onclick = async () => {
-            confirmBtn.disabled = true;
-
-            const res = await apiPost("/upgrade-animal", {
-              animalId: Number(card.id),
-            });
-
-            setResult(res.data);
-
-            if (res.ok) {
-              if (res.data?.success) {
-                showToast(
-                  res.data?.message ||
-                    `✅ LVL ${res.data?.animal?.level ?? level + 1}`,
-                );
-              } else {
-                showToast(res.data?.message || `❌ Upgrade failed`);
-              }
-
-              await loadState();
-              openAnimalsModal();
-              setTimeout(() => renderAnimalsOwned(), 50);
-            } else {
-              showToast(res.data?.error || "Помилка апгрейду");
-              confirmBtn.disabled = false;
-            }
-          };
-        }
-      }
-
       function renderAnimalsOwned() {
         tabBuyBtn.classList.remove("active");
         tabOwnedBtn.classList.add("active");
@@ -1979,24 +1832,6 @@
               <div class="animal-card-title">Slot ${slotIndex} — LVL ${card.level ?? 1}</div>
 
               <div class="tile-row"><span>🧬 Bonus</span><span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span></div>
-              ${
-                Number(card.level ?? 1) >= 5
-                  ? `<div class="tile-row"><span>⬆️ Upgrade</span><span>MAX</span></div>`
-                  : (() => {
-                      const upgradeCost = getAnimalUpgradeCostPreview(
-                        type,
-                        card.level ?? 1,
-                        card.rarity,
-                      );
-                      const chance = getAnimalUpgradeChance(
-                        card.level ?? 1,
-                        card.upgradeFails ?? 0,
-                      );
-                      return `<div class="tile-row"><span>⬆️ Next</span><span>LVL ${card.level ?? 1} → ${Number(card.level ?? 1) + 1}</span></div>
-                        <div class="tile-row"><span>Cost</span><span>${upgradeCost?.coins ?? 0} 🪙 / ${upgradeCost?.diamonds ?? 0} 💎</span></div>
-                        <div class="tile-row"><span>🎲 Chance</span><span>${chance}%</span></div>`;
-                    })()
-              }
               <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
 
               <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
@@ -2006,7 +1841,7 @@
               <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
 
               <div class="animal-actions">
-                <button class="animal-small-btn" data-upgrade-modal="${card.id}">⬆️ Upgrade</button>
+                <button class="animal-small-btn" data-upgrade-one="${card.id}">⬆️ Upgrade</button>
                 <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
               </div>
 
@@ -2086,26 +1921,9 @@
           };
         });
 
-        modalBody.querySelectorAll("[data-upgrade-modal]").forEach((btn) => {
-          btn.onclick = () => {
-            const id = Number(btn.getAttribute("data-upgrade-modal"));
-            const allCards = [
-              ...(animals.chickenCards || []),
-              ...(animals.sheepCards || []),
-              ...(animals.cowCards || []),
-            ];
-            const card = allCards.find((item) => Number(item.id) === id);
-            const type = (animals.chickenCards || []).some(
-              (item) => Number(item.id) === id,
-            )
-              ? "CHICKEN"
-              : (animals.sheepCards || []).some(
-                    (item) => Number(item.id) === id,
-                  )
-                ? "SHEEP"
-                : "COW";
-
-            openAnimalUpgradeModal(card, type);
+        modalBody.querySelectorAll("[data-upgrade-one]").forEach((btn) => {
+          btn.onclick = async () => {
+            await upgradeOneAnimal(btn.getAttribute("data-upgrade-one"));
           };
         });
 
@@ -3644,6 +3462,30 @@
         setTimeout(bindFeedProfileFix, 300);
         setTimeout(bindFeedProfileFix, 1200);
       })();
+
+      /* BUY BUTTON HARD FIX */
+      if (modalBody) {
+        modalBody.addEventListener("click", async (e) => {
+          const btn = e.target.closest("[data-animal], [data-buy-from-slot]");
+          if (!btn) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          const type =
+            btn.getAttribute("data-animal") ||
+            btn.getAttribute("data-buy-from-slot");
+
+          if (!type) return;
+
+          btn.disabled = true;
+          await buyAnimal(type);
+
+          setTimeout(() => {
+            btn.disabled = false;
+          }, 800);
+        });
+      }
 
       function bindButton(id, handler) {
         const el = document.getElementById(id);
