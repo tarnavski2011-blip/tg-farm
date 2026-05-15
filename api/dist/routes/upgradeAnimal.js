@@ -31,9 +31,9 @@ const RARITY_MULTIPLIER = {
 };
 const SUCCESS_CHANCE = {
     1: 100,
-    2: 90,
-    3: 75,
-    4: 55,
+    2: 80,
+    3: 60,
+    4: 35,
 };
 function getUpgradeCost(type, level, rarity) {
     const safeType = type;
