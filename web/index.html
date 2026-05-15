@@ -1753,12 +1753,107 @@
         };
       }
 
+      function getAnimalUpgradeChance(level, fails = 0) {
+        if (Number(fails || 0) >= 5) return 100;
+
+        const chances = {
+          1: 95,
+          2: 80,
+          3: 60,
+          4: 40,
+        };
+
+        return chances[Math.max(1, Math.min(4, Number(level || 1)))] ?? 40;
+      }
+
       function canPayUpgrade(cost) {
         if (!cost) return false;
         return (
           Number(currentState?.coins ?? 0) >= Number(cost.coins ?? 0) &&
           Number(currentState?.diamonds ?? 0) >= Number(cost.diamonds ?? 0)
         );
+      }
+
+      function openAnimalUpgradeModal(card, type) {
+        if (!card) return;
+
+        modalTitle.textContent = "⬆️ Upgrade Animal";
+        modalTabs.style.display = "none";
+
+        const level = Number(card.level ?? 1);
+        const rarity = String(card.rarity ?? "normal").toLowerCase();
+        const fails = Number(card.upgradeFails ?? 0);
+
+        if (level >= 5) {
+          modalBody.innerHTML = `
+            <div class="modal-grid">
+              <div class="tile full">
+                <div class="tile-title">✅ MAX LEVEL</div>
+                <div class="tile-value">LVL ${level}</div>
+                <div class="note">Ця тварина вже має максимальний рівень.</div>
+              </div>
+            </div>
+          `;
+          showModal();
+          return;
+        }
+
+        const cost = getAnimalUpgradeCostPreview(type, level, rarity);
+        const chance = getAnimalUpgradeChance(level, fails);
+        const canUpgrade = canPayUpgrade(cost);
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">${type === "CHICKEN" ? "🐔 Chicken" : type === "SHEEP" ? "🐑 Sheep" : "🐄 Cow"}</div>
+              <div class="tile-value">LVL ${level} → ${level + 1}</div>
+              <div class="tile-row"><span>Rarity</span><span>${rarity.toUpperCase()}</span></div>
+              <div class="tile-row"><span>Rarity multiplier</span><span>x${Number(cost?.multiplier ?? 1).toFixed(2)}</span></div>
+              <div class="tile-row"><span>🪙 Coins</span><span>${cost?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>💎 Diamonds</span><span>${cost?.diamonds ?? 0}</span></div>
+              <div class="tile-row"><span>🎲 Success chance</span><span class="${chance >= 80 ? "chance-green" : chance >= 50 ? "chance-gold" : "chance-danger"}">${chance}%</span></div>
+              <div class="tile-row"><span>❌ Fails</span><span>${fails}/5</span></div>
+              ${fails >= 5 ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+              ${canUpgrade ? "" : `<div class="warn">Не вистачає ресурсів для апгрейду</div>`}
+              <button class="buy-btn ${canUpgrade ? "green" : "gold"}" id="confirmAnimalUpgradeBtn" ${canUpgrade ? "" : "disabled"}>
+                ${canUpgrade ? "Підтвердити Upgrade" : "Не вистачає"}
+              </button>
+            </div>
+          </div>
+        `;
+
+        showModal();
+
+        const confirmBtn = document.getElementById("confirmAnimalUpgradeBtn");
+        if (confirmBtn) {
+          confirmBtn.onclick = async () => {
+            confirmBtn.disabled = true;
+
+            const res = await apiPost("/upgrade-animal", {
+              animalId: Number(card.id),
+            });
+
+            setResult(res.data);
+
+            if (res.ok) {
+              if (res.data?.success) {
+                showToast(
+                  res.data?.message ||
+                    `✅ LVL ${res.data?.animal?.level ?? level + 1}`,
+                );
+              } else {
+                showToast(res.data?.message || `❌ Upgrade failed`);
+              }
+
+              await loadState();
+              openAnimalsModal();
+              setTimeout(() => renderAnimalsOwned(), 50);
+            } else {
+              showToast(res.data?.error || "Помилка апгрейду");
+              confirmBtn.disabled = false;
+            }
+          };
+        }
       }
 
       function renderAnimalsOwned() {
@@ -1884,6 +1979,24 @@
               <div class="animal-card-title">Slot ${slotIndex} — LVL ${card.level ?? 1}</div>
 
               <div class="tile-row"><span>🧬 Bonus</span><span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span></div>
+              ${
+                Number(card.level ?? 1) >= 5
+                  ? `<div class="tile-row"><span>⬆️ Upgrade</span><span>MAX</span></div>`
+                  : (() => {
+                      const upgradeCost = getAnimalUpgradeCostPreview(
+                        type,
+                        card.level ?? 1,
+                        card.rarity,
+                      );
+                      const chance = getAnimalUpgradeChance(
+                        card.level ?? 1,
+                        card.upgradeFails ?? 0,
+                      );
+                      return `<div class="tile-row"><span>⬆️ Next</span><span>LVL ${card.level ?? 1} → ${Number(card.level ?? 1) + 1}</span></div>
+                        <div class="tile-row"><span>Cost</span><span>${upgradeCost?.coins ?? 0} 🪙 / ${upgradeCost?.diamonds ?? 0} 💎</span></div>
+                        <div class="tile-row"><span>🎲 Chance</span><span>${chance}%</span></div>`;
+                    })()
+              }
               <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
 
               <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
@@ -1892,32 +2005,10 @@
               <div class="tile-row"><span>⚡ Efficiency</span><span>${efficiency}%</span></div>
               <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
 
-              ${
-                Number(card.level ?? 1) >= 5
-                  ? `<div class="animal-actions">
-                      <button class="animal-small-btn green" disabled>✅ MAX LVL</button>
-                      <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
-                    </div>`
-                  : (() => {
-                      const upgradeCost = getAnimalUpgradeCostPreview(
-                        type,
-                        card.level ?? 1,
-                        card.rarity,
-                      );
-                      const canUpgrade = canPayUpgrade(upgradeCost);
-
-                      return `<div class="tile-row"><span>⬆️ Upgrade</span><span>LVL ${card.level ?? 1} → ${Number(card.level ?? 1) + 1}</span></div>
-                        <div class="tile-row"><span>Coins</span><span>${upgradeCost?.coins ?? 0}</span></div>
-                        <div class="tile-row"><span>Diamonds</span><span>${upgradeCost?.diamonds ?? 0}</span></div>
-                        <div class="tile-row"><span>Rarity x</span><span>${Number(upgradeCost?.multiplier ?? 1).toFixed(2)}</span></div>
-                        <div class="animal-actions">
-                          <button class="animal-small-btn ${canUpgrade ? "" : "gold"}" data-upgrade-one="${card.id}" ${canUpgrade ? "" : "disabled"}>
-                            ${canUpgrade ? "⬆️ Upgrade" : "Не вистачає"}
-                          </button>
-                          <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
-                        </div>`;
-                    })()
-              }
+              <div class="animal-actions">
+                <button class="animal-small-btn" data-upgrade-modal="${card.id}">⬆️ Upgrade</button>
+                <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
+              </div>
 
               <label class="breed-check">
                 <input type="checkbox" data-breed-pick="${type}" value="${card.id}" ${canBreed ? "" : "disabled"} />
@@ -1995,9 +2086,26 @@
           };
         });
 
-        modalBody.querySelectorAll("[data-upgrade-one]").forEach((btn) => {
-          btn.onclick = async () => {
-            await upgradeOneAnimal(btn.getAttribute("data-upgrade-one"));
+        modalBody.querySelectorAll("[data-upgrade-modal]").forEach((btn) => {
+          btn.onclick = () => {
+            const id = Number(btn.getAttribute("data-upgrade-modal"));
+            const allCards = [
+              ...(animals.chickenCards || []),
+              ...(animals.sheepCards || []),
+              ...(animals.cowCards || []),
+            ];
+            const card = allCards.find((item) => Number(item.id) === id);
+            const type = (animals.chickenCards || []).some(
+              (item) => Number(item.id) === id,
+            )
+              ? "CHICKEN"
+              : (animals.sheepCards || []).some(
+                    (item) => Number(item.id) === id,
+                  )
+                ? "SHEEP"
+                : "COW";
+
+            openAnimalUpgradeModal(card, type);
           };
         });
 
@@ -2081,10 +2189,11 @@
       }
 
       async function openStorageModal() {
-        modalTitle.textContent = "📦 Warehouse";
+        modalTitle.textContent = "📦 Склад";
         modalTabs.style.display = "none";
 
         const s = currentState?.storage || {};
+
         const eggs = s.eggs ?? 0;
         const wool = s.wool ?? 0;
         const milk = s.milk ?? 0;
@@ -2094,21 +2203,11 @@
         const coinsFromEggs = eggs * 6;
         const coinsFromWool = wool * 15;
         const coinsFromMilk = milk * 30;
+        const fallbackCoins = coinsFromEggs + coinsFromWool + coinsFromMilk;
         const totalCoins =
-          s.sellValue ?? coinsFromEggs + coinsFromWool + coinsFromMilk;
+          s.sellValue ?? s.sellCoins ?? s.coins ?? fallbackCoins;
+
         const percent = Math.min(100, Math.floor((total / capacity) * 100));
-
-        modalBody.innerHTML = `<div class="note">loading...</div>`;
-        showModal();
-
-        let labStorage = null;
-
-        try {
-          const labRes = await apiGet("/lab");
-          if (labRes.ok) {
-            labStorage = labRes.data?.storage || null;
-          }
-        } catch {}
 
         let warning = "";
         if (percent >= 95) {
@@ -2117,133 +2216,79 @@
           warning = `<div class="warn">⚠️ Склад майже повний</div>`;
         }
 
-        function storageUpgradeCard(item) {
-          if (!item) {
-            return `
-              <div class="tile full">
-                <div class="tile-title">📦 Upgrade Warehouse</div>
-                <div class="warn">Не вдалося завантажити апгрейд складу</div>
-              </div>
-            `;
-          }
-
-          if (item.maxed) {
-            return `
-              <div class="tile full">
-                <div class="tile-title">📦 Upgrade Warehouse</div>
-                <div class="tile-value">LVL ${item.currentLevel}</div>
-                <div class="tile-row"><span>Capacity</span><span>${item.capacity}</span></div>
-                <button class="buy-btn green" disabled>✅ MAX</button>
-              </div>
-            `;
-          }
-
-          const canUpgrade = !!item.canUpgrade;
-
-          return `
-            <div class="tile full">
-              <div class="tile-title">📦 Upgrade Warehouse</div>
-              <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-              <div class="tile-row"><span>Capacity</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
-              <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-              <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-              <div class="tile-row"><span>🎲 Chance</span><span class="${(item.successChance ?? 0) >= 80 ? "chance-green" : (item.successChance ?? 0) >= 50 ? "chance-gold" : "chance-danger"}">${item.successChance ?? 0}%</span></div>
-              <div class="tile-row"><span>❌ Fails</span><span>${item.upgradeFails ?? 0}/5</span></div>
-              ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-              <button class="buy-btn ${canUpgrade ? "green" : "gold"}" id="storageUpgradeBtn" ${canUpgrade ? "" : "disabled"}>
-                ${canUpgrade ? "⬆️ Upgrade Warehouse" : "Не вистачає"}
-              </button>
-            </div>
-          `;
-        }
-
         modalBody.innerHTML = `
-          <div class="modal-grid">
-            <div class="tile full">
-              <div class="tile-title">📊 Warehouse filling</div>
-              <div class="tile-value">${total} / ${capacity}</div>
-              <div class="tile-row"><span>Used</span><span>${percent}%</span></div>
-              <div class="mini-bar"><span style="width:${percent}%"></span></div>
-              ${warning}
-            </div>
+                            <div class="modal-grid">
+                              <div class="tile full">
+                                <div class="tile-title">📊 Заповнення</div>
+                                <div class="tile-value">${total} / ${capacity}</div>
+                                <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
+                                ${warning}
+                              </div>
 
-            ${storageUpgradeCard(labStorage)}
+                              <div class="tile">
+                                <div class="tile-title">🥚 Яйця</div>
+                                <div class="tile-value">${eggs}</div>
+                                <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
+                              </div>
 
-            <div class="tile">
-              <div class="tile-title">🥚 Eggs</div>
-              <div class="tile-value">${eggs}</div>
-              <div class="tile-row"><span>Value</span><span>${coinsFromEggs} coins</span></div>
-            </div>
+                              <div class="tile">
+                                <div class="tile-title">🧶 Шерсть</div>
+                                <div class="tile-value">${wool}</div>
+                                <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
+                              </div>
 
-            <div class="tile">
-              <div class="tile-title">🧶 Wool</div>
-              <div class="tile-value">${wool}</div>
-              <div class="tile-row"><span>Value</span><span>${coinsFromWool} coins</span></div>
-            </div>
+                              <div class="tile">
+                                <div class="tile-title">🥛 Молоко</div>
+                                <div class="tile-value">${milk}</div>
+                                <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
+                              </div>
 
-            <div class="tile">
-              <div class="tile-title">🥛 Milk</div>
-              <div class="tile-value">${milk}</div>
-              <div class="tile-row"><span>Value</span><span>${coinsFromMilk} coins</span></div>
-            </div>
+                              <div class="tile full">
+                                <div class="tile-title">💰 Продаж</div>
+                                <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
+                               <span>+${totalCoins} coins 💰</span>
+                               <span>+${
+                                 getSellPreviewPoints(
+                                   "CHICKEN",
+                                   eggs,
+                                   currentState?.animals?.chickenLevel ?? 0,
+                                 ) +
+                                 getSellPreviewPoints(
+                                   "SHEEP",
+                                   wool,
+                                   currentState?.animals?.sheepLevel ?? 0,
+                                 ) +
+                                 getSellPreviewPoints(
+                                   "COW",
+                                   milk,
+                                   currentState?.animals?.cowLevel ?? 0,
+                                 )
+                               } points ⭐</span>
+                               </div>
+                                <button class="buy-btn green" id="sellAllBtn">Продати все</button>
+                              </div>
+                            </div>
+                          `;
 
-            <div class="tile full">
-              <div class="tile-title">💰 Sell</div>
-              <div class="tile-value">+${totalCoins} coins 💰</div>
-              <button class="buy-btn green" id="sellAllBtn">Продати все</button>
-            </div>
-          </div>
-        `;
+        showModal();
 
-        const storageUpgradeBtn = document.getElementById("storageUpgradeBtn");
-        if (storageUpgradeBtn) {
-          storageUpgradeBtn.onclick = async () => {
-            storageUpgradeBtn.disabled = true;
+        document.getElementById("sellAllBtn").onclick = async () => {
+          const res = await apiPost("/sell");
+          setResult(res.data);
 
-            const resp = await apiPost("/lab/storage-upgrade");
-            setResult(resp.data);
-
-            if (resp.ok) {
-              if (resp.data?.success) {
-                showToast(resp.data?.message || `📦 LVL ${resp.data?.level}`);
-              } else {
-                showToast(
-                  resp.data?.message ||
-                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
-                );
-              }
-
-              handleXpResult(resp.data?.xp);
-
-              await loadState();
-              await openStorageModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
-              storageUpgradeBtn.disabled = false;
+          if (res.ok) {
+            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
+              showToast(
+                `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
+              );
             }
-          };
-        }
 
-        const sellAllBtn = document.getElementById("sellAllBtn");
-        if (sellAllBtn) {
-          sellAllBtn.onclick = async () => {
-            const res = await apiPost("/sell");
-            setResult(res.data);
-
-            if (res.ok) {
-              if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
-                showToast(
-                  `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
-                );
-              }
-
-              await loadState();
-              await openStorageModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
-            }
-          };
-        }
+            await loadState();
+            await openStorageModal();
+          } else {
+            showToast(res.data?.error || "Помилка");
+          }
+        };
       }
 
       function openFeedModal() {
@@ -3398,9 +3443,9 @@
         safeBind("feedBtnOld", openFeedModal);
         safeBind("feedSideBtn", openFeedModal);
 
-        safeBind("labBtn", openAnimalsModal);
-        safeBind("labBtnOld", openAnimalsModal);
-        safeBind("labSideBtn", openAnimalsModal);
+        safeBind("labBtn", openLabModal);
+        safeBind("labBtnOld", openLabModal);
+        safeBind("labSideBtn", openLabModal);
 
         safeBind("boostBtn", openBoostersModal);
         safeBind("boostBtnOld", openBoostersModal);
@@ -3478,13 +3523,13 @@
           };
 
           bindClick("farmHomeBtn", loadState);
-          bindClick("labSideBtn", openAnimalsModal);
+          bindClick("labSideBtn", openLabModal);
           bindClick("feedSideBtn", openFeedModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
           bindClick("storageBtnOld", openStorageModal);
           bindClick("feedBtnOld", openFeedModal);
-          bindClick("labBtnOld", openAnimalsModal);
+          bindClick("labBtnOld", openLabModal);
           bindClick("dailyBtnOld", openDailyModal);
           bindClick("questsBtnOld", openQuestsModal);
           bindClick("shopBtnOld", openShopModal);
@@ -3608,7 +3653,7 @@
       bindButton("animalsBtn", openAnimalsModal);
       bindButton("storageBtn", openStorageModal);
       bindButton("feedSideBtn", openFeedModal);
-      bindButton("labSideBtn", openAnimalsModal);
+      bindButton("labSideBtn", openLabModal);
       bindButton("dailyBtn", openDailyModal);
       bindButton("questsBtn", openQuestsModal);
       bindButton("boostBtn", openBoostersModal);
@@ -3621,7 +3666,7 @@
       bindButton("animalsBtnOld", openAnimalsModal);
       bindButton("storageBtnOld", openStorageModal);
       bindButton("feedBtnOld", openFeedModal);
-      bindButton("labBtnOld", openAnimalsModal);
+      bindButton("labBtnOld", openLabModal);
       bindButton("dailyBtnOld", openDailyModal);
       bindButton("questsBtnOld", openQuestsModal);
       bindButton("boostBtnOld", openBoostersModal);
