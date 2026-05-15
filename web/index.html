@@ -1709,6 +1709,58 @@
         }
       }
 
+      function getAnimalUpgradeCostPreview(type, level, rarity) {
+        const costs = {
+          CHICKEN: {
+            1: { coins: 5000, diamonds: 0 },
+            2: { coins: 25000, diamonds: 0 },
+            3: { coins: 100000, diamonds: 5 },
+            4: { coins: 500000, diamonds: 25 },
+          },
+          SHEEP: {
+            1: { coins: 25000, diamonds: 0 },
+            2: { coins: 100000, diamonds: 5 },
+            3: { coins: 500000, diamonds: 25 },
+            4: { coins: 1500000, diamonds: 75 },
+          },
+          COW: {
+            1: { coins: 100000, diamonds: 5 },
+            2: { coins: 500000, diamonds: 25 },
+            3: { coins: 1500000, diamonds: 75 },
+            4: { coins: 3000000, diamonds: 150 },
+          },
+        };
+
+        const multipliers = {
+          normal: 1,
+          rare: 1.25,
+          epic: 1.6,
+          legendary: 2.2,
+        };
+
+        const safeLevel = Math.max(1, Math.min(4, Number(level || 1)));
+        const base = costs[type]?.[safeLevel];
+
+        if (!base) return null;
+
+        const multiplier =
+          multipliers[String(rarity || "normal").toLowerCase()] ?? 1;
+
+        return {
+          coins: Math.floor(base.coins * multiplier),
+          diamonds: Math.floor(base.diamonds * multiplier),
+          multiplier,
+        };
+      }
+
+      function canPayUpgrade(cost) {
+        if (!cost) return false;
+        return (
+          Number(currentState?.coins ?? 0) >= Number(cost.coins ?? 0) &&
+          Number(currentState?.diamonds ?? 0) >= Number(cost.diamonds ?? 0)
+        );
+      }
+
       function renderAnimalsOwned() {
         tabBuyBtn.classList.remove("active");
         tabOwnedBtn.classList.add("active");
@@ -1717,12 +1769,6 @@
         const animals = currentState?.animals || {};
         const feed = currentState?.feedStock || {};
         const MAX_SLOTS = 6;
-
-        const selectedForBreed = {
-          CHICKEN: [],
-          SHEEP: [],
-          COW: [],
-        };
 
         function emojiByType(type) {
           if (type === "CHICKEN") return "🐔";
@@ -1736,24 +1782,6 @@
           if (type === "SHEEP") return "Вівці";
           if (type === "COW") return "Корови";
           return "Тварини";
-        }
-
-        function resourceByType(type) {
-          if (type === "CHICKEN") return "eggs";
-          if (type === "SHEEP") return "wool";
-          if (type === "COW") return "milk";
-          return "-";
-        }
-
-        function slotPrice(nextSlot) {
-          const prices = {
-            3: { coins: 25000, diamonds: 0 },
-            4: { coins: 150000, diamonds: 25 },
-            5: { coins: 750000, diamonds: 100 },
-            6: { coins: 2500000, diamonds: 300 },
-          };
-
-          return prices[nextSlot] || null;
         }
 
         function rarityClass(rarity) {
@@ -1772,7 +1800,25 @@
           return "Normal";
         }
 
-        function feedLeftByType(type) {
+        function slotPrice(nextSlot) {
+          const prices = {
+            3: { coins: 25000, diamonds: 0 },
+            4: { coins: 150000, diamonds: 25 },
+            5: { coins: 750000, diamonds: 100 },
+            6: { coins: 2500000, diamonds: 300 },
+          };
+
+          return prices[nextSlot] || { coins: "-", diamonds: 0 };
+        }
+
+        function getBreedCost(type) {
+          if (type === "CHICKEN") return { coins: 500000, diamonds: 50 };
+          if (type === "SHEEP") return { coins: 1500000, diamonds: 150 };
+          if (type === "COW") return { coins: 3000000, diamonds: 300 };
+          return { coins: 0, diamonds: 0 };
+        }
+
+        function getFeedLeft(type) {
           if (type === "CHICKEN") return feed.chicken ?? 0;
           if (type === "SHEEP") return feed.sheep ?? 0;
           if (type === "COW") return feed.cow ?? 0;
@@ -1784,6 +1830,7 @@
 
           if (!unlocked) {
             const price = slotPrice(slotIndex);
+
             return `
               <div class="animal-card locked">
                 <div class="animal-card-head">
@@ -1791,9 +1838,11 @@
                   <span class="rarity-badge rarity-normal">LOCKED</span>
                 </div>
                 <div class="animal-card-title">${emoji} Slot ${slotIndex}</div>
-                <div class="tile-row"><span>Coins</span><span>${price?.coins ?? "-"}</span></div>
-                <div class="tile-row"><span>Diamonds</span><span>${price?.diamonds ?? 0}</span></div>
-                <button class="animal-small-btn gold" data-unlock-slot="${type}">🔓 Відкрити слот</button>
+                <div class="tile-row"><span>Coins</span><span>${price.coins}</span></div>
+                <div class="tile-row"><span>Diamonds</span><span>${price.diamonds}</span></div>
+                <button class="animal-small-btn gold" data-unlock-slot="${type}">
+                  🔓 Відкрити слот
+                </button>
               </div>
             `;
           }
@@ -1806,8 +1855,10 @@
                   <span class="rarity-badge rarity-normal">EMPTY</span>
                 </div>
                 <div class="animal-card-title">Slot ${slotIndex}</div>
-                <div class="note">Вільний слот. Можеш купити тварину в вкладці “Купити”.</div>
-                <button class="animal-small-btn green" data-buy-from-slot="${type}">+ Купити</button>
+                <div class="note">Вільний слот. Можеш купити тварину.</div>
+                <button class="animal-small-btn green" data-buy-from-slot="${type}">
+                  + Купити
+                </button>
               </div>
             `;
           }
@@ -1816,22 +1867,32 @@
             0,
             Math.min(100, Number(card.hp ?? card.lifePercent ?? 100)),
           );
+
           const efficiency = Math.max(
             0,
             Math.min(100, Number(card.efficiencyPercent ?? 100)),
           );
+
           const canBreed = Number(card.level ?? 1) >= 5;
 
           return `
             <div class="animal-card">
               <div class="animal-card-head">
                 <div class="animal-emoji">${emoji}</div>
-                <span class="rarity-badge ${rarityClass(card.rarity)}">${rarityLabel(card.rarity)}</span>
+                <span class="rarity-badge ${rarityClass(card.rarity)}">
+                  ${rarityLabel(card.rarity)}
+                </span>
               </div>
 
-              <div class="animal-card-title">Slot ${slotIndex} — LVL ${card.level ?? 1}</div>
+              <div class="animal-card-title">
+                Slot ${slotIndex} — LVL ${card.level ?? 1}
+              </div>
 
-              <div class="tile-row"><span>🧬 Bonus</span><span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span></div>
+              <div class="tile-row">
+                <span>🧬 Bonus</span>
+                <span>x${Number(card.breedBonus ?? 1).toFixed(2)}</span>
+              </div>
+
               <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
 
               <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
@@ -1841,12 +1902,28 @@
               <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
 
               <div class="animal-actions">
-                <button class="animal-small-btn" data-upgrade-one="${card.id}">⬆️ Upgrade</button>
-                <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
+                ${
+                  Number(card.level ?? 1) < 5
+                    ? `<button class="animal-small-btn" data-upgrade-one="${card.id}">
+                        ⬆️ Upgrade
+                      </button>`
+                    : `<button class="animal-small-btn green" disabled>
+                        ✅ MAX LVL
+                      </button>`
+                }
+
+                <button class="animal-small-btn gold" data-heal-one="${card.id}">
+                  ❤️ Heal
+                </button>
               </div>
 
               <label class="breed-check">
-                <input type="checkbox" data-breed-pick="${type}" value="${card.id}" ${canBreed ? "" : "disabled"} />
+                <input
+                  type="checkbox"
+                  data-breed-pick="${type}"
+                  value="${card.id}"
+                  ${canBreed ? "" : "disabled"}
+                />
                 <span>${canBreed ? "Select for breed" : "Breed з LVL 5"}</span>
               </label>
             </div>
@@ -1858,12 +1935,14 @@
             (a, b) => Number(a.slotIndex || 1) - Number(b.slotIndex || 1),
           );
 
+          const breedCost = getBreedCost(type);
           const slotsHtml = [];
 
           for (let i = 1; i <= MAX_SLOTS; i++) {
             const card = sortedCards.find(
               (a) => Number(a.slotIndex || 1) === i,
             );
+
             slotsHtml.push(cardHtml(type, i, card, i <= slots));
           }
 
@@ -1875,16 +1954,23 @@
               </div>
 
               <div class="breed-panel">
-                <div class="tile-row"><span>🌾 Feed</span><span>${feedLeftByType(type)}</span></div>
-                <div class="tile-row"><span>📦 Resource</span><span>${resourceByType(type)}</span></div>
-                <div class="tile-row"><span>🧬 Breed cost</span><span>${
-                  type === "CHICKEN"
-                    ? "500k coins + 50 💎"
-                    : type === "SHEEP"
-                      ? "1.5M coins + 150 💎"
-                      : "3M coins + 300 💎"
-                }</span></div>
-                <button class="buy-btn gold" data-breed-type="${type}">🧬 Breed selected 2</button>
+                <div class="tile-row">
+                  <span>🌾 Feed</span>
+                  <span>${getFeedLeft(type)}</span>
+                </div>
+
+                <div class="tile-row">
+                  <span>🧬 Breed cost</span>
+                  <span>${breedCost.coins} coins + ${breedCost.diamonds} 💎</span>
+                </div>
+
+                <div class="note" style="margin-top:8px;">
+                  Вибери 2 тварини одного типу з LVL 5.
+                </div>
+
+                <button class="buy-btn gold" data-breed-type="${type}">
+                  🧬 Breed selected 2
+                </button>
               </div>
 
               <div class="animal-slot-grid">
@@ -1899,7 +1985,7 @@
             <div class="tile full">
               <div class="tile-title">🐾 My Animals</div>
               <div class="note">
-                Вибери 2 тварини одного типу з LVL 5 і натисни Breed. Після схрещення старі 2 тварини зникають, а нова отримує rarity bonus.
+                Тварини показані карточками. Схрещення працює прямо тут: вибери 2 тварини LVL 5 одного типу.
               </div>
             </div>
 
@@ -1945,28 +2031,34 @@
             if (checked.length > 2) {
               input.checked = false;
               showToast("Максимум 2 тварини");
-              return;
             }
-
-            selectedForBreed[type] = checked.map((x) => x.value);
           };
         });
 
         modalBody.querySelectorAll("[data-breed-type]").forEach((btn) => {
           btn.onclick = async () => {
             const type = btn.getAttribute("data-breed-type");
+
             const ids = [
               ...modalBody.querySelectorAll(
                 `[data-breed-pick="${type}"]:checked`,
               ),
-            ].map((x) => x.value);
+            ].map((x) => Number(x.value));
+
+            if (ids.length !== 2) {
+              showToast("Вибери 2 тварини");
+              return;
+            }
+
+            btn.disabled = true;
             await breedAnimals(type, ids);
+            btn.disabled = false;
           };
         });
       }
 
       function renderAnimalsUpgrade() {
-        openLabModal();
+        renderAnimalsOwned();
       }
 
       function openAnimalsModal() {
@@ -2007,11 +2099,10 @@
       }
 
       async function openStorageModal() {
-        modalTitle.textContent = "📦 Склад";
+        modalTitle.textContent = "📦 Warehouse";
         modalTabs.style.display = "none";
 
         const s = currentState?.storage || {};
-
         const eggs = s.eggs ?? 0;
         const wool = s.wool ?? 0;
         const milk = s.milk ?? 0;
@@ -2021,11 +2112,21 @@
         const coinsFromEggs = eggs * 6;
         const coinsFromWool = wool * 15;
         const coinsFromMilk = milk * 30;
-        const fallbackCoins = coinsFromEggs + coinsFromWool + coinsFromMilk;
         const totalCoins =
-          s.sellValue ?? s.sellCoins ?? s.coins ?? fallbackCoins;
-
+          s.sellValue ?? coinsFromEggs + coinsFromWool + coinsFromMilk;
         const percent = Math.min(100, Math.floor((total / capacity) * 100));
+
+        modalBody.innerHTML = `<div class="note">loading...</div>`;
+        showModal();
+
+        let labStorage = null;
+
+        try {
+          const labRes = await apiGet("/lab");
+          if (labRes.ok) {
+            labStorage = labRes.data?.storage || null;
+          }
+        } catch {}
 
         let warning = "";
         if (percent >= 95) {
@@ -2034,79 +2135,133 @@
           warning = `<div class="warn">⚠️ Склад майже повний</div>`;
         }
 
-        modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">📊 Заповнення</div>
-                                <div class="tile-value">${total} / ${capacity}</div>
-                                <div class="tile-row"><span>Використано</span><span>${percent}%</span></div>
-                                ${warning}
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">🥚 Яйця</div>
-                                <div class="tile-value">${eggs}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromEggs} coins</span></div>
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">🧶 Шерсть</div>
-                                <div class="tile-value">${wool}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromWool} coins</span></div>
-                              </div>
-
-                              <div class="tile">
-                                <div class="tile-title">🥛 Молоко</div>
-                                <div class="tile-value">${milk}</div>
-                                <div class="tile-row"><span>Ціна</span><span>${coinsFromMilk} coins</span></div>
-                              </div>
-
-                              <div class="tile full">
-                                <div class="tile-title">💰 Продаж</div>
-                                <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
-                               <span>+${totalCoins} coins 💰</span>
-                               <span>+${
-                                 getSellPreviewPoints(
-                                   "CHICKEN",
-                                   eggs,
-                                   currentState?.animals?.chickenLevel ?? 0,
-                                 ) +
-                                 getSellPreviewPoints(
-                                   "SHEEP",
-                                   wool,
-                                   currentState?.animals?.sheepLevel ?? 0,
-                                 ) +
-                                 getSellPreviewPoints(
-                                   "COW",
-                                   milk,
-                                   currentState?.animals?.cowLevel ?? 0,
-                                 )
-                               } points ⭐</span>
-                               </div>
-                                <button class="buy-btn green" id="sellAllBtn">Продати все</button>
-                              </div>
-                            </div>
-                          `;
-
-        showModal();
-
-        document.getElementById("sellAllBtn").onclick = async () => {
-          const res = await apiPost("/sell");
-          setResult(res.data);
-
-          if (res.ok) {
-            if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
-              showToast(
-                `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
-              );
-            }
-
-            await loadState();
-            await openStorageModal();
-          } else {
-            showToast(res.data?.error || "Помилка");
+        function storageUpgradeCard(item) {
+          if (!item) {
+            return `
+              <div class="tile full">
+                <div class="tile-title">📦 Upgrade Warehouse</div>
+                <div class="warn">Не вдалося завантажити апгрейд складу</div>
+              </div>
+            `;
           }
-        };
+
+          if (item.maxed) {
+            return `
+              <div class="tile full">
+                <div class="tile-title">📦 Upgrade Warehouse</div>
+                <div class="tile-value">LVL ${item.currentLevel}</div>
+                <div class="tile-row"><span>Capacity</span><span>${item.capacity}</span></div>
+                <button class="buy-btn green" disabled>✅ MAX</button>
+              </div>
+            `;
+          }
+
+          const canUpgrade = !!item.canUpgrade;
+
+          return `
+            <div class="tile full">
+              <div class="tile-title">📦 Upgrade Warehouse</div>
+              <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+              <div class="tile-row"><span>Capacity</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
+              <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+              <div class="tile-row"><span>🎲 Chance</span><span class="${(item.successChance ?? 0) >= 80 ? "chance-green" : (item.successChance ?? 0) >= 50 ? "chance-gold" : "chance-danger"}">${item.successChance ?? 0}%</span></div>
+              <div class="tile-row"><span>❌ Fails</span><span>${item.upgradeFails ?? 0}/5</span></div>
+              ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+              <button class="buy-btn ${canUpgrade ? "green" : "gold"}" id="storageUpgradeBtn" ${canUpgrade ? "" : "disabled"}>
+                ${canUpgrade ? "⬆️ Upgrade Warehouse" : "Не вистачає"}
+              </button>
+            </div>
+          `;
+        }
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">📊 Warehouse filling</div>
+              <div class="tile-value">${total} / ${capacity}</div>
+              <div class="tile-row"><span>Used</span><span>${percent}%</span></div>
+              <div class="mini-bar"><span style="width:${percent}%"></span></div>
+              ${warning}
+            </div>
+
+            ${storageUpgradeCard(labStorage)}
+
+            <div class="tile">
+              <div class="tile-title">🥚 Eggs</div>
+              <div class="tile-value">${eggs}</div>
+              <div class="tile-row"><span>Value</span><span>${coinsFromEggs} coins</span></div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">🧶 Wool</div>
+              <div class="tile-value">${wool}</div>
+              <div class="tile-row"><span>Value</span><span>${coinsFromWool} coins</span></div>
+            </div>
+
+            <div class="tile">
+              <div class="tile-title">🥛 Milk</div>
+              <div class="tile-value">${milk}</div>
+              <div class="tile-row"><span>Value</span><span>${coinsFromMilk} coins</span></div>
+            </div>
+
+            <div class="tile full">
+              <div class="tile-title">💰 Sell</div>
+              <div class="tile-value">+${totalCoins} coins 💰</div>
+              <button class="buy-btn green" id="sellAllBtn">Продати все</button>
+            </div>
+          </div>
+        `;
+
+        const storageUpgradeBtn = document.getElementById("storageUpgradeBtn");
+        if (storageUpgradeBtn) {
+          storageUpgradeBtn.onclick = async () => {
+            storageUpgradeBtn.disabled = true;
+
+            const resp = await apiPost("/lab/storage-upgrade");
+            setResult(resp.data);
+
+            if (resp.ok) {
+              if (resp.data?.success) {
+                showToast(resp.data?.message || `📦 LVL ${resp.data?.level}`);
+              } else {
+                showToast(
+                  resp.data?.message ||
+                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
+                );
+              }
+
+              handleXpResult(resp.data?.xp);
+
+              await loadState();
+              await openStorageModal();
+            } else {
+              showToast(resp.data?.error || "Помилка");
+              storageUpgradeBtn.disabled = false;
+            }
+          };
+        }
+
+        const sellAllBtn = document.getElementById("sellAllBtn");
+        if (sellAllBtn) {
+          sellAllBtn.onclick = async () => {
+            const res = await apiPost("/sell");
+            setResult(res.data);
+
+            if (res.ok) {
+              if (!handleXpResult(res.data?.levelUpData ?? res.data?.xp)) {
+                showToast(
+                  `+${res.data?.earned ?? 0} coins 💰 | +${res.data?.earnedPoints ?? 0} points ⭐`,
+                );
+              }
+
+              await loadState();
+              await openStorageModal();
+            } else {
+              showToast(res.data?.error || "Помилка");
+            }
+          };
+        }
       }
 
       function openFeedModal() {
@@ -2283,7 +2438,7 @@
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
         modalTabs.style.display = "none";
-        tabUpgradeBtn.style.display = "";
+        tabUpgradeBtn.style.display = "none";
 
         modalBody.innerHTML = `<div class="note">loading...</div>`;
 
@@ -3261,9 +3416,9 @@
         safeBind("feedBtnOld", openFeedModal);
         safeBind("feedSideBtn", openFeedModal);
 
-        safeBind("labBtn", openLabModal);
-        safeBind("labBtnOld", openLabModal);
-        safeBind("labSideBtn", openLabModal);
+        safeBind("labBtn", openAnimalsModal);
+        safeBind("labBtnOld", openAnimalsModal);
+        safeBind("labSideBtn", openAnimalsModal);
 
         safeBind("boostBtn", openBoostersModal);
         safeBind("boostBtnOld", openBoostersModal);
@@ -3341,13 +3496,13 @@
           };
 
           bindClick("farmHomeBtn", loadState);
-          bindClick("labSideBtn", openLabModal);
+          bindClick("labSideBtn", openAnimalsModal);
           bindClick("feedSideBtn", openFeedModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
           bindClick("storageBtnOld", openStorageModal);
           bindClick("feedBtnOld", openFeedModal);
-          bindClick("labBtnOld", openLabModal);
+          bindClick("labBtnOld", openAnimalsModal);
           bindClick("dailyBtnOld", openDailyModal);
           bindClick("questsBtnOld", openQuestsModal);
           bindClick("shopBtnOld", openShopModal);
@@ -3463,6 +3618,56 @@
         setTimeout(bindFeedProfileFix, 1200);
       })();
 
+      /* ANIMALS CARD ACTIONS HARD FIX */
+      if (modalBody) {
+        modalBody.addEventListener("click", async (e) => {
+          const buyBtn = e.target.closest(
+            "[data-animal], [data-buy-from-slot]",
+          );
+          if (buyBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const type =
+              buyBtn.getAttribute("data-animal") ||
+              buyBtn.getAttribute("data-buy-from-slot");
+
+            if (!type) return;
+
+            buyBtn.disabled = true;
+            await buyAnimal(type);
+            setTimeout(() => {
+              buyBtn.disabled = false;
+            }, 800);
+            return;
+          }
+
+          const breedBtn = e.target.closest("[data-breed-type]");
+          if (breedBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const type = breedBtn.getAttribute("data-breed-type");
+            const ids = [
+              ...modalBody.querySelectorAll(
+                `[data-breed-pick="${type}"]:checked`,
+              ),
+            ].map((x) => Number(x.value));
+
+            if (ids.length !== 2) {
+              showToast("Вибери 2 тварини");
+              return;
+            }
+
+            breedBtn.disabled = true;
+            await breedAnimals(type, ids);
+            setTimeout(() => {
+              breedBtn.disabled = false;
+            }, 800);
+          }
+        });
+      }
+
       function bindButton(id, handler) {
         const el = document.getElementById(id);
         if (el) el.addEventListener("click", handler);
@@ -3471,7 +3676,7 @@
       bindButton("animalsBtn", openAnimalsModal);
       bindButton("storageBtn", openStorageModal);
       bindButton("feedSideBtn", openFeedModal);
-      bindButton("labSideBtn", openLabModal);
+      bindButton("labSideBtn", openAnimalsModal);
       bindButton("dailyBtn", openDailyModal);
       bindButton("questsBtn", openQuestsModal);
       bindButton("boostBtn", openBoostersModal);
@@ -3484,7 +3689,7 @@
       bindButton("animalsBtnOld", openAnimalsModal);
       bindButton("storageBtnOld", openStorageModal);
       bindButton("feedBtnOld", openFeedModal);
-      bindButton("labBtnOld", openLabModal);
+      bindButton("labBtnOld", openAnimalsModal);
       bindButton("dailyBtnOld", openDailyModal);
       bindButton("questsBtnOld", openQuestsModal);
       bindButton("boostBtnOld", openBoostersModal);
