@@ -6,22 +6,22 @@ const router = Router();
 
 const UPGRADE_COSTS = {
   CHICKEN: {
-    1: { coins: 5000, diamonds: 0 },
-    2: { coins: 25000, diamonds: 0 },
-    3: { coins: 100000, diamonds: 5 },
-    4: { coins: 500000, diamonds: 25 },
+    1: { coins: 3000, diamonds: 0 },
+    2: { coins: 12000, diamonds: 0 },
+    3: { coins: 50000, diamonds: 3 },
+    4: { coins: 180000, diamonds: 12 },
   },
   SHEEP: {
-    1: { coins: 25000, diamonds: 0 },
-    2: { coins: 100000, diamonds: 5 },
-    3: { coins: 500000, diamonds: 25 },
-    4: { coins: 1500000, diamonds: 75 },
+    1: { coins: 12000, diamonds: 0 },
+    2: { coins: 50000, diamonds: 3 },
+    3: { coins: 180000, diamonds: 12 },
+    4: { coins: 600000, diamonds: 35 },
   },
   COW: {
-    1: { coins: 100000, diamonds: 5 },
-    2: { coins: 500000, diamonds: 25 },
-    3: { coins: 1500000, diamonds: 75 },
-    4: { coins: 3000000, diamonds: 150 },
+    1: { coins: 50000, diamonds: 3 },
+    2: { coins: 180000, diamonds: 12 },
+    3: { coins: 600000, diamonds: 35 },
+    4: { coins: 1500000, diamonds: 75 },
   },
 } as const;
 
@@ -33,19 +33,24 @@ const RARITY_MULTIPLIER: Record<string, number> = {
 };
 
 const SUCCESS_CHANCE: Record<number, number> = {
-  1: 95,
-  2: 80,
-  3: 60,
-  4: 40,
+  1: 100,
+  2: 90,
+  3: 75,
+  4: 55,
 };
 
 function getUpgradeCost(type: string, level: number, rarity: string) {
   const safeType = type as "CHICKEN" | "SHEEP" | "COW";
   const safeLevel = Math.max(1, Math.min(4, level)) as 1 | 2 | 3 | 4;
   const base = UPGRADE_COSTS[safeType]?.[safeLevel];
-  if (!base) return null;
+
+  if (!base) {
+    return null;
+  }
+
   const multiplier =
     RARITY_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
+
   return {
     coins: Math.floor(base.coins * multiplier),
     diamonds: Math.floor(base.diamonds * multiplier),
@@ -55,7 +60,7 @@ function getUpgradeCost(type: string, level: number, rarity: string) {
 
 function getSuccessChance(level: number, fails: number) {
   if (fails >= 5) return 100;
-  return SUCCESS_CHANCE[Math.max(1, Math.min(4, level))] ?? 40;
+  return SUCCESS_CHANCE[Math.max(1, Math.min(4, level))] ?? 55;
 }
 
 router.post("/", async (req: TgAuthedRequest, res) => {

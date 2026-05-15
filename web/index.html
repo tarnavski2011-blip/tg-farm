@@ -1712,22 +1712,22 @@
       function getAnimalUpgradeCostPreview(type, level, rarity) {
         const costs = {
           CHICKEN: {
-            1: { coins: 5000, diamonds: 0 },
-            2: { coins: 25000, diamonds: 0 },
-            3: { coins: 100000, diamonds: 5 },
-            4: { coins: 500000, diamonds: 25 },
+            1: { coins: 3000, diamonds: 0 },
+            2: { coins: 12000, diamonds: 0 },
+            3: { coins: 50000, diamonds: 3 },
+            4: { coins: 180000, diamonds: 12 },
           },
           SHEEP: {
-            1: { coins: 25000, diamonds: 0 },
-            2: { coins: 100000, diamonds: 5 },
-            3: { coins: 500000, diamonds: 25 },
-            4: { coins: 1500000, diamonds: 75 },
+            1: { coins: 12000, diamonds: 0 },
+            2: { coins: 50000, diamonds: 3 },
+            3: { coins: 180000, diamonds: 12 },
+            4: { coins: 600000, diamonds: 35 },
           },
           COW: {
-            1: { coins: 100000, diamonds: 5 },
-            2: { coins: 500000, diamonds: 25 },
-            3: { coins: 1500000, diamonds: 75 },
-            4: { coins: 3000000, diamonds: 150 },
+            1: { coins: 50000, diamonds: 3 },
+            2: { coins: 180000, diamonds: 12 },
+            3: { coins: 600000, diamonds: 35 },
+            4: { coins: 1500000, diamonds: 75 },
           },
         };
 
@@ -1757,13 +1757,13 @@
         if (Number(fails || 0) >= 5) return 100;
 
         const chances = {
-          1: 95,
-          2: 80,
-          3: 60,
-          4: 40,
+          1: 100,
+          2: 90,
+          3: 75,
+          4: 55,
         };
 
-        return chances[Math.max(1, Math.min(4, Number(level || 1)))] ?? 40;
+        return chances[Math.max(1, Math.min(4, Number(level || 1)))] ?? 55;
       }
 
       function canPayUpgrade(cost) {
@@ -2465,7 +2465,7 @@
       async function openLabModal() {
         modalTitle.textContent = "🧪 Лабораторія";
         modalTabs.style.display = "none";
-        tabUpgradeBtn.style.display = "";
+        tabUpgradeBtn.style.display = "none";
 
         modalBody.innerHTML = `<div class="note">loading...</div>`;
 
@@ -2474,16 +2474,15 @@
 
         if (!res.ok) {
           modalBody.innerHTML = `
-                              <div class="tile full">
-                                <div class="tile-title">Лабораторія</div>
-                                <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
-                              </div>
-                            `;
+            <div class="tile full">
+              <div class="tile-title">Лабораторія</div>
+              <div class="warn">${res.data?.error || "Помилка завантаження"}</div>
+            </div>
+          `;
           showModal();
           return;
         }
 
-        const animals = res.data?.animals || {};
         const storage = res.data?.storage || {};
 
         function chanceClass(chance) {
@@ -2492,132 +2491,54 @@
           return "chance-danger";
         }
 
-        function animalCard(title, emoji, item, type) {
-          if (!item || item.owned <= 0) {
-            return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">0 шт</div>
-                                  <div class="warn">Спочатку купи тварин</div>
-                                </div>
-                              `;
-          }
-
-          if (item.maxed) {
-            return `
-                                <div class="tile">
-                                  <div class="tile-title">${emoji} ${title}</div>
-                                  <div class="tile-value">LVL ${item.currentLevel}</div>
-                                  <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
-          }
-
-          const chance = item.successChance ?? 0;
-          const fails = item.upgradeFails ?? 0;
-
-          return `
-                              <div class="tile">
-                                <div class="tile-title">${emoji} ${title}</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Кількість</span><span>${item.owned}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.nextLevel >= 4 ? `<div class="tile-row"><span>⭐ Бонус</span><span>Points з LVL 4</span></div>` : ""}
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" data-lab-animal="${type}" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
-        }
-
         function storageCard(item) {
           if (!item || item.maxed) {
             return `
-                                <div class="tile full">
-                                  <div class="tile-title">📦 Склад</div>
-                                  <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
-                                  <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? 0}</span></div>
-                                  <div class="tile-row"><span>Статус</span><span>MAX</span></div>
-                                  <button class="buy-btn green" disabled>MAX</button>
-                                </div>
-                              `;
+              <div class="tile full">
+                <div class="tile-title">📦 Склад</div>
+                <div class="tile-value">LVL ${item?.currentLevel ?? 5}</div>
+                <div class="tile-row"><span>Місткість</span><span>${item?.capacity ?? currentState?.storage?.capacity ?? 0}</span></div>
+                <div class="tile-row"><span>Статус</span><span>MAX</span></div>
+                <button class="buy-btn green" disabled>MAX</button>
+              </div>
+            `;
           }
 
           const chance = item.successChance ?? 0;
           const fails = item.upgradeFails ?? 0;
 
           return `
-                              <div class="tile full">
-                                <div class="tile-title">📦 Склад</div>
-                                <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
-                                <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
-                                <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
-                                <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
-                                <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
-                                <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
-                                ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
-                                <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
-                                  ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
-                                </button>
-                              </div>
-                            `;
+            <div class="tile full">
+              <div class="tile-title">📦 Склад</div>
+              <div class="tile-value">LVL ${item.currentLevel} → ${item.nextLevel}</div>
+              <div class="tile-row"><span>Місткість</span><span>${item.capacity} → ${item.nextCapacity}</span></div>
+              <div class="tile-row"><span>Coins</span><span>${item.upgradeCost?.coins ?? 0}</span></div>
+              <div class="tile-row"><span>Diamonds</span><span>${item.upgradeCost?.diamonds ?? 0}</span></div>
+              <div class="tile-row"><span>🎲 Шанс</span><span class="${chanceClass(chance)}">${chance}%</span></div>
+              <div class="tile-row"><span>❌ Невдачі</span><span>${fails}/5</span></div>
+              ${item.pity ? `<div class="warn">🔥 Наступна спроба гарантована</div>` : ""}
+              <button class="buy-btn ${item.canUpgrade ? "" : "gold"}" id="storageUpgradeBtn" ${item.canUpgrade ? "" : "disabled"}>
+                ${item.canUpgrade ? "Покращити склад" : "Не вистачає"}
+              </button>
+            </div>
+          `;
         }
 
         modalBody.innerHTML = `
-                            <div class="modal-grid">
-                              <div class="tile full">
-                                <div class="tile-title">🐾 Upgrade тварин</div>
-                                <div class="note">
-                                  ⭐ Points відкриваються з LVL 4 тварин.<br>
-                                  Чим вищий рівень тварини — тим більше Points вона дає.<br>
-                                  У майбутньому Points можна буде обмінювати на TON.
-                                </div>
-                              </div>
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">🧪 Лабораторія</div>
+              <div class="note">
+                Апгрейд тварин тепер тільки в <b>Animals → Мої</b> на карточці кожної тварини.<br>
+                Тут залишився апгрейд складу.
+              </div>
+            </div>
 
-                              ${animalCard("Курки", "🐔", animals.chicken, "CHICKEN")}
-                              ${animalCard("Вівці", "🐑", animals.sheep, "SHEEP")}
-                              ${animalCard("Корови", "🐄", animals.cow, "COW")}
-
-                              ${storageCard(storage)}
-                            </div>
-                          `;
+            ${storageCard(storage)}
+          </div>
+        `;
 
         showModal();
-
-        modalBody.querySelectorAll("[data-lab-animal]").forEach((btn) => {
-          btn.addEventListener("click", async () => {
-            const type = btn.getAttribute("data-lab-animal");
-            btn.disabled = true;
-
-            const resp = await apiPost("/lab/animal-upgrade", { type });
-            setResult(resp.data);
-
-            if (resp.ok) {
-              if (resp.data?.success) {
-                showToast(resp.data?.message || `✅ LVL ${resp.data?.level}`);
-              } else {
-                showToast(
-                  resp.data?.message ||
-                    `❌ Фейл (${resp.data?.upgradeFails ?? 0}/5)`,
-                );
-              }
-
-              handleXpResult(resp.data?.xp);
-
-              await loadState();
-              await openLabModal();
-            } else {
-              showToast(resp.data?.error || "Помилка");
-              btn.disabled = false;
-            }
-          });
-        });
 
         const storageBtn = document.getElementById("storageUpgradeBtn");
         if (storageBtn) {
