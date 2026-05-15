@@ -288,6 +288,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
+      produced = Math.floor(produced * ((animal as any).breedBonus ?? 1));
       produced = Math.floor(produced * (animalStats.efficiencyPercent / 100));
 
       if (user.boostUntil && user.boostUntil > now) {
@@ -301,6 +302,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       let earnedPoints =
         usedCycles * getAnimalPointsPerCycle(animal.type, animal.level);
 
+      earnedPoints = Math.floor(
+        earnedPoints * ((animal as any).breedBonus ?? 1),
+      );
       earnedPoints = Math.floor(
         earnedPoints * (animalStats.efficiencyPercent / 100),
       );
@@ -482,6 +486,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       let produced =
         usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
 
+      produced = Math.floor(produced * ((animal as any).breedBonus ?? 1));
       produced = Math.floor(produced * (stats.efficiencyPercent / 100));
 
       if (user!.boostUntil && user!.boostUntil > new Date()) {
@@ -549,6 +554,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         let produced =
           cyclesPerHour * getAnimalProducedPerCycle(type, animal.level);
 
+        produced = Math.floor(produced * ((animal as any).breedBonus ?? 1));
         produced = Math.floor(produced * (stats.efficiencyPercent / 100));
 
         if (user!.boostUntil && user!.boostUntil > new Date()) {
@@ -578,6 +584,88 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         chicken: chickenAnimals.length,
         sheep: sheepAnimals.length,
         cow: cowAnimals.length,
+
+        chickenSlots: (user as any).chickenSlots ?? 2,
+        sheepSlots: (user as any).sheepSlots ?? 2,
+        cowSlots: (user as any).cowSlots ?? 2,
+
+        chickenCards: chickenAnimals
+          .sort(
+            (a, b) => ((a as any).slotIndex ?? 1) - ((b as any).slotIndex ?? 1),
+          )
+          .map((animal) => {
+            const stats = getAnimalEfficiency({
+              type: animal.type,
+              bornAt: animal.bornAt,
+              lastFedAt: animal.lastFedAt,
+            });
+
+            return {
+              id: animal.id,
+              type: animal.type,
+              level: animal.level,
+              rarity: (animal as any).rarity ?? "normal",
+              breedBonus: (animal as any).breedBonus ?? 1,
+              slotIndex: (animal as any).slotIndex ?? 1,
+              hp: (animal as any).hp ?? stats.lifePercent,
+              upgradeFails: (animal as any).upgradeFails ?? 0,
+              lifePercent: stats.lifePercent,
+              efficiencyPercent: stats.efficiencyPercent,
+              daysLeft: stats.daysLeft,
+            };
+          }),
+
+        sheepCards: sheepAnimals
+          .sort(
+            (a, b) => ((a as any).slotIndex ?? 1) - ((b as any).slotIndex ?? 1),
+          )
+          .map((animal) => {
+            const stats = getAnimalEfficiency({
+              type: animal.type,
+              bornAt: animal.bornAt,
+              lastFedAt: animal.lastFedAt,
+            });
+
+            return {
+              id: animal.id,
+              type: animal.type,
+              level: animal.level,
+              rarity: (animal as any).rarity ?? "normal",
+              breedBonus: (animal as any).breedBonus ?? 1,
+              slotIndex: (animal as any).slotIndex ?? 1,
+              hp: (animal as any).hp ?? stats.lifePercent,
+              upgradeFails: (animal as any).upgradeFails ?? 0,
+              lifePercent: stats.lifePercent,
+              efficiencyPercent: stats.efficiencyPercent,
+              daysLeft: stats.daysLeft,
+            };
+          }),
+
+        cowCards: cowAnimals
+          .sort(
+            (a, b) => ((a as any).slotIndex ?? 1) - ((b as any).slotIndex ?? 1),
+          )
+          .map((animal) => {
+            const stats = getAnimalEfficiency({
+              type: animal.type,
+              bornAt: animal.bornAt,
+              lastFedAt: animal.lastFedAt,
+            });
+
+            return {
+              id: animal.id,
+              type: animal.type,
+              level: animal.level,
+              rarity: (animal as any).rarity ?? "normal",
+              breedBonus: (animal as any).breedBonus ?? 1,
+              slotIndex: (animal as any).slotIndex ?? 1,
+              hp: (animal as any).hp ?? stats.lifePercent,
+              upgradeFails: (animal as any).upgradeFails ?? 0,
+              lifePercent: stats.lifePercent,
+              efficiencyPercent: stats.efficiencyPercent,
+              daysLeft: stats.daysLeft,
+            };
+          }),
 
         chickenLevel: chickenAnimals.length
           ? Math.max(...chickenAnimals.map((a) => a.level))
