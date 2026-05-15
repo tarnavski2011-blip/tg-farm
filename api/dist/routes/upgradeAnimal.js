@@ -39,20 +39,19 @@ function getUpgradeCost(type, level, rarity) {
     const safeType = type;
     const safeLevel = Math.max(1, Math.min(4, level));
     const base = UPGRADE_COSTS[safeType]?.[safeLevel];
-    if (!base) {
+    if (!base)
         return null;
-    }
     const multiplier = RARITY_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
     return {
         coins: Math.floor(base.coins * multiplier),
         diamonds: Math.floor(base.diamonds * multiplier),
+        multiplier,
     };
 }
 function getSuccessChance(level, fails) {
     if (fails >= 5)
         return 100;
-    const safeLevel = Math.max(1, Math.min(4, level));
-    return SUCCESS_CHANCE[safeLevel] ?? 40;
+    return SUCCESS_CHANCE[Math.max(1, Math.min(4, level))] ?? 40;
 }
 router.post("/", async (req, res) => {
     try {
@@ -68,13 +67,11 @@ router.post("/", async (req, res) => {
             where: { telegramId },
             include: { animals: true },
         });
-        if (!user) {
+        if (!user)
             return res.status(404).json({ error: "User not found" });
-        }
         const animal = user.animals.find((a) => a.id === animalId);
-        if (!animal) {
+        if (!animal)
             return res.status(404).json({ error: "Animal not found" });
-        }
         if ((animal.level ?? 1) >= 5) {
             return res.status(400).json({ error: "Max level reached" });
         }
@@ -108,10 +105,7 @@ router.post("/", async (req, res) => {
                     coins: { decrement: cost.coins },
                     diamonds: { decrement: cost.diamonds },
                 },
-                select: {
-                    coins: true,
-                    diamonds: true,
-                },
+                select: { coins: true, diamonds: true },
             });
             const updatedAnimal = await tx.animal.update({
                 where: { id: animal.id },
@@ -124,10 +118,7 @@ router.post("/", async (req, res) => {
                         upgradeFails: { increment: 1 },
                     },
             });
-            return {
-                animal: updatedAnimal,
-                user: updatedUser,
-            };
+            return { user: updatedUser, animal: updatedAnimal };
         });
         return res.json({
             ok: true,
@@ -137,7 +128,6 @@ router.post("/", async (req, res) => {
             diamonds: result.user.diamonds,
             spent: cost,
             chance,
-            roll: Math.round(roll),
             upgradeFails: result.animal.upgradeFails ?? 0,
             message: success
                 ? `✅ Animal upgraded to LVL ${result.animal.level}`
