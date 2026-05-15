@@ -1639,8 +1639,154 @@
           };
         });
       }
+
+      function renderBreedTab() {
+        tabBuyBtn.classList.remove("active");
+        tabOwnedBtn.classList.remove("active");
+        tabUpgradeBtn.classList.add("active");
+
+        const animals = currentState?.animals || {};
+
+        function emoji(type) {
+          if (type === "CHICKEN") return "🐔";
+          if (type === "SHEEP") return "🐑";
+          if (type === "COW") return "🐄";
+          return "🐾";
+        }
+
+        function title(type) {
+          if (type === "CHICKEN") return "Курки";
+          if (type === "SHEEP") return "Вівці";
+          if (type === "COW") return "Корови";
+          return "Тварини";
+        }
+
+        function costText(type) {
+          if (type === "CHICKEN") return "500 000 coins + 50 💎";
+          if (type === "SHEEP") return "1 500 000 coins + 150 💎";
+          if (type === "COW") return "3 000 000 coins + 300 💎";
+          return "";
+        }
+
+        function rarityLabel(rarity) {
+          const r = String(rarity || "normal").toLowerCase();
+          if (r === "legendary") return "Legendary";
+          if (r === "epic") return "Epic";
+          if (r === "rare") return "Rare";
+          return "Normal";
+        }
+
+        function listFor(type) {
+          if (type === "CHICKEN") return animals.chickenCards || [];
+          if (type === "SHEEP") return animals.sheepCards || [];
+          if (type === "COW") return animals.cowCards || [];
+          return [];
+        }
+
+        function renderType(type) {
+          const list = listFor(type).filter((a) => Number(a.level ?? 1) >= 5);
+
+          return `
+            <div class="tile full">
+              <div class="tile-title">${emoji(type)} ${title(type)} — схрещення</div>
+              <div class="tile-value">${list.length} / 2 готові</div>
+              <div class="tile-row"><span>Ціна</span><span>${costText(type)}</span></div>
+              <div class="note" style="margin-top:8px;">
+                Потрібно вибрати 2 тварини одного типу з LVL 5. Старі 2 тварини зникнуть, а нова отримає rarity bonus.
+              </div>
+
+              ${
+                list.length <= 0
+                  ? `<div class="warn">Немає тварин LVL 5 для схрещення</div>`
+                  : list
+                      .map(
+                        (a) => `
+                          <label class="breed-check">
+                            <input type="checkbox" data-breed-tab-pick="${type}" value="${a.id}" />
+                            <span>Slot ${a.slotIndex ?? "-"} · LVL ${a.level ?? 1} · ${rarityLabel(a.rarity)} · x${Number(a.breedBonus ?? 1).toFixed(2)}</span>
+                          </label>
+                        `,
+                      )
+                      .join("")
+              }
+
+              <button class="buy-btn gold" data-breed-tab-type="${type}" ${list.length >= 2 ? "" : "disabled"}>
+                🧬 Схрестити 2 тварини
+              </button>
+            </div>
+          `;
+        }
+
+        modalBody.innerHTML = `
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">🧬 Breeding</div>
+              <div class="note">
+                Шанс результату: Rare 70%, Epic 25%, Legendary 5%.
+              </div>
+            </div>
+
+            ${renderType("CHICKEN")}
+            ${renderType("SHEEP")}
+            ${renderType("COW")}
+          </div>
+        `;
+
+        modalBody.querySelectorAll("[data-breed-tab-pick]").forEach((input) => {
+          input.onchange = () => {
+            const type = input.getAttribute("data-breed-tab-pick");
+            const checked = [
+              ...modalBody.querySelectorAll(
+                `[data-breed-tab-pick="${type}"]:checked`,
+              ),
+            ];
+
+            if (checked.length > 2) {
+              input.checked = false;
+              showToast("Можна вибрати тільки 2");
+            }
+          };
+        });
+
+        modalBody.querySelectorAll("[data-breed-tab-type]").forEach((btn) => {
+          btn.onclick = async () => {
+            const type = btn.getAttribute("data-breed-tab-type");
+            const ids = [
+              ...modalBody.querySelectorAll(
+                `[data-breed-tab-pick="${type}"]:checked`,
+              ),
+            ].map((x) => Number(x.value));
+
+            if (ids.length !== 2) {
+              showToast("Вибери 2 тварини");
+              return;
+            }
+
+            btn.disabled = true;
+
+            const res = await apiPost("/breed", {
+              animalType: type,
+              animalIds: ids,
+            });
+
+            setResult(res.data);
+
+            if (res.ok || res.data?.success) {
+              showToast(
+                `🧬 ${res.data?.rarity ?? "rare"} x${res.data?.breedBonus ?? 1}`,
+              );
+              await loadState();
+              renderBreedTab();
+            } else {
+              showToast(res.data?.error || "Помилка схрещення");
+              btn.disabled = false;
+            }
+          };
+        });
+      }
+
       function renderAnimalsUpgrade() {
-        openLabModal();
+        renderBreedTab();
       }
 
       function openAnimalsModal() {
@@ -1648,9 +1794,10 @@
         modalTabs.style.display = "block";
         tabBuyBtn.style.display = "";
         tabOwnedBtn.style.display = "";
-        tabUpgradeBtn.style.display = "none";
+        tabUpgradeBtn.style.display = "";
         tabBuyBtn.textContent = "Купити";
         tabOwnedBtn.textContent = "Мої";
+        tabUpgradeBtn.textContent = "Схрещення";
         renderAnimalsBuy();
         showModal();
       }
@@ -3136,6 +3283,49 @@
         setTimeout(bindFeedProfileFix, 300);
         setTimeout(bindFeedProfileFix, 1200);
       })();
+
+      /* BREED TAB HARD FIX */
+      if (modalBody) {
+        modalBody.addEventListener("click", async (e) => {
+          const btn = e.target.closest("[data-breed-tab-type]");
+          if (!btn) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          const type = btn.getAttribute("data-breed-tab-type");
+          const ids = [
+            ...modalBody.querySelectorAll(
+              `[data-breed-tab-pick="${type}"]:checked`,
+            ),
+          ].map((x) => Number(x.value));
+
+          if (ids.length !== 2) {
+            showToast("Вибери 2 тварини");
+            return;
+          }
+
+          btn.disabled = true;
+
+          const res = await apiPost("/breed", {
+            animalType: type,
+            animalIds: ids,
+          });
+
+          setResult(res.data);
+
+          if (res.ok || res.data?.success) {
+            showToast(
+              `🧬 ${res.data?.rarity ?? "rare"} x${res.data?.breedBonus ?? 1}`,
+            );
+            await loadState();
+            renderBreedTab();
+          } else {
+            showToast(res.data?.error || "Помилка схрещення");
+            btn.disabled = false;
+          }
+        });
+      }
 
       function bindButton(id, handler) {
         const el = document.getElementById(id);
