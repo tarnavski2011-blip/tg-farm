@@ -211,8 +211,15 @@ router.get("/", async (req, res) => {
                 }));
                 continue;
             }
+            const currentStorageTotal = (user.storage?.eggs ?? 0) +
+                (user.storage?.wool ?? 0) +
+                (user.storage?.milk ?? 0);
+            const storageFreeSpace = Math.max(0, (user.storage?.capacity ?? 1000) - currentStorageTotal);
+            let producedPerCycle = getAnimalProducedPerCycle(animal.type, animal.level);
+            producedPerCycle = Math.max(1, Math.floor(producedPerCycle * (animal.breedBonus ?? 1)));
             const maxCyclesByFeed = Math.floor(feedAvailable / 1);
-            const usedCycles = Math.min(fullCycles, maxCyclesByFeed);
+            const maxCyclesByStorage = Math.floor(storageFreeSpace / producedPerCycle);
+            const usedCycles = Math.min(fullCycles, maxCyclesByFeed, maxCyclesByStorage);
             if (usedCycles <= 0) {
                 animalUpdates.push(prisma_1.prisma.animal.update({
                     where: { id: animal.id },
