@@ -372,6 +372,41 @@ router.get("/", async (req: TgAuthedRequest, res) => {
 
     const capacity = user.storage?.capacity ?? 1000;
 
+    if (currentTotal > capacity && user.storage) {
+      const overflow = currentTotal - capacity;
+
+      let eggs = storageEggs;
+      let wool = storageWool;
+      let milk = storageMilk;
+
+      let leftOverflow = overflow;
+
+      const cutMilk = Math.min(milk, leftOverflow);
+      milk -= cutMilk;
+      leftOverflow -= cutMilk;
+
+      const cutWool = Math.min(wool, leftOverflow);
+      wool -= cutWool;
+      leftOverflow -= cutWool;
+
+      const cutEggs = Math.min(eggs, leftOverflow);
+      eggs -= cutEggs;
+
+      storageEggs = eggs;
+      storageWool = wool;
+      storageMilk = milk;
+      currentTotal = capacity;
+
+      await prisma.storage.update({
+        where: { userId: user.id },
+        data: {
+          eggs: storageEggs,
+          wool: storageWool,
+          milk: storageMilk,
+        },
+      });
+    }
+
     let totalAdd = eggsAdd + woolAdd + milkAdd;
 
     if (
