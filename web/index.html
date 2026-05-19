@@ -1757,10 +1757,10 @@
         if (Number(fails || 0) >= 5) return 100;
 
         const chances = {
-          1: 100,
-          2: 80,
-          3: 60,
-          4: 35,
+          1: 90,
+          2: 65,
+          3: 45,
+          4: 25,
         };
 
         return chances[Math.max(1, Math.min(4, Number(level || 1)))] ?? 55;
