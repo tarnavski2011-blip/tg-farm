@@ -2007,6 +2007,12 @@
 
               <div class="animal-actions">
                 <button class="animal-small-btn" data-upgrade-modal="${card.id}">⬆️ Upgrade</button>
+
+                <div class="tile-row">
+                 <span>❤️ Heal cost</span>
+                 <span>${Math.ceil((100 - hp) * 100)} 🪙</span>
+              </div>
+              
                 <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
               </div>
 
