@@ -2009,15 +2009,53 @@
                       <button class="animal-small-btn" data-upgrade-modal="${card.id}">⬆️ Upgrade</button>
 
                       <div class="tile-row">
-        <span>❤️ Heal cost</span>
-        <span>
-          ${
-            Number(card.level ?? 1) >= 4
-              ? `${Math.ceil((100 - hp) * 20)} ⭐`
-              : `${Math.ceil((100 - hp) * 100)} 🪙`
-          }
-        </span>
-      </div>
+  <span>❤️ Heal cost</span>
+  <span>
+    ${(() => {
+      const rarityMulti =
+        card.rarity === "legendary"
+          ? 3
+          : card.rarity === "epic"
+            ? 2
+            : card.rarity === "rare"
+              ? 1.5
+              : 1;
+
+      const missingHp = Math.max(0, 100 - hp);
+      const hpMulti = missingHp / 100;
+
+      const healPrices = {
+        CHICKEN: {
+          coins: { 1: 500, 2: 1000, 3: 2000 },
+          points: { 4: 5000, 5: 12000 },
+        },
+        SHEEP: {
+          coins: { 1: 1500, 2: 3000, 3: 6000 },
+          points: { 4: 15000, 5: 35000 },
+        },
+        COW: {
+          coins: { 1: 5000, 2: 10000, 3: 20000 },
+          points: { 4: 30000, 5: 70000 },
+        },
+      };
+
+      const lvl = Math.min(5, Math.max(1, Number(card.level || 1)));
+      const data = healPrices[type];
+
+      if (lvl <= 3) {
+        return `${Math.max(
+          1,
+          Math.floor(data.coins[lvl] * rarityMulti * hpMulti),
+        )} 🪙`;
+      }
+
+      return `${Math.max(
+        1,
+        Math.floor(data.points[lvl] * rarityMulti * hpMulti),
+      )} ⭐`;
+    })()}
+  </span>
+</div>
 
                       <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
                     </div>

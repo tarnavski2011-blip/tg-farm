@@ -40,26 +40,35 @@ function normalizeLevel(level: number) {
   return 5;
 }
 
-function getHealCost(type: AnimalType, levelRaw: number, rarity: string) {
+function getHealCost(
+  type: AnimalType,
+  levelRaw: number,
+  rarity: string,
+  hp: number,
+) {
   const level = normalizeLevel(levelRaw || 1);
+
   const rarityMultiplier =
     HEAL_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
 
+  const missingHp = Math.max(0, 100 - (hp ?? 100));
+  const hpMultiplier = missingHp / 100;
+
   if (level <= 3) {
+    const base = HEAL_COSTS[type].coins[level as 1 | 2 | 3] * rarityMultiplier;
+
     return {
       currency: "coins" as const,
-      amount: Math.floor(
-        HEAL_COSTS[type].coins[level as 1 | 2 | 3] * rarityMultiplier,
-      ),
+      amount: Math.max(1, Math.floor(base * hpMultiplier)),
       level,
     };
   }
 
+  const base = HEAL_COSTS[type].points[level as 4 | 5] * rarityMultiplier;
+
   return {
     currency: "points" as const,
-    amount: Math.floor(
-      HEAL_COSTS[type].points[level as 4 | 5] * rarityMultiplier,
-    ),
+    amount: Math.max(1, Math.floor(base * hpMultiplier)),
     level,
   };
 }
@@ -115,6 +124,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         type,
         animal.level ?? 1,
         (animal as any).rarity || "normal",
+        (animal as any).hp ?? 100,
       );
 
       if (cost.currency === "coins") {
