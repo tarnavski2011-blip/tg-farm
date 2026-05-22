@@ -26,7 +26,12 @@ router.post("/", async (req, res) => {
             });
         }
         if (update.message?.successful_payment) {
-            const paymentId = Number(update.message.successful_payment.invoice_payload);
+            const payload = update.message.successful_payment.invoice_payload;
+            const parts = String(payload).split(":");
+            const paymentId = Number(parts[2]);
+            if (!paymentId || Number.isNaN(paymentId)) {
+                throw new Error("Invalid payment payload");
+            }
             await (0, paymentGrant_1.grantPremiumPurchase)(paymentId);
         }
         if (update.message?.text?.startsWith("/start")) {

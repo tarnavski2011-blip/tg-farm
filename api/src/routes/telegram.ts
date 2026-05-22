@@ -28,9 +28,14 @@ router.post("/", async (req, res) => {
     }
 
     if (update.message?.successful_payment) {
-      const paymentId = Number(
-        update.message.successful_payment.invoice_payload,
-      );
+      const payload = update.message.successful_payment.invoice_payload;
+
+      const parts = String(payload).split(":");
+      const paymentId = Number(parts[2]);
+
+      if (!paymentId || Number.isNaN(paymentId)) {
+        throw new Error("Invalid payment payload");
+      }
       await grantPremiumPurchase(paymentId);
     }
 
