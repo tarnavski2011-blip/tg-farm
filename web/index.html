@@ -1341,10 +1341,21 @@
       const API = "https://tg-farm-api.onrender.com/api";
       const BOT_USERNAME = "my_farm_clicker_bot";
 
-      const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl:
-          "https://tg-farm-api.onrender.com/tonconnect-manifest.json",
-      });
+      let tonConnectUI = null;
+
+      function getTonConnectUI() {
+        if (!window.TON_CONNECT_UI?.TonConnectUI) {
+          throw new Error("TON Connect UI not loaded");
+        }
+
+        if (!tonConnectUI) {
+          tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
+          });
+        }
+
+        return tonConnectUI;
+      }
 
       if (tg) {
         tg.ready();
@@ -3024,7 +3035,7 @@
         const data = res.data || {};
 
         if (!res.ok) {
-          modalBody.innerHTML = <div class="note">Помилка завантаження</div>;
+          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
           showModal();
           return;
         }
@@ -3034,95 +3045,118 @@
         const receiveTon =
           availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
 
+        let connectedAddress = "";
+        try {
+          const tc = getTonConnectUI();
+          connectedAddress = tc?.wallet?.account?.address || "";
+        } catch {
+          connectedAddress = "";
+        }
+
         modalBody.innerHTML = `
-    <div class="modal-grid">
+          <div class="modal-grid">
+            <div class="tile full">
+              <div class="tile-title">💰 TON Баланс</div>
+              <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+              <div class="tile-row"><span>Points</span><span>${points}</span></div>
+            </div>
 
-      <div class="tile full">
-        <div class="tile-title">💰 TON Баланс</div>
-        <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-        <div class="tile-row"><span>Points</span><span>${points}</span></div>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">🔗 TON Wallet</div>
+              <div
+                id="walletAddressBox"
+                style="
+                  width:100%;
+                  padding:12px;
+                  border-radius:12px;
+                  background:#1e293b;
+                  color:white;
+                  font-size:14px;
+                  word-break:break-all;
+                  white-space:normal;
+                  overflow-wrap:anywhere;
+                  border:1px solid rgba(148,163,184,0.18);
+                "
+              >${connectedAddress || "Не підключено"}</div>
 
-      <div class="tile full">
-        <div class="tile-title">🔗 TON Wallet</div>
+              <button class="buy-btn green" id="connectWalletBtn" style="margin-top:10px;">
+                🔗 ${connectedAddress ? "Оновити гаманець" : "Підключити гаманець"}
+              </button>
 
-        <div
-          id="walletAddressBox"
-          style="
-            width:100%;
-            padding:12px;
-            border-radius:12px;
-            background:#1e293b;
-            color:white;
-            font-size:14px;
-            word-break:break-all;
-            border:1px solid rgba(148,163,184,0.18);
-          "
-        >
-          Не підключено
-        </div>
+              <button class="buy-btn gold" id="disconnectWalletBtn" style="margin-top:10px;">
+                Відключити гаманець
+              </button>
+            </div>
 
-        <button class="buy-btn green" id="connectWalletBtn" style="margin-top:10px;">
-          🔗 Підключити гаманець
-        </button>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">📥 Поповнення TON</div>
+              <div class="note">Надішли TON на адресу:</div>
 
-      <div class="tile full">
-        <div class="tile-title">📥 Поповнення TON</div>
-        <div class="note">Надішли TON на адресу:</div>
+              <div style="margin-top:10px;">
+                <div
+                  id="depositAddress"
+                  style="
+                    width:100%;
+                    padding:12px;
+                    border-radius:12px;
+                    background:#1e293b;
+                    color:white;
+                    font-size:14px;
+                    word-break:break-all;
+                    white-space:normal;
+                    overflow-wrap:anywhere;
+                    border:1px solid rgba(148,163,184,0.18);
+                  "
+                >${data.depositWallet ?? ""}</div>
 
-        <div style="margin-top:10px;">
-          <div
-            id="depositAddress"
-            style="
-              width:100%;
-              padding:12px;
-              border-radius:12px;
-              background:#1e293b;
-              color:white;
-              font-size:14px;
-              word-break:break-all;
-              white-space:normal;
-              overflow-wrap:anywhere;
-              border:1px solid rgba(148,163,184,0.18);
-            "
-          >${data.depositWallet ?? ""}</div>
+                <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
+                  📋 Копіювати адресу
+                </button>
+              </div>
 
-          <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
-            📋 Копіювати адресу
-          </button>
-        </div>
+              <div class="note" style="margin-top:8px;">
+                Коментар платежу: USER_${getMyTelegramId()}
+              </div>
+            </div>
 
-        <div class="note" style="margin-top:8px;">
-          Коментар платежу: USER_${getMyTelegramId()}
-        </div>
-      </div>
+            <div class="tile full">
+              <div class="tile-title">⭐ Points → TON</div>
+              <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+              <div class="tile-row"><span>Комісія</span><span>5%</span></div>
+              <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
+              <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
 
-      <div class="tile full">
-        <div class="tile-title">⭐ Points → TON</div>
-        <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-        <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-        <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-        <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
+              <input
+                id="withdrawTonAddress"
+                class="input-box"
+                placeholder="Твоя TON адреса для виводу"
+                value="${connectedAddress}"
+              />
 
-        <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-        <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
+              <input
+                id="withdrawPointsAmount"
+                class="input-box"
+                type="number"
+                placeholder="Points для обміну, мін. 100000"
+              />
 
-        <button class="buy-btn gold" id="requestWithdrawBtn">
-          Запросити вивід TON
-        </button>
+              <button class="buy-btn gold" id="requestWithdrawBtn">
+                Запросити вивід TON
+              </button>
 
-        <div class="note" style="margin-top:8px;">
-          Заявка піде адміну на ручну перевірку.
-        </div>
-      </div>
-
-    </div>
-  `;
+              <div class="note" style="margin-top:8px;">
+                Заявка піде адміну на ручну перевірку.
+              </div>
+            </div>
+          </div>
+        `;
 
         showModal();
 
         const connectWalletBtn = document.getElementById("connectWalletBtn");
+        const disconnectWalletBtn = document.getElementById(
+          "disconnectWalletBtn",
+        );
         const walletAddressBox = document.getElementById("walletAddressBox");
         const withdrawTonAddress =
           document.getElementById("withdrawTonAddress");
@@ -3130,20 +3164,41 @@
         if (connectWalletBtn) {
           connectWalletBtn.onclick = async () => {
             try {
-              const wallet = await tonConnectUI.connectWallet();
-              const address = wallet?.account?.address;
+              const tc = getTonConnectUI();
+              const wallet = await tc.connectWallet();
+              const address =
+                wallet?.account?.address || tc?.wallet?.account?.address;
 
               if (!address) {
                 showToast("Не вдалося отримати адресу");
                 return;
               }
 
-              walletAddressBox.textContent = address;
-              withdrawTonAddress.value = address;
+              if (walletAddressBox) walletAddressBox.textContent = address;
+              if (withdrawTonAddress) withdrawTonAddress.value = address;
 
               showToast("Гаманець підключено");
             } catch (e) {
-              showToast("Підключення скасовано");
+              console.error("TON CONNECT ERROR:", e);
+              showToast("Підключення скасовано або недоступне");
+            }
+          };
+        }
+
+        if (disconnectWalletBtn) {
+          disconnectWalletBtn.onclick = async () => {
+            try {
+              const tc = getTonConnectUI();
+              await tc.disconnect();
+
+              if (walletAddressBox)
+                walletAddressBox.textContent = "Не підключено";
+              if (withdrawTonAddress) withdrawTonAddress.value = "";
+
+              showToast("Гаманець відключено");
+            } catch (e) {
+              console.error("TON DISCONNECT ERROR:", e);
+              showToast("Помилка відключення");
             }
           };
         }
