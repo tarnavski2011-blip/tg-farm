@@ -70,6 +70,7 @@ model User {
   achievementClaims AchievementClaim[]
   leaderboardRewards LeaderboardReward[]
   withdrawals       WithdrawalRequest[]
+  walletAddress String?
 }
 
 model Storage {

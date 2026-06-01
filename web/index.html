@@ -1138,6 +1138,8 @@
         }
       }
     </style>
+
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
   <body>
     <div class="app">
@@ -1338,6 +1340,12 @@
       const tg = window.Telegram?.WebApp;
       const API = "https://tg-farm-api.onrender.com/api";
       const BOT_USERNAME = "my_farm_clicker_bot";
+
+      const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl:
+          "https://tg-farm-api.onrender.com/tonconnect-manifest.json",
+      });
+
       if (tg) {
         tg.ready();
         tg.expand();
@@ -3016,7 +3024,7 @@
         const data = res.data || {};
 
         if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка завантаження</div>`;
+          modalBody.innerHTML = <div class="note">Помилка завантаження</div>;
           showModal();
           return;
         }
@@ -3027,59 +3035,118 @@
           availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
 
         modalBody.innerHTML = `
-                <div class="modal-grid">
-                  <div class="tile full">
-                    <div class="tile-title">💰 TON Баланс</div>
-                    <div class="tile-value">${data.tonBalance ?? 0} TON</div>
-                    <div class="tile-row"><span>Points</span><span>${points}</span></div>
-                  </div>
+    <div class="modal-grid">
 
-                  <div class="tile full">
-                    <div class="tile-title">📥 Поповнення TON</div>
-                    <div class="note">Надішли TON на адресу:</div>
+      <div class="tile full">
+        <div class="tile-title">💰 TON Баланс</div>
+        <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+        <div class="tile-row"><span>Points</span><span>${points}</span></div>
+      </div>
 
-                    <div style="margin-top:10px;">
-                      <div
-                        id="depositAddress"
-                        style="
-                          width:100%;
-                          padding:12px;
-                          border-radius:12px;
-                          background:#1e293b;
-                          color:white;
-                          font-size:14px;
-                          word-break:break-all;
-                          white-space:normal;
-                          overflow-wrap:anywhere;
-                          border:1px solid rgba(148,163,184,0.18);
-                        "
-                      >${data.depositWallet ?? ""}</div>
+      <div class="tile full">
+        <div class="tile-title">🔗 TON Wallet</div>
 
-                      <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
-                        📋 Копіювати адресу
-                      </button>
-                    </div>
+        <div
+          id="walletAddressBox"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:12px;
+            background:#1e293b;
+            color:white;
+            font-size:14px;
+            word-break:break-all;
+            border:1px solid rgba(148,163,184,0.18);
+          "
+        >
+          Не підключено
+        </div>
 
-                    <div class="note" style="margin-top:8px;">
-                      Коментар платежу: USER_${getMyTelegramId()}
-                    </div>
-                  </div>
+        <button class="buy-btn green" id="connectWalletBtn" style="margin-top:10px;">
+          🔗 Підключити гаманець
+        </button>
+      </div>
 
-                  <div class="tile full">
-                    <div class="tile-title">⭐ Points → TON</div>
-                    <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
-                    <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-                    <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-                    <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
-                    <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
-                    <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
-                    <button class="buy-btn gold" id="requestWithdrawBtn">Запросити вивід TON</button>
-                    <div class="note" style="margin-top:8px;">Заявка піде адміну на ручну перевірку.</div>
-                  </div>
-                </div>
-              `;
+      <div class="tile full">
+        <div class="tile-title">📥 Поповнення TON</div>
+        <div class="note">Надішли TON на адресу:</div>
+
+        <div style="margin-top:10px;">
+          <div
+            id="depositAddress"
+            style="
+              width:100%;
+              padding:12px;
+              border-radius:12px;
+              background:#1e293b;
+              color:white;
+              font-size:14px;
+              word-break:break-all;
+              white-space:normal;
+              overflow-wrap:anywhere;
+              border:1px solid rgba(148,163,184,0.18);
+            "
+          >${data.depositWallet ?? ""}</div>
+
+          <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
+            📋 Копіювати адресу
+          </button>
+        </div>
+
+        <div class="note" style="margin-top:8px;">
+          Коментар платежу: USER_${getMyTelegramId()}
+        </div>
+      </div>
+
+      <div class="tile full">
+        <div class="tile-title">⭐ Points → TON</div>
+        <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+        <div class="tile-row"><span>Комісія</span><span>5%</span></div>
+        <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
+        <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
+
+        <input id="withdrawTonAddress" class="input-box" placeholder="Твоя TON адреса для виводу" />
+        <input id="withdrawPointsAmount" class="input-box" type="number" placeholder="Points для обміну, мін. 100000" />
+
+        <button class="buy-btn gold" id="requestWithdrawBtn">
+          Запросити вивід TON
+        </button>
+
+        <div class="note" style="margin-top:8px;">
+          Заявка піде адміну на ручну перевірку.
+        </div>
+      </div>
+
+    </div>
+  `;
 
         showModal();
+
+        const connectWalletBtn = document.getElementById("connectWalletBtn");
+        const walletAddressBox = document.getElementById("walletAddressBox");
+        const withdrawTonAddress =
+          document.getElementById("withdrawTonAddress");
+
+        if (connectWalletBtn) {
+          connectWalletBtn.onclick = async () => {
+            try {
+              const wallet = await tonConnectUI.connectWallet();
+              const address = wallet?.account?.address;
+
+              if (!address) {
+                showToast("Не вдалося отримати адресу");
+                return;
+              }
+
+              walletAddressBox.textContent = address;
+              withdrawTonAddress.value = address;
+
+              showToast("Гаманець підключено");
+            } catch (e) {
+              showToast("Підключення скасовано");
+            }
+          };
+        }
 
         const copyDepositBtn = document.getElementById("copyDepositBtn");
         if (copyDepositBtn) {
