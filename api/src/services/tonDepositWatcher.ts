@@ -26,6 +26,8 @@ export async function startTonDepositWatcher() {
 
       const txs = response.data.result ?? [];
 
+      console.log(JSON.stringify(txs[0], null, 2));
+
       for (const tx of txs) {
         const txHash = tx.transaction_id?.hash;
 
