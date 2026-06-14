@@ -3232,12 +3232,19 @@
 
               if (!amount || Number(amount) <= 0) return;
 
-              const url =
-                `https://app.tonkeeper.com/transfer/${data.depositWallet}` +
-                `?amount=${Math.floor(Number(amount) * 1000000000)}` +
-                `&text=${encodeURIComponent(comment)}`;
+              const tc = getTonConnectUI();
 
-              window.open(url, "_blank");
+              await tc.sendTransaction({
+                validUntil: Math.floor(Date.now() / 1000) + 600,
+                messages: [
+                  {
+                    address: data.depositWallet,
+                    amount: String(Math.floor(Number(amount) * 1000000000)),
+                  },
+                ],
+              });
+
+              showToast("Транзакцію відправлено");
             } catch (e) {
               console.error(e);
               showToast("Помилка відкриття гаманця");
