@@ -10,6 +10,8 @@ export async function startTonDepositWatcher() {
     try {
       const apiKey = process.env.TON_API_KEY;
 
+      console.log("API KEY:", apiKey);
+
       if (!apiKey) {
         console.error("TON_API_KEY missing");
         return;
