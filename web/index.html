@@ -3234,6 +3234,11 @@
 
               const tc = getTonConnectUI();
 
+              console.log("TON CONNECT:", tc);
+              console.log("AMOUNT:", amount);
+
+              alert("TonConnect знайдено");
+
               await tc.sendTransaction({
                 validUntil: Math.floor(Date.now() / 1000) + 600,
                 messages: [
