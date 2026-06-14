@@ -3112,6 +3112,9 @@
                 <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
                   📋 Копіювати адресу
                 </button>
+                <button class="buy-btn gold" id="depositTonBtn" style="margin-top:10px;">
+  💎 Поповнити TON
+</button>
               </div>
 
               <div class="note" style="margin-top:8px;">
@@ -3212,6 +3215,20 @@
             } catch {
               showToast("Помилка копіювання");
             }
+          };
+        }
+
+        const depositTonBtn = document.getElementById("depositTonBtn");
+
+        if (depositTonBtn) {
+          depositTonBtn.onclick = () => {
+            const comment = `USER_${getMyTelegramId()}`;
+
+            const url =
+              `ton://transfer/${data.depositWallet}` +
+              `?text=${encodeURIComponent(comment)}`;
+
+            window.location.href = url;
           };
         }
 
