@@ -3218,6 +3218,29 @@
           };
         }
 
+
+        const depositTonBtn = document.getElementById("depositTonBtn");
+        if (depositTonBtn) {
+          depositTonBtn.onclick = async () => {
+            try {
+              const comment = `USER_${getMyTelegramId()}`;
+              const amount = prompt("Введи суму TON для поповнення:", "0.1");
+
+              if (!amount || Number(amount) <= 0) return;
+
+              const url =
+                `ton://transfer/${data.depositWallet}` +
+                `?amount=${Math.floor(Number(amount) * 1000000000)}` +
+                `&text=${encodeURIComponent(comment)}`;
+
+              window.location.href = url;
+            } catch (e) {
+              console.error(e);
+              showToast("Помилка відкриття гаманця");
+            }
+          };
+        }
+
         const withdrawBtn = document.getElementById("requestWithdrawBtn");
         if (withdrawBtn) {
           withdrawBtn.onclick = async () => {
