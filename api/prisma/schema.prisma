@@ -71,6 +71,8 @@ model User {
   leaderboardRewards LeaderboardReward[]
   withdrawals       WithdrawalRequest[]
   walletAddress String?
+  
+  tonDeposits TonDeposit[]
 }
 
 model Storage {
@@ -193,4 +195,16 @@ model WithdrawalRequest {
 
   status       String   @default("pending")
   createdAt    DateTime @default(now())
+}
+
+model TonDeposit {
+  id          Int      @id @default(autoincrement())
+  txHash      String   @unique
+  userId      Int
+  amount      Float
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

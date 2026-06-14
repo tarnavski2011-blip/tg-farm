@@ -21,7 +21,6 @@ import referralsRouter from "./routes/referrals";
 import tapRouter from "./routes/tap";
 import breedRouter from "./routes/breed";
 import upgradeRouter from "./routes/upgrade";
-// import shopStarsRouter from "./routes/shopStars";
 import paymentsRouter from "./routes/payments";
 import testPaymentRouter from "./routes/testPayment";
 import paymentLogsRouter from "./routes/paymentLogs";
@@ -34,6 +33,8 @@ import adminWithdrawalsRouter from "./routes/adminWithdrawals";
 import healRouter from "./routes/heal";
 import unlockSlotRouter from "./routes/unlockSlot";
 import upgradeAnimalRouter from "./routes/upgradeAnimal";
+
+import { startTonDepositWatcher } from "./services/tonDepositWatcher";
 
 const app = express();
 
@@ -76,7 +77,6 @@ app.use("/api/referrals", referralsRouter);
 app.use("/api/tap", tapRouter);
 app.use("/api/breed", breedRouter);
 app.use("/api/upgrade", upgradeRouter);
-// app.use("/api/stars", shopStarsRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/admin/leaderboard-rewards", adminLeaderboardRewardsRouter);
 app.use("/admin", adminWalletRouter);
@@ -88,6 +88,9 @@ app.use("/api/upgrade-animal", upgradeAnimalRouter);
 
 // test routes
 app.use("/test-payment", testPaymentRouter);
+
+// запуск TON watcher
+startTonDepositWatcher();
 
 const port = Number(process.env.PORT ?? 3000);
 
