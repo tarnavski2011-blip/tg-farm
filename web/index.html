@@ -3218,57 +3218,6 @@
           };
         }
 
-        <input
-          id="depositTonAmount"
-          class="input-box"
-          type="number"
-          step="0.1"
-          min="0.1"
-          placeholder="Сума TON"
-        />;
-
-        const depositTonBtn = document.getElementById("depositTonBtn");
-
-        if (depositTonBtn) {
-          depositTonBtn.onclick = async () => {
-            try {
-              const amountTon = Number(
-                document.getElementById("depositTonAmount").value,
-              );
-
-              if (!amountTon || amountTon <= 0) {
-                showToast("Введи суму TON");
-                return;
-              }
-
-              const tc = getTonConnectUI();
-
-              if (!tc.wallet) {
-                showToast("Спочатку підключи гаманець");
-                return;
-              }
-
-              const comment = `USER_${getMyTelegramId()}`;
-
-              await tc.sendTransaction({
-                validUntil: Math.floor(Date.now() / 1000) + 600,
-                messages: [
-                  {
-                    address: data.depositWallet,
-                    amount: String(Math.floor(amountTon * 1000000000)),
-                    payload: btoa(comment),
-                  },
-                ],
-              });
-
-              showToast(`Відправлено ${amountTon} TON`);
-            } catch (e) {
-              console.error(e);
-              showToast("Платіж скасовано");
-            }
-          };
-        }
-
         const withdrawBtn = document.getElementById("requestWithdrawBtn");
         if (withdrawBtn) {
           withdrawBtn.onclick = async () => {
