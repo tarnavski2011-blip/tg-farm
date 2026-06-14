@@ -3240,7 +3240,7 @@
                   {
                     address: data.depositWallet,
                     amount: String(Math.floor(Number(amount) * 1000000000)),
-                    payload: btoa(comment),
+                    payload: btoa(`USER_${getMyTelegramId()}`),
                   },
                 ],
               });
