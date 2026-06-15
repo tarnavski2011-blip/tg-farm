@@ -46,6 +46,9 @@ export async function startTonDepositWatcher() {
 
         const comment = tx.in_msg?.message || tx.in_msg?.comment || "";
 
+        console.log("COMMENT:", comment);
+        console.log("IN_MSG:", JSON.stringify(tx.in_msg, null, 2));
+
         if (!comment.startsWith("USER_")) continue;
 
         const telegramId = BigInt(comment.replace("USER_", ""));
