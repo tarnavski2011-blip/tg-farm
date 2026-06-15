@@ -51,7 +51,9 @@ export async function startTonDepositWatcher() {
 
         console.log("COMMENT:", comment);
 
-        const telegramId = BigInt(7758974573);
+        if (!comment.startsWith("USER_")) continue;
+
+        const telegramId = BigInt(comment.replace("USER_", ""));
 
         const user = await prisma.user.findUnique({
           where: { telegramId },
