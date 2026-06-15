@@ -26,6 +26,9 @@ export async function startTonDepositWatcher() {
         },
       );
 
+      console.log("TON wallet:", TON_WALLET);
+      console.log("Transactions:", response.data.result?.length);
+
       const txs = response.data.result ?? [];
 
       console.log(JSON.stringify(txs[0], null, 2));
