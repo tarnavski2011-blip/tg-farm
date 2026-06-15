@@ -3253,7 +3253,7 @@
               showToast("Транзакцію відправлено");
             } catch (e) {
               console.error(e);
-              showToast("Помилка відкриття гаманця");
+              alert(JSON.stringify(e));
             }
           };
         }
