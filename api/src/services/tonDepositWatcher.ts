@@ -10,8 +10,6 @@ export async function startTonDepositWatcher() {
     try {
       const apiKey = process.env.TON_API_KEY;
 
-      console.log("API KEY:", apiKey);
-
       if (!apiKey) {
         console.error("TON_API_KEY missing");
         return;
@@ -26,12 +24,7 @@ export async function startTonDepositWatcher() {
         },
       );
 
-      console.log("TON wallet:", TON_WALLET);
-      console.log("Transactions:", response.data.result?.length);
-
       const txs = response.data.result ?? [];
-
-      console.log(JSON.stringify(txs[0], null, 2));
 
       for (const tx of txs) {
         const txHash = tx.transaction_id?.hash;
@@ -46,20 +39,28 @@ export async function startTonDepositWatcher() {
 
         const comment = tx.in_msg?.message || tx.in_msg?.comment || "";
 
-        console.log("COMMENT:", comment);
-        console.log("IN_MSG:", JSON.stringify(tx.in_msg, null, 2));
+        console.log("RAW COMMENT:", comment);
 
-        console.log("COMMENT:", comment);
+        let decodedComment = comment;
 
-        if (!comment.startsWith("USER_")) continue;
+        try {
+          decodedComment = Buffer.from(comment, "base64").toString("utf8");
+        } catch (e) {}
 
-        const telegramId = BigInt(comment.replace("USER_", ""));
+        console.log("DECODED:", decodedComment);
+
+        if (!decodedComment.startsWith("USER_")) continue;
+
+        const telegramId = BigInt(decodedComment.replace("USER_", ""));
 
         const user = await prisma.user.findUnique({
           where: { telegramId },
         });
 
-        if (!user) continue;
+        if (!user) {
+          console.log("USER NOT FOUND:", telegramId.toString());
+          continue;
+        }
 
         const amount = Number(tx.in_msg?.value || 0) / 1000000000;
 
@@ -68,7 +69,7 @@ export async function startTonDepositWatcher() {
             txHash,
             userId: user.id,
             amount,
-            comment,
+            comment: decodedComment,
           },
         });
 
