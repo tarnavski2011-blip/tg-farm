@@ -1573,6 +1573,7 @@
         modal.classList.add("show");
       }
       function closeModal() {
+        if (typeof stopGramBalanceRefresh === "function") stopGramBalanceRefresh();
         modal.classList.remove("show");
       }
       modal.addEventListener("click", (e) => {
@@ -2949,9 +2950,9 @@
         modalBody.innerHTML = `
                       <div class="modal-grid">
                         <div class="tile full">
-                          <div class="tile-title">👛 TON Баланс</div>
-                          <div class="tile-value">${wallet.tonBalance ?? 0} TON</div>
-                          <div class="tile-row"><span>Можна купувати</span><span>Diamonds за TON</span></div>
+                          <div class="tile-title">👛 GRAM Баланс</div>
+                          <div class="tile-value">${wallet.tonBalance ?? 0} GRAM</div>
+                          <div class="tile-row"><span>Можна купувати</span><span>Diamonds за GRAM</span></div>
                         </div>
 
                         <div class="tile full">
@@ -2981,28 +2982,28 @@
                         </div>
 
                         <div class="tile full">
-                          <div class="tile-title">💎 Diamonds за TON</div>
-                          <div class="note">Покупка йде з TON балансу у гаманці</div>
+                          <div class="tile-title">💎 Diamonds за GRAM</div>
+                          <div class="note">Покупка йде з GRAM балансу у гаманці</div>
                         </div>
 
                         <div class="tile">
-                          <div class="tile-title">TON Small</div>
+                          <div class="tile-title">GRAM Small</div>
                           <div class="tile-value">50 💎</div>
-                          <div class="tile-row"><span>Ціна</span><span>0.5 TON</span></div>
+                          <div class="tile-row"><span>Ціна</span><span>0.5 GRAM</span></div>
                           <button class="buy-btn" data-wallet-buy="small">Купити</button>
                         </div>
 
                         <div class="tile">
-                          <div class="tile-title">TON Medium</div>
+                          <div class="tile-title">GRAM Medium</div>
                           <div class="tile-value">120 💎</div>
-                          <div class="tile-row"><span>Ціна</span><span>1 TON</span></div>
+                          <div class="tile-row"><span>Ціна</span><span>1 GRAM</span></div>
                           <button class="buy-btn" data-wallet-buy="medium">Купити</button>
                         </div>
 
                         <div class="tile full">
-                          <div class="tile-title">TON Large</div>
+                          <div class="tile-title">GRAM Large</div>
                           <div class="tile-value">700 💎</div>
-                          <div class="tile-row"><span>Ціна</span><span>5 TON</span></div>
+                          <div class="tile-row"><span>Ціна</span><span>5 GRAM</span></div>
                           <button class="buy-btn gold" data-wallet-buy="large">Купити</button>
                         </div>
                       </div>
@@ -3058,7 +3059,29 @@
         });
       }
 
+      // Refresh only the visible GRAM balance, without rebuilding the modal or its buttons.
+      let gramBalanceRefreshTimer = null;
+      let gramBalanceRefreshBusy = false;
+      function stopGramBalanceRefresh() {
+        if (gramBalanceRefreshTimer) clearInterval(gramBalanceRefreshTimer);
+        gramBalanceRefreshTimer = null;
+      }
+      async function refreshGramBalance() {
+        if (gramBalanceRefreshBusy || !modal.classList.contains("show")) return;
+        const value = document.getElementById("gramBalanceValue");
+        if (!value) return;
+        gramBalanceRefreshBusy = true;
+        try {
+          const result = await apiGet("/wallet");
+          if (result.ok && result.data && result.data.tonBalance != null) {
+            const newValue = `${result.data.tonBalance} GRAM`;
+            if (value.textContent !== newValue) value.textContent = newValue;
+          }
+        } catch (e) { console.warn("GRAM balance refresh:", e); }
+        finally { gramBalanceRefreshBusy = false; }
+      }
       async function openWalletModal() {
+        stopGramBalanceRefresh();
         modalTitle.textContent = "👛 Гаманець";
         modalTabs.style.display = "none";
 
@@ -3087,13 +3110,13 @@
         modalBody.innerHTML = `
                 <div class="modal-grid">
                   <div class="tile full">
-                    <div class="tile-title">💰 TON Баланс</div>
-                    <div class="tile-value">${data.tonBalance ?? 0} TON</div>
+                    <div class="tile-title">💰 GRAM Баланс</div>
+                    <div class="tile-value" id="gramBalanceValue">${data.tonBalance ?? 0} GRAM</div>
                     <div class="tile-row"><span>Points</span><span>${points}</span></div>
                   </div>
 
                   <div class="tile full">
-                    <div class="tile-title">🔗 TON Wallet</div>
+                    <div class="tile-title">🔗 GRAM Wallet</div>
                     <div
                       id="walletAddressBox"
                       style="
@@ -3140,9 +3163,6 @@
                         "
                       >${data.depositWallet ?? ""}</div>
 
-                      <button class="buy-btn green" id="copyDepositBtn" style="margin-top:10px;">
-                        📋 Копіювати адресу
-                      </button>
                       <button class="buy-btn gold" id="depositTonBtn" style="margin-top:10px;">
         💎 Поповнити GRAM через гаманець
       </button>
@@ -3167,7 +3187,7 @@
                     <input
                       id="withdrawTonAddress"
                       class="input-box"
-                      placeholder="Твоя адреса TON для виводу GRAM"
+                      placeholder="Твоя адреса гаманця для виводу GRAM"
                       value="${connectedAddress}"
                     />
 
@@ -3179,7 +3199,7 @@
                     />
 
                     <button class="buy-btn gold" id="requestWithdrawBtn">
-                      Запросити вивід TON
+                      Запросити вивід GRAM
                     </button>
 
                     <div class="note" style="margin-top:8px;">
@@ -3190,6 +3210,8 @@
               `;
 
         showModal();
+        gramBalanceRefreshTimer = setInterval(refreshGramBalance, 12000);
+
 
         const connectWalletBtn = document.getElementById("connectWalletBtn");
         const disconnectWalletBtn = document.getElementById(
@@ -3241,18 +3263,6 @@
           };
         }
 
-        const copyDepositBtn = document.getElementById("copyDepositBtn");
-        if (copyDepositBtn) {
-          copyDepositBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(data.depositWallet ?? "");
-              showToast("Адресу скопійовано");
-            } catch {
-              showToast("Помилка копіювання");
-            }
-          };
-        }
-
         const copyDepositDetailsBtn = document.getElementById("copyDepositDetailsBtn");
         if (copyDepositDetailsBtn) {
           copyDepositDetailsBtn.onclick = async () => {
@@ -3296,7 +3306,7 @@
 
               const tc = getTonConnectUI();
               if (!tc.wallet) {
-                showToast("Спочатку підключи TON-гаманець");
+                showToast("Спочатку підключи GRAM-гаманець");
                 return;
               }
 
