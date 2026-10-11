@@ -1343,6 +1343,32 @@
 
       let tonConnectUI = null;
 
+      // Encode a TON text comment as a single-cell BOC (base64).
+      function tonCommentPayload(comment) {
+        const textBytes = new TextEncoder().encode(comment);
+        const data = new Uint8Array(4 + textBytes.length);
+        data.set(textBytes, 4); // 32-bit zero prefix = text comment
+        if (data.length > 123) throw new Error("TON comment is too long");
+
+        // BOC: magic, flags (CRC32C), offset size, cells, roots,
+        // absent, total cells size, root index, cell descriptors, cell data.
+        const bytes = [
+          0xb5, 0xee, 0x9c, 0x72, 0x41, 0x01,
+          0x01, 0x01, 0x00, data.length + 2, 0x00,
+          0x00, data.length * 2, ...data,
+        ];
+        let crc = 0xffffffff;
+        for (const b of bytes) {
+          crc ^= b;
+          for (let i = 0; i < 8; i++) {
+            crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0);
+          }
+        }
+        crc = (crc ^ 0xffffffff) >>> 0;
+        bytes.push(crc & 255, (crc >>> 8) & 255, (crc >>> 16) & 255, (crc >>> 24) & 255);
+        return btoa(String.fromCharCode(...bytes));
+      }
+
       function getTonConnectUI() {
         if (!window.TON_CONNECT_UI?.TonConnectUI) {
           throw new Error("TON Connect UI not loaded");
@@ -3094,8 +3120,8 @@
                   </div>
 
                   <div class="tile full">
-                    <div class="tile-title">📥 Поповнення TON</div>
-                    <div class="note">Надішли TON на адресу:</div>
+                    <div class="tile-title">📥 Поповнення GRAM</div>
+                    <div class="note">Надішли GRAM (мережа TON) на адресу:</div>
 
                     <div style="margin-top:10px;">
                       <div
@@ -3118,26 +3144,30 @@
                         📋 Копіювати адресу
                       </button>
                       <button class="buy-btn gold" id="depositTonBtn" style="margin-top:10px;">
-        💎 Поповнити TON
+        💎 Поповнити GRAM через гаманець
       </button>
+                      <button class="buy-btn green" id="copyDepositDetailsBtn" style="margin-top:10px;">
+                        📋 Скопіювати дані для ручного переказу
+                      </button>
                     </div>
 
                     <div class="note" style="margin-top:8px;">
-                      Коментар платежу: USER_${getMyTelegramId()}
+                      Коментар платежу: <strong>USER_${getMyTelegramId()}</strong><br>
+                      Якщо підтвердження через TonConnect зависає, скопіюй дані та зроби переказ у своєму гаманці. Коментар обов’язковий для автоматичного зарахування. Не надсилай кошти, доки не перевіриш адресу й мережу.
                     </div>
                   </div>
 
                   <div class="tile full">
-                    <div class="tile-title">⭐ Points → TON</div>
-                    <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 TON</span></div>
+                    <div class="tile-title">⭐ Points → GRAM</div>
+                    <div class="tile-row"><span>Курс</span><span>100 000 Points = 1 GRAM</span></div>
                     <div class="tile-row"><span>Комісія</span><span>5%</span></div>
-                    <div class="tile-row"><span>Доступно</span><span>${availableTon} TON</span></div>
-                    <div class="tile-row"><span>Після комісії</span><span>${receiveTon} TON</span></div>
+                    <div class="tile-row"><span>Доступно</span><span>${availableTon} GRAM</span></div>
+                    <div class="tile-row"><span>Після комісії</span><span>${receiveTon} GRAM</span></div>
 
                     <input
                       id="withdrawTonAddress"
                       class="input-box"
-                      placeholder="Твоя TON адреса для виводу"
+                      placeholder="Твоя адреса TON для виводу GRAM"
                       value="${connectedAddress}"
                     />
 
@@ -3216,9 +3246,28 @@
           copyDepositBtn.onclick = async () => {
             try {
               await navigator.clipboard.writeText(data.depositWallet ?? "");
-              showToast("TON адреса скопійована");
+              showToast("Адресу скопійовано");
             } catch {
               showToast("Помилка копіювання");
+            }
+          };
+        }
+
+        const copyDepositDetailsBtn = document.getElementById("copyDepositDetailsBtn");
+        if (copyDepositDetailsBtn) {
+          copyDepositDetailsBtn.onclick = async () => {
+            const userId = getMyTelegramId();
+            if (!data.depositWallet || !/^\d+$/.test(String(userId))) {
+              showToast("Немає адреси або Telegram ID");
+              return;
+            }
+            const details = `Мережа: TON\nМонета: GRAM\nАдреса: ${data.depositWallet}\nКоментар: USER_${userId}`;
+            try {
+              await navigator.clipboard.writeText(details);
+              showToast("Адресу й коментар скопійовано");
+            } catch (e) {
+              // Clipboard permissions may be restricted in Telegram's webview.
+              window.prompt("Скопіюй ці дані для переказу:", details);
             }
           };
         }
@@ -3228,32 +3277,45 @@
           depositTonBtn.onclick = async () => {
             try {
               const comment = `USER_${getMyTelegramId()}`;
-              const amount = prompt("Введи суму TON для поповнення:", "0.1");
+              const amount = prompt("Введи суму GRAM для поповнення (мережа TON):", "0.1");
 
-              if (!amount || Number(amount) <= 0) return;
+              const amountTon = Number(amount);
+              if (amount === null) return;
+              if (!Number.isFinite(amountTon) || amountTon < 0.01 || amountTon > 1000000) {
+                showToast("Введи суму від 0.01 GRAM");
+                return;
+              }
+              if (!/^USER_\d+$/.test(comment)) {
+                showToast("Не вдалося визначити Telegram ID");
+                return;
+              }
+              if (!data.depositWallet) {
+                showToast("Адреса для поповнення недоступна");
+                return;
+              }
 
               const tc = getTonConnectUI();
+              if (!tc.wallet) {
+                showToast("Спочатку підключи TON-гаманець");
+                return;
+              }
 
-              console.log("TON CONNECT:", tc);
-              console.log("AMOUNT:", amount);
-
-              alert("TonConnect знайдено");
-
+              showToast("Підтвердь платіж у гаманці. Якщо він зависне, закрий вікно та скористайся ручним переказом.");
               await tc.sendTransaction({
                 validUntil: Math.floor(Date.now() / 1000) + 600,
                 messages: [
                   {
                     address: data.depositWallet,
-                    amount: String(Math.floor(Number(amount) * 1000000000)),
-                    payload: comment,
+                    amount: String(Math.round(amountTon * 1000000000)),
+                    payload: tonCommentPayload(comment),
                   },
                 ],
               });
 
-              showToast("Транзакцію відправлено");
+              showToast("Платіж підтверджено гаманцем. Очікуй зарахування після перевірки мережі.");
             } catch (e) {
               console.error(e);
-              alert(JSON.stringify(e));
+              showToast("Не вдалося підтвердити платіж. Скористайся ручним переказом з коментарем USER_ID.");
             }
           };
         }
