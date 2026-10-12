@@ -126,7 +126,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
 
     await addSellToday(user.id, 1);
 
-    const xpResult = await addXp(user.id, Math.floor(totalCoins / 20));
+    const xpResult = await addXp(user.id, Math.floor(totalCoins / 100));
 
     return res.json({
       ok: true,
