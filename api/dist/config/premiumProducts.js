@@ -13,16 +13,16 @@ exports.PREMIUM_PRODUCTS = {
     diamonds_medium: {
         code: "diamonds_medium",
         title: "Середній пакет",
-        description: "120 діамантів",
+        description: "130 діамантів",
         starsAmount: 120,
-        diamonds: 120,
+        diamonds: 130,
     },
     diamonds_large: {
         code: "diamonds_large",
         title: "Великий пакет",
-        description: "300 діамантів",
+        description: "350 діамантів",
         starsAmount: 300,
-        diamonds: 300,
+        diamonds: 350,
     },
 };
 function getPremiumProduct(code) {

@@ -1777,6 +1777,11 @@
           },
         };
 
+        const normalCosts = {
+          CHICKEN: {1:{coins:100,diamonds:0},2:{coins:200,diamonds:0},3:{coins:400,diamonds:2},4:{coins:800,diamonds:5}},
+          SHEEP: {1:{coins:250,diamonds:0},2:{coins:500,diamonds:0},3:{coins:900,diamonds:3},4:{coins:1500,diamonds:6}},
+          COW: {1:{coins:500,diamonds:0},2:{coins:900,diamonds:0},3:{coins:1500,diamonds:4},4:{coins:2500,diamonds:8}}
+        };
         const multipliers = {
           normal: 1,
           rare: 1.25,
@@ -1785,7 +1790,7 @@
         };
 
         const safeLevel = Math.max(1, Math.min(4, Number(level || 1)));
-        const base = costs[type]?.[safeLevel];
+        const base = (String(rarity || "normal").toLowerCase() === "normal" ? normalCosts : costs)[type]?.[safeLevel];
 
         if (!base) return null;
 
@@ -2096,10 +2101,8 @@
               )} 🪙`;
             }
 
-            return `${Math.max(
-              1,
-              Math.floor(data.points[lvl] * rarityMulti * hpMulti),
-            )} ⭐`;
+            const diamondHeal = lvl === 4 ? (card.rarity && card.rarity !== "normal" ? 10 : 5) : (card.rarity && card.rarity !== "normal" ? 20 : 10);
+            return `${Math.max(1, Math.floor(data.points[lvl] * rarityMulti * hpMulti))} ⭐ + ${diamondHeal} 💎`;
           })()}
         </span>
       </div>
@@ -2848,7 +2851,7 @@
         let canSpin = false;
 
         if (state.ok && state.data) {
-          canSpin = (state.data.cooldownSec ?? 0) <= 0;
+          canSpin = Boolean(state.data.canSpin);
         }
 
         modalBody.innerHTML = `

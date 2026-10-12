@@ -94,9 +94,14 @@ router.post("/", async (req, res) => {
         }
         let totalCoinsCost = 0;
         let totalPointsCost = 0;
+        let totalDiamondsCost = 0;
         const breakdown = animalsToHeal.map((animal) => {
             const type = animal.type;
             const cost = getHealCost(type, animal.level ?? 1, animal.rarity || "normal", animal.hp ?? 100);
+            const rarity = String(animal.rarity || "normal").toLowerCase();
+            const bred = rarity !== "normal";
+            const diamondCost = cost.level === 4 ? (bred ? 10 : 5) : cost.level === 5 ? (bred ? 20 : 10) : 0;
+            totalDiamondsCost += diamondCost;
             if (cost.currency === "coins") {
                 totalCoinsCost += cost.amount;
             }
@@ -110,6 +115,7 @@ router.post("/", async (req, res) => {
                 level: cost.level,
                 currency: cost.currency,
                 amount: cost.amount,
+                diamonds: diamondCost,
             };
         });
         if ((user.coins ?? 0) < totalCoinsCost) {
@@ -126,19 +132,25 @@ router.post("/", async (req, res) => {
                 have: user.points ?? 0,
             });
         }
+        if ((user.diamonds ?? 0) < totalDiamondsCost) {
+            return res.status(400).json({ error: "Not enough diamonds", need: totalDiamondsCost, have: user.diamonds ?? 0 });
+        }
         const now = new Date();
         const animalIds = animalsToHeal.map((animal) => animal.id);
         const result = await prisma_1.prisma.$transaction(async (tx) => {
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
+            const paid = await tx.user.updateMany({
+                where: { id: user.id, coins: { gte: totalCoinsCost }, points: { gte: totalPointsCost }, diamonds: { gte: totalDiamondsCost } },
                 data: {
-                    coins: totalCoinsCost > 0 ? { decrement: totalCoinsCost } : undefined,
-                    points: totalPointsCost > 0 ? { decrement: totalPointsCost } : undefined,
+                    coins: { decrement: totalCoinsCost },
+                    points: { decrement: totalPointsCost },
+                    diamonds: { decrement: totalDiamondsCost },
                 },
-                select: {
-                    coins: true,
-                    points: true,
-                },
+            });
+            if (paid.count !== 1)
+                throw new Error("Insufficient balance at payment time");
+            const updatedUser = await tx.user.findUniqueOrThrow({
+                where: { id: user.id },
+                select: { coins: true, points: true, diamonds: true },
             });
             await tx.animal.updateMany({
                 where: {
@@ -159,6 +171,8 @@ router.post("/", async (req, res) => {
             animalId,
             costCoins: totalCoinsCost,
             costPoints: totalPointsCost,
+            costDiamonds: totalDiamondsCost,
+            diamonds: result.diamonds,
             coins: result.coins,
             points: result.points,
             breakdown,

@@ -412,18 +412,8 @@ router.post("/claim", async (req, res) => {
                         diamonds: { increment: quest.rewardDiamonds },
                     },
                 }),
-                prisma_1.prisma.achievementClaim.upsert({
-                    where: {
-                        userId_code: {
-                            userId: freshUser.id,
-                            code,
-                        },
-                    },
-                    update: {
-                        claimed: true,
-                        claimedAt: new Date(),
-                    },
-                    create: {
+                prisma_1.prisma.achievementClaim.create({
+                    data: {
                         userId: freshUser.id,
                         code,
                         claimed: true,

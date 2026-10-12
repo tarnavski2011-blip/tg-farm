@@ -14,8 +14,8 @@ const DAILY_REWARDS = [
     { day: 7, coins: 500, diamonds: 5 },
 ];
 function getDayDiff(a, b) {
-    const aStart = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
-    const bStart = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+    const aStart = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate())).getTime();
+    const bStart = new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())).getTime();
     return Math.floor((aStart - bStart) / DAY_MS);
 }
 function getRewardForDay(day) {
@@ -95,8 +95,10 @@ router.post("/", async (req, res) => {
         const nextDay = Math.min(7, streak + 1);
         const reward = getRewardForDay(nextDay);
         const nextStreak = nextDay >= 7 ? 0 : nextDay;
-        await prisma_1.prisma.user.update({
-            where: { id: user.id },
+        // Compare-and-set: only one request per user can claim on this UTC day.
+        const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const claimed = await prisma_1.prisma.user.updateMany({
+            where: { id: user.id, OR: [{ lastDailyAt: null }, { lastDailyAt: { lt: dayStart } }] },
             data: {
                 coins: { increment: reward.coins },
                 diamonds: { increment: reward.diamonds },
@@ -104,6 +106,8 @@ router.post("/", async (req, res) => {
                 lastDailyAt: now,
             },
         });
+        if (claimed.count !== 1)
+            return res.status(400).json({ error: "Вже забрано сьогодні" });
         return res.json({
             ok: true,
             day: nextDay,

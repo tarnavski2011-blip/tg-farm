@@ -93,7 +93,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       cowCycles * pointsPerCycle("COW", cowLevel) * cowBreedBonus,
     );
 
-    const totalPoints = eggsPoints + woolPoints + milkPoints;
+    const totalPoints = 0; // Points are earned only during production
 
     if (totalCoins <= 0 && totalPoints <= 0) {
       return res.json({
@@ -110,7 +110,6 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       where: { telegramId },
       data: {
         coins: { increment: totalCoins },
-        points: { increment: totalPoints },
         storage: {
           update: {
             eggs: 0,
@@ -138,9 +137,9 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       totalCoins: updated.coins,
       totalPoints: updated.points,
       pointsBreakdown: {
-        eggs: eggsPoints,
-        wool: woolPoints,
-        milk: milkPoints,
+        eggs: 0,
+        wool: 0,
+        milk: 0,
       },
       cycles: {
         chicken: chickenCycles,

@@ -487,18 +487,8 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
             diamonds: { increment: quest.rewardDiamonds },
           },
         }),
-        prisma.achievementClaim.upsert({
-          where: {
-            userId_code: {
-              userId: freshUser.id,
-              code,
-            },
-          },
-          update: {
-            claimed: true,
-            claimedAt: new Date(),
-          },
-          create: {
+        prisma.achievementClaim.create({
+          data: {
             userId: freshUser.id,
             code,
             claimed: true,

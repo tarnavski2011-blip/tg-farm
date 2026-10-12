@@ -105,6 +105,8 @@ router.post("/apply", async (req, res) => {
             return res.status(404).json({ error: "Реферер не знайдений" });
         }
         const result = await prisma_1.prisma.$transaction(async (tx) => {
+            // Serialize referrals for a referrer so milestone counts cannot race.
+            await tx.$executeRaw `SELECT pg_advisory_xact_lock(${referrer.id}::bigint)`;
             await tx.user.update({
                 where: { id: user.id },
                 data: {

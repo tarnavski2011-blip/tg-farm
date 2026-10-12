@@ -4,9 +4,10 @@ const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
 const TON_RATES = {
-    small: { ton: 0.5, diamonds: 50 },
-    medium: { ton: 1, diamonds: 120 },
-    large: { ton: 5, diamonds: 700 },
+    small: { ton: 0.55, diamonds: 50 },
+    medium: { ton: 1.1, diamonds: 130 },
+    large: { ton: 2.75, diamonds: 350 },
+    mega: { ton: 5, diamonds: 700 },
 };
 router.get("/", async (req, res) => {
     try {
@@ -45,28 +46,18 @@ router.post("/buy-diamonds", async (req, res) => {
         if (!selected) {
             return res.status(400).json({ error: "Invalid package" });
         }
-        const user = await prisma_1.prisma.user.findUnique({
-            where: { telegramId },
-        });
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-        if ((user.tonBalance ?? 0) < selected.ton) {
-            return res.status(400).json({
-                error: "Not enough TON balance",
+        // Conditional debit prevents two concurrent purchases from overspending.
+        const updated = await prisma_1.prisma.$transaction(async (tx) => {
+            const debited = await tx.user.updateMany({
+                where: { telegramId, tonBalance: { gte: selected.ton } },
+                data: { tonBalance: { decrement: selected.ton }, diamonds: { increment: selected.diamonds } },
             });
-        }
-        const updated = await prisma_1.prisma.user.update({
-            where: { telegramId },
-            data: {
-                tonBalance: { decrement: selected.ton },
-                diamonds: { increment: selected.diamonds },
-            },
-            select: {
-                tonBalance: true,
-                diamonds: true,
-            },
+            if (debited.count !== 1)
+                return null;
+            return tx.user.findUnique({ where: { telegramId }, select: { tonBalance: true, diamonds: true } });
         });
+        if (!updated)
+            return res.status(400).json({ error: "Not enough GRAM balance" });
         return res.json({
             ok: true,
             spentTon: selected.ton,

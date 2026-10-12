@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
-import { AnimalType } from "@prisma/client";
+import { AnimalType, Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -113,22 +113,21 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     const now = new Date();
 
     const created = await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          coins: { decrement: cost.coins },
-          diamonds: { decrement: cost.diamonds },
-        },
-      });
-
-      await tx.animal.deleteMany({
+      const freshParents = await tx.animal.findMany({ where: { id: { in: animalIds }, userId: user.id, type: animalType, level: { gte: 5 } } });
+      if (freshParents.length !== 2) throw new Error("PARENTS_CHANGED");
+      const charged = await tx.user.updateMany({ where: { id: user.id, coins: { gte: cost.coins }, diamonds: { gte: cost.diamonds } }, data: { coins: { decrement: cost.coins }, diamonds: { decrement: cost.diamonds } } });
+      if (charged.count !== 1) throw new Error("INSUFFICIENT_FUNDS");
+      const deleted = await tx.animal.deleteMany({
         where: {
           id: {
             in: animalIds,
           },
           userId: user.id,
+          type: animalType,
+          level: { gte: 5 },
         },
       });
+      if (deleted.count !== 2) throw new Error("PARENTS_CHANGED");
 
       const newAnimal = await tx.animal.create({
         data: {
@@ -146,7 +145,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       });
 
       return newAnimal;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     return res.json({
       ok: true,
@@ -160,6 +159,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       message: `New ${result.rarity} animal created`,
     });
   } catch (error) {
+    if (error instanceof Error && ["PARENTS_CHANGED", "INSUFFICIENT_FUNDS"].includes(error.message))
+      return res.status(409).json({ error: error.message });
     console.error("BREED ERROR:", error);
     return res.status(500).json({
       error: "Breed failed",

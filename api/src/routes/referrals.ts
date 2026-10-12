@@ -125,6 +125,8 @@ router.post("/apply", async (req: TgAuthedRequest, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Serialize referrals for a referrer so milestone counts cannot race.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${referrer.id}::bigint)`;
       await tx.user.update({
         where: { id: user.id },
         data: {

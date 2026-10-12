@@ -23,6 +23,11 @@ const UPGRADE_COSTS = {
         4: { coins: 1500000, diamonds: 75 },
     },
 };
+const NORMAL_UPGRADE_COSTS = {
+    CHICKEN: { 1: { coins: 100, diamonds: 0 }, 2: { coins: 200, diamonds: 0 }, 3: { coins: 400, diamonds: 2 }, 4: { coins: 800, diamonds: 5 } },
+    SHEEP: { 1: { coins: 250, diamonds: 0 }, 2: { coins: 500, diamonds: 0 }, 3: { coins: 900, diamonds: 3 }, 4: { coins: 1500, diamonds: 6 } },
+    COW: { 1: { coins: 500, diamonds: 0 }, 2: { coins: 900, diamonds: 0 }, 3: { coins: 1500, diamonds: 4 }, 4: { coins: 2500, diamonds: 8 } },
+};
 const RARITY_MULTIPLIER = {
     normal: 1,
     rare: 1.25,
@@ -38,7 +43,7 @@ const SUCCESS_CHANCE = {
 function getUpgradeCost(type, level, rarity) {
     const safeType = type;
     const safeLevel = Math.max(1, Math.min(4, level));
-    const base = UPGRADE_COSTS[safeType]?.[safeLevel];
+    const base = (String(rarity || "normal").toLowerCase() === "normal" ? NORMAL_UPGRADE_COSTS : UPGRADE_COSTS)[safeType]?.[safeLevel];
     if (!base) {
         return null;
     }
@@ -100,25 +105,20 @@ router.post("/", async (req, res) => {
         const roll = Math.random() * 100;
         const success = roll <= chance;
         const result = await prisma_1.prisma.$transaction(async (tx) => {
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: {
-                    coins: { decrement: cost.coins },
-                    diamonds: { decrement: cost.diamonds },
-                },
-                select: { coins: true, diamonds: true },
+            const paid = await tx.user.updateMany({
+                where: { id: user.id, coins: { gte: cost.coins }, diamonds: { gte: cost.diamonds } },
+                data: { coins: { decrement: cost.coins }, diamonds: { decrement: cost.diamonds } },
             });
-            const updatedAnimal = await tx.animal.update({
-                where: { id: animal.id },
-                data: success
-                    ? {
-                        level: { increment: 1 },
-                        upgradeFails: 0,
-                    }
-                    : {
-                        upgradeFails: { increment: 1 },
-                    },
+            if (paid.count !== 1)
+                throw new Error("Insufficient balance at payment time");
+            const changed = await tx.animal.updateMany({
+                where: { id: animal.id, userId: user.id, level: animal.level, upgradeFails },
+                data: success ? { level: { increment: 1 }, upgradeFails: 0 } : { upgradeFails: { increment: 1 } },
             });
+            if (changed.count !== 1)
+                throw new Error("Animal was already upgraded; retry");
+            const updatedUser = await tx.user.findUniqueOrThrow({ where: { id: user.id }, select: { coins: true, diamonds: true } });
+            const updatedAnimal = await tx.animal.findUniqueOrThrow({ where: { id: animal.id } });
             return { user: updatedUser, animal: updatedAnimal };
         });
         return res.json({
@@ -147,6 +147,7 @@ router.get("/costs", async (_req, res) => {
     return res.json({
         ok: true,
         costs: UPGRADE_COSTS,
+        normalCosts: NORMAL_UPGRADE_COSTS,
         rarityMultiplier: RARITY_MULTIPLIER,
         successChance: SUCCESS_CHANCE,
     });

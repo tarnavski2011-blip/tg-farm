@@ -78,31 +78,34 @@ router.post("/", async (req, res) => {
             });
         }
         const now = new Date();
-        const [animal, updatedUser] = await prisma_1.prisma.$transaction([
-            prisma_1.prisma.animal.create({
+        const { animal, updatedUser } = await prisma_1.prisma.$transaction(async (tx) => {
+            const debit = await tx.user.updateMany({
+                where: { id: user.id, coins: { gte: price } },
+                data: { coins: { decrement: price } },
+            });
+            if (debit.count !== 1)
+                throw new Error("INSUFFICIENT_COINS");
+            // Recheck the slot inside the serializable transaction.
+            const currentAnimals = await tx.animal.findMany({
+                where: { userId: user.id, type },
+                select: { slotIndex: true },
+            });
+            const currentUser = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
+            const actualSlot = getFreeSlot(currentAnimals, getSlotLimit(currentUser, type));
+            if (!actualSlot)
+                throw new Error("NO_FREE_SLOT");
+            const animal = await tx.animal.create({
                 data: {
-                    userId: user.id,
-                    type,
-                    level: 1,
-                    rarity: "normal",
-                    breedBonus: 1,
-                    slotIndex: freeSlot,
-                    hp: 100,
-                    bornAt: now,
-                    lastFedAt: now,
-                    lastClaim: now,
+                    userId: user.id, type, level: 1, rarity: "normal",
+                    breedBonus: 1, slotIndex: actualSlot, hp: 100,
+                    bornAt: now, lastFedAt: now, lastClaim: now,
                 },
-            }),
-            prisma_1.prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    coins: { decrement: price },
-                },
-                select: {
-                    coins: true,
-                },
-            }),
-        ]);
+            });
+            const updatedUser = await tx.user.findUniqueOrThrow({
+                where: { id: user.id }, select: { coins: true },
+            });
+            return { animal, updatedUser };
+        }, { isolationLevel: "Serializable" });
         const xpResult = await (0, xp_1.addXp)(user.id, 20);
         return res.json({
             ok: true,
@@ -119,6 +122,10 @@ router.post("/", async (req, res) => {
         });
     }
     catch (e) {
+        if (e instanceof Error && e.message === "INSUFFICIENT_COINS")
+            return res.status(400).json({ error: "Не вистачає coins" });
+        if (e instanceof Error && e.message === "NO_FREE_SLOT")
+            return res.status(409).json({ error: "Немає вільного слота" });
         console.error("BUY ANIMAL ERROR:", e);
         return res.status(500).json({ error: "Server error" });
     }

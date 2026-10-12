@@ -155,7 +155,8 @@ router.get("/", async (req, res) => {
         let pointsAdd = 0;
         let autoFeedCoinsSpent = 0;
         let autoSellCoinsAdd = 0;
-        let autoSellPointsAdd = 0;
+        let autoSellPointsAdd = 0; // sale awards no Points
+        let reservedStorage = 0;
         const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
         const autoSellActiveNow = vipActiveNow || !!(user.autoCollectUntil && user.autoCollectUntil > now);
         let chickenFeedLeft = user.chickenFeed ?? 0;
@@ -214,7 +215,7 @@ router.get("/", async (req, res) => {
             const currentStorageTotal = (user.storage?.eggs ?? 0) +
                 (user.storage?.wool ?? 0) +
                 (user.storage?.milk ?? 0);
-            const storageFreeSpace = Math.max(0, (user.storage?.capacity ?? 1000) - currentStorageTotal);
+            const storageFreeSpace = Math.max(0, (user.storage?.capacity ?? 1000) - currentStorageTotal - reservedStorage);
             let producedPerCycle = getAnimalProducedPerCycle(animal.type, animal.level);
             producedPerCycle = Math.max(1, Math.floor(producedPerCycle * (animal.breedBonus ?? 1)));
             const maxCyclesByFeed = Math.floor(feedAvailable / 1);
@@ -256,6 +257,16 @@ router.get("/", async (req, res) => {
             if (user.vipUntil && user.vipUntil > now) {
                 earnedPoints = Math.ceil(earnedPoints * 1.2);
             }
+            // Reserve actual produced units before processing the next animal.
+            const actualFree = Math.max(0, storageFreeSpace);
+            if (produced > actualFree) {
+                const ratio = actualFree / Math.max(1, produced);
+                produced = Math.floor(produced * ratio);
+                earnedPoints = Math.floor(earnedPoints * ratio);
+            }
+            if (produced <= 0)
+                continue;
+            reservedStorage += produced;
             pointsAdd += earnedPoints;
             if (animal.type === "CHICKEN")
                 chickenFeedLeft -= usedCycles;
@@ -318,22 +329,8 @@ router.get("/", async (req, res) => {
                 storageEggs * SELL_PRICES.eggs +
                     storageWool * SELL_PRICES.wool +
                     storageMilk * SELL_PRICES.milk;
-            const autoSellChickenAnimals = user.animals.filter((a) => a.type === "CHICKEN");
-            const autoSellSheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
-            const autoSellCowAnimals = user.animals.filter((a) => a.type === "COW");
-            const chickenLevel = autoSellChickenAnimals.length
-                ? Math.max(...autoSellChickenAnimals.map((a) => a.level))
-                : 0;
-            const sheepLevel = autoSellSheepAnimals.length
-                ? Math.max(...autoSellSheepAnimals.map((a) => a.level))
-                : 0;
-            const cowLevel = autoSellCowAnimals.length
-                ? Math.max(...autoSellCowAnimals.map((a) => a.level))
-                : 0;
-            autoSellPointsAdd =
-                storageEggs * sellPointsRate(chickenLevel, 1, 3) +
-                    storageWool * sellPointsRate(sheepLevel, 2, 6) +
-                    storageMilk * sellPointsRate(cowLevel, 3, 10);
+            // No Points on auto-sale: already credited during production.
+            autoSellPointsAdd = 0;
             storageEggs = 0;
             storageWool = 0;
             storageMilk = 0;
@@ -357,7 +354,7 @@ router.get("/", async (req, res) => {
                 sheepFeed: sheepFeedLeft,
                 cowFeed: cowFeedLeft,
                 coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-                points: { increment: pointsAdd + autoSellPointsAdd },
+                points: { increment: pointsAdd },
                 lastSeenAt: now,
             },
         });

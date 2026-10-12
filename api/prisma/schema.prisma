@@ -50,6 +50,7 @@ model User {
   cowSlots          Int      @default(2)
 
   lastWheelSpinAt   DateTime?
+  wheelBonusSpins   Int      @default(0)
 
   referredById      Int?
 

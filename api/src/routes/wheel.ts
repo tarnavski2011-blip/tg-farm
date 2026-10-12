@@ -6,7 +6,7 @@ const router = Router();
 
 function isSameDay(a?: Date | null, b?: Date | null) {
   if (!a || !b) return false;
-  return a.toDateString() === b.toDateString();
+  return a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
 }
 
 const REWARDS = [
@@ -39,6 +39,7 @@ router.get("/state", async (req: TgAuthedRequest, res) => {
       where: { telegramId },
       select: {
         lastWheelSpinAt: true,
+        wheelBonusSpins: true,
       },
     });
 
@@ -61,9 +62,10 @@ router.get("/state", async (req: TgAuthedRequest, res) => {
 
     return res.json({
       ok: true,
+      bonusSpins: user.wheelBonusSpins,
       rewards: REWARDS,
       cooldownSec,
-      canSpin: cooldownSec <= 0,
+      canSpin: cooldownSec <= 0 || user.wheelBonusSpins > 0,
     });
   } catch (e) {
     console.error("WHEEL STATE ERROR:", e);
@@ -87,6 +89,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
         coins: true,
         diamonds: true,
         lastWheelSpinAt: true,
+        wheelBonusSpins: true,
       },
     });
 
@@ -94,53 +97,47 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (isSameDay(user.lastWheelSpinAt, now)) {
-      return res.status(400).json({
-        error: "Already spun today",
-      });
+    const daily = !isSameDay(user.lastWheelSpinAt, now);
+    if (!daily && user.wheelBonusSpins <= 0) {
+      return res.status(400).json({ error: "Already spun today" });
     }
-
     const reward = getRandomReward();
-
-    const updateData: {
-      lastWheelSpinAt: Date;
-      coins?: { increment: number };
-      diamonds?: { increment: number };
-    } = {
-      lastWheelSpinAt: now,
-    };
-
-    if (reward.type === "coins") {
-      updateData.coins = { increment: reward.amount };
-    }
-
-    if (reward.type === "diamonds") {
-      updateData.diamonds = { increment: reward.amount };
-    }
-
-    const updated = await prisma.user.update({
-      where: { telegramId },
-      data: updateData,
-      select: {
-        coins: true,
-        diamonds: true,
-        lastWheelSpinAt: true,
-      },
+    // Atomic compare-and-set avoids concurrent double claims across server instances.
+    // A bonus spin cannot create another bonus spin (prevents unbounded free chains).
+    const updated = await prisma.$transaction(async (tx) => {
+      const claimed = daily
+        ? await tx.user.updateMany({
+            where: { id: user.id, OR: [{ lastWheelSpinAt: null }, { lastWheelSpinAt: { lt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) } }] },
+            data: {
+              lastWheelSpinAt: now,
+              ...(reward.type === "coins" ? { coins: { increment: reward.amount } } : {}),
+              ...(reward.type === "diamonds" ? { diamonds: { increment: reward.amount } } : {}),
+              ...(reward.type === "freeSpin" ? { wheelBonusSpins: { increment: 1 } } : {}),
+            },
+          })
+        : await tx.user.updateMany({
+            where: { id: user.id, wheelBonusSpins: { gt: 0 } },
+            data: {
+              wheelBonusSpins: { decrement: 1 },
+              ...(reward.type === "coins" ? { coins: { increment: reward.amount } } : {}),
+              ...(reward.type === "diamonds" ? { diamonds: { increment: reward.amount } } : {}),
+            },
+          });
+      if (claimed.count !== 1) return null;
+      return tx.user.findUniqueOrThrow({ where: { id: user.id }, select: { coins: true, diamonds: true, lastWheelSpinAt: true, wheelBonusSpins: true } });
     });
+    if (!updated) return res.status(400).json({ error: "Spin already claimed" });
 
     return res.json({
       ok: true,
-      reward, // важливо: весь об'єкт, не label
+      reward, // full reward object
+      bonusSpins: updated.wheelBonusSpins,
       coins: updated.coins,
       diamonds: updated.diamonds,
       cooldownSec: Math.max(
         0,
         Math.floor(
-          (new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() + 1,
-          ).getTime() -
+          (new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).getTime() -
             now.getTime()) /
             1000,
         ),
