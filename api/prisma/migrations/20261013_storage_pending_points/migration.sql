@@ -1,0 +1,1 @@
+ALTER TABLE "Storage" ADD COLUMN "pendingPoints" INTEGER NOT NULL DEFAULT 0;
