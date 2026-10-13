@@ -2352,24 +2352,7 @@
                                             <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
                                            <span>+${totalCoins} coins 💰</span>
                                            <span>+${
-                                             getSellPreviewPoints(
-                                               "CHICKEN",
-                                               eggs,
-                                               currentState?.animals
-                                                 ?.chickenLevel ?? 0,
-                                             ) +
-                                             getSellPreviewPoints(
-                                               "SHEEP",
-                                               wool,
-                                               currentState?.animals
-                                                 ?.sheepLevel ?? 0,
-                                             ) +
-                                             getSellPreviewPoints(
-                                               "COW",
-                                               milk,
-                                               currentState?.animals
-                                                 ?.cowLevel ?? 0,
-                                             )
+                                             Number(s.pendingPoints ?? 0)
                                            } points ⭐</span>
                                            </div>
                                             <button class="buy-btn green" id="sellAllBtn">Продати все</button>

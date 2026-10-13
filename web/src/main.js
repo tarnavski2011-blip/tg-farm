@@ -1226,7 +1226,7 @@ async function sellAll() {
     });
     if (!ok) continue;
 
-    showToast(`💰 +${json.earned ?? json.totalCoins ?? 0}`);
+    showToast(`💰 +${json.earned ?? 0} coins | ⭐ +${json.earnedPoints ?? 0} Points`);
     loadState();
     return;
   }
