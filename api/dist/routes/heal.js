@@ -89,8 +89,9 @@ router.post("/", async (req, res) => {
                         ? user.animals.filter((animal) => animal.type === typeRaw)
                         : [];
         }
+        animalsToHeal = animalsToHeal.filter((animal) => (animal.hp ?? 100) < 100);
         if (animalsToHeal.length <= 0) {
-            return res.status(400).json({ error: "No animals to heal" });
+            return res.status(400).json({ error: "No animals need healing" });
         }
         let totalCoinsCost = 0;
         let totalPointsCost = 0;
