@@ -2103,15 +2103,13 @@
               )} 🪙`;
             }
 
-            return `${Math.max(
-              1,
-              Math.floor(data.points[lvl] * rarityMulti * hpMulti),
-            )} ⭐`;
+            const diamondCost = lvl === 4 ? (card.rarity !== "normal" ? 10 : 5) : (card.rarity !== "normal" ? 20 : 10);
+            return `${Math.max(1, Math.floor(data.points[lvl] * rarityMulti * hpMulti))} ⭐ + ${diamondCost} 💎`;
           })()}
         </span>
       </div>
 
-                            <button class="animal-small-btn gold" data-heal-one="${card.id}">❤️ Heal</button>
+                            <button class="animal-small-btn gold" data-heal-one="${card.id}" ${hp >= 100 ? "disabled" : ""}>❤️ Heal</button>
                           </div>
 
                           <label class="breed-check">
