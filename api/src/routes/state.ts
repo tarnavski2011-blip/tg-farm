@@ -430,7 +430,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         storageMilk * SELL_PRICES.milk;
 
       // Transfer stored Points to balance on automatic sale.
-      autoSellPointsAdd = user.storage.pendingPoints ?? 0;
+      autoSellPointsAdd = user.storage?.pendingPoints ?? 0;
 
       storageEggs = 0;
       storageWool = 0;

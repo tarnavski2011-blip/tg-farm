@@ -329,8 +329,8 @@ router.get("/", async (req, res) => {
                 storageEggs * SELL_PRICES.eggs +
                     storageWool * SELL_PRICES.wool +
                     storageMilk * SELL_PRICES.milk;
-            // No Points on auto-sale: already credited during production.
-            autoSellPointsAdd = 0;
+            // Transfer stored Points to balance on automatic sale.
+            autoSellPointsAdd = user.storage?.pendingPoints ?? 0;
             storageEggs = 0;
             storageWool = 0;
             storageMilk = 0;
@@ -354,7 +354,7 @@ router.get("/", async (req, res) => {
                 sheepFeed: sheepFeedLeft,
                 cowFeed: cowFeedLeft,
                 coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-                points: { increment: pointsAdd },
+                points: { increment: autoSellPointsAdd },
                 lastSeenAt: now,
             },
         });
@@ -366,11 +366,13 @@ router.get("/", async (req, res) => {
                         eggs: eggsAdd,
                         wool: woolAdd,
                         milk: milkAdd,
+                        pendingPoints: pointsAdd,
                     }
                     : {
                         eggs: { increment: eggsAdd },
                         wool: { increment: woolAdd },
                         milk: { increment: milkAdd },
+                        pendingPoints: { increment: pointsAdd },
                     },
             });
         }
@@ -606,6 +608,7 @@ router.get("/", async (req, res) => {
                 milk: user.storage.milk ?? 0,
                 total: storageTotal,
                 capacity: user.storage.capacity ?? 1000,
+                pendingPoints: user.storage.pendingPoints ?? 0,
                 sellValue: (user.storage.eggs ?? 0) * 6 +
                     (user.storage.wool ?? 0) * 15 +
                     (user.storage.milk ?? 0) * 30,

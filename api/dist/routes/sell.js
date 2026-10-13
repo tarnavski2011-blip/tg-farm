@@ -68,7 +68,7 @@ router.post("/", async (req, res) => {
             chickenBreedBonus);
         const woolPoints = Math.floor(sheepCycles * pointsPerCycle("SHEEP", sheepLevel) * sheepBreedBonus);
         const milkPoints = Math.floor(cowCycles * pointsPerCycle("COW", cowLevel) * cowBreedBonus);
-        const totalPoints = 0; // Points are earned only during production
+        const totalPoints = user.storage.pendingPoints ?? 0;
         if (totalCoins <= 0 && totalPoints <= 0) {
             return res.json({
                 ok: true,
@@ -83,11 +83,13 @@ router.post("/", async (req, res) => {
             where: { telegramId },
             data: {
                 coins: { increment: totalCoins },
+                points: { increment: totalPoints },
                 storage: {
                     update: {
                         eggs: 0,
                         wool: 0,
                         milk: 0,
+                        pendingPoints: 0,
                     },
                 },
             },
@@ -97,7 +99,7 @@ router.post("/", async (req, res) => {
             },
         });
         await (0, questProgress_1.addSellToday)(user.id, 1);
-        const xpResult = await (0, xp_1.addXp)(user.id, Math.floor(totalCoins / 20));
+        const xpResult = await (0, xp_1.addXp)(user.id, Math.floor(totalCoins / 100));
         return res.json({
             ok: true,
             sold: { eggs, wool, milk },
@@ -107,9 +109,9 @@ router.post("/", async (req, res) => {
             totalCoins: updated.coins,
             totalPoints: updated.points,
             pointsBreakdown: {
-                eggs: 0,
-                wool: 0,
-                milk: 0,
+                eggs: eggsPoints,
+                wool: woolPoints,
+                milk: milkPoints,
             },
             cycles: {
                 chicken: chickenCycles,
