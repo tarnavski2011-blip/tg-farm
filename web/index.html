@@ -1749,16 +1749,47 @@
         }
       }
 
-      async function healOneAnimal(animalId) {
-        const res = await apiPost("/heal", { animalId: Number(animalId) });
-        setResult(res.data);
+      // Delegate heal clicks once: animal cards are rebuilt when state changes.
+      modalBody.addEventListener("click", async (event) => {
+        const btn = event.target.closest?.("[data-heal-one]");
+        if (!btn || !modalBody.contains(btn) || btn.disabled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (btn.dataset.healing === "1") return;
+        btn.dataset.healing = "1";
+        btn.disabled = true;
+        const originalLabel = btn.textContent;
+        btn.textContent = "⏳ Healing...";
+        try {
+          await healOneAnimal(btn.getAttribute("data-heal-one"));
+        } finally {
+          if (btn.isConnected) {
+            btn.dataset.healing = "0";
+            btn.disabled = false;
+            btn.textContent = originalLabel;
+          }
+        }
+      });
 
-        if (res.ok) {
-          showToast("❤️ Лікування виконано");
-          await loadState();
-          renderAnimalsOwned();
-        } else {
-          showToast(res.data?.error || "Помилка лікування");
+      async function healOneAnimal(animalId) {
+        const id = Number(animalId);
+        if (!Number.isSafeInteger(id) || id <= 0) {
+          showToast("Помилка: неправильний ID тварини");
+          return;
+        }
+        try {
+          const res = await apiPost("/heal", { animalId: id });
+          setResult(res.data);
+          if (res.ok) {
+            showToast("❤️ Лікування виконано");
+            await loadState();
+            renderAnimalsOwned();
+          } else {
+            showToast(res.data?.error || "Помилка лікування");
+          }
+        } catch (error) {
+          console.error("HEAL REQUEST ERROR:", error);
+          showToast("Не вдалося з'єднатися з сервером лікування");
         }
       }
 
@@ -2211,11 +2242,8 @@
           };
         });
 
-        modalBody.querySelectorAll("[data-heal-one]").forEach((btn) => {
-          btn.onclick = async () => {
-            await healOneAnimal(btn.getAttribute("data-heal-one"));
-          };
-        });
+        // Healing clicks are handled by a delegated listener below.
+        // This survives modal re-renders and nested elements inside buttons.
 
         modalBody.querySelectorAll("[data-breed-pick]").forEach((input) => {
           input.onchange = () => {
