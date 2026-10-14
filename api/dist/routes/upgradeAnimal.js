@@ -7,32 +7,27 @@ const UPGRADE_COSTS = {
     CHICKEN: {
         1: { coins: 3000, diamonds: 0 },
         2: { coins: 12000, diamonds: 0 },
-        3: { coins: 50000, diamonds: 3 },
-        4: { coins: 180000, diamonds: 12 },
+        3: { coins: 50000, diamonds: 5 },
+        4: { coins: 120000, diamonds: 15 },
     },
     SHEEP: {
-        1: { coins: 12000, diamonds: 0 },
-        2: { coins: 50000, diamonds: 3 },
-        3: { coins: 180000, diamonds: 12 },
-        4: { coins: 600000, diamonds: 35 },
+        1: { coins: 9000, diamonds: 0 },
+        2: { coins: 36000, diamonds: 0 },
+        3: { coins: 150000, diamonds: 15 },
+        4: { coins: 360000, diamonds: 45 },
     },
     COW: {
-        1: { coins: 50000, diamonds: 3 },
-        2: { coins: 180000, diamonds: 12 },
-        3: { coins: 600000, diamonds: 35 },
-        4: { coins: 1500000, diamonds: 75 },
+        1: { coins: 21000, diamonds: 0 },
+        2: { coins: 84000, diamonds: 0 },
+        3: { coins: 350000, diamonds: 35 },
+        4: { coins: 840000, diamonds: 105 },
     },
-};
-const NORMAL_UPGRADE_COSTS = {
-    CHICKEN: { 1: { coins: 100, diamonds: 0 }, 2: { coins: 200, diamonds: 0 }, 3: { coins: 400, diamonds: 2 }, 4: { coins: 800, diamonds: 5 } },
-    SHEEP: { 1: { coins: 250, diamonds: 0 }, 2: { coins: 500, diamonds: 0 }, 3: { coins: 900, diamonds: 3 }, 4: { coins: 1500, diamonds: 6 } },
-    COW: { 1: { coins: 500, diamonds: 0 }, 2: { coins: 900, diamonds: 0 }, 3: { coins: 1500, diamonds: 4 }, 4: { coins: 2500, diamonds: 8 } },
 };
 const RARITY_MULTIPLIER = {
     normal: 1,
-    rare: 1.25,
-    epic: 1.6,
-    legendary: 2.2,
+    rare: 2,
+    epic: 4,
+    legendary: 8,
 };
 const SUCCESS_CHANCE = {
     1: 90,
@@ -43,7 +38,7 @@ const SUCCESS_CHANCE = {
 function getUpgradeCost(type, level, rarity) {
     const safeType = type;
     const safeLevel = Math.max(1, Math.min(4, level));
-    const base = (String(rarity || "normal").toLowerCase() === "normal" ? NORMAL_UPGRADE_COSTS : UPGRADE_COSTS)[safeType]?.[safeLevel];
+    const base = UPGRADE_COSTS[safeType]?.[safeLevel];
     if (!base) {
         return null;
     }
@@ -147,7 +142,7 @@ router.get("/costs", async (_req, res) => {
     return res.json({
         ok: true,
         costs: UPGRADE_COSTS,
-        normalCosts: NORMAL_UPGRADE_COSTS,
+        normalCosts: UPGRADE_COSTS,
         rarityMultiplier: RARITY_MULTIPLIER,
         successChance: SUCCESS_CHANCE,
     });

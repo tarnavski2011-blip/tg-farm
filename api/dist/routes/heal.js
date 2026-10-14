@@ -89,7 +89,13 @@ router.post("/", async (req, res) => {
                         ? user.animals.filter((animal) => animal.type === typeRaw)
                         : [];
         }
-        animalsToHeal = animalsToHeal.filter((animal) => (animal.hp ?? 100) < 100);
+        const currentLifePercent = (animal) => {
+            const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
+            const duration = lifeDays * 86400000;
+            const remaining = Math.max(0, duration - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
+            return Math.max(0, Math.min(100, Math.ceil(remaining / duration * 100)));
+        };
+        animalsToHeal = animalsToHeal.filter((animal) => currentLifePercent(animal) < 100);
         if (animalsToHeal.length <= 0) {
             return res.status(400).json({ error: "No animals need healing" });
         }
@@ -98,7 +104,7 @@ router.post("/", async (req, res) => {
         let totalDiamondsCost = 0;
         const breakdown = animalsToHeal.map((animal) => {
             const type = animal.type;
-            const cost = getHealCost(type, animal.level ?? 1, animal.rarity || "normal", animal.hp ?? 100);
+            const cost = getHealCost(type, animal.level ?? 1, animal.rarity || "normal", currentLifePercent(animal));
             const rarity = String(animal.rarity || "normal").toLowerCase();
             const bred = rarity !== "normal";
             const diamondCost = cost.level === 4 ? (bred ? 10 : 5) : cost.level === 5 ? (bred ? 20 : 10) : 0;
@@ -159,8 +165,8 @@ router.post("/", async (req, res) => {
                     userId: user.id,
                 },
                 data: {
-                    bornAt: now,
                     lastFedAt: now,
+                    bornAt: now,
                     hp: 100,
                 },
             });
