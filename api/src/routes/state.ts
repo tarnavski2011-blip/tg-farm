@@ -70,50 +70,22 @@ function getAnimalPointsPerCycle(
   return 0;
 }
 
-function getAnimalLifeDays(type: "CHICKEN" | "SHEEP" | "COW") {
-  if (type === "CHICKEN") return 3;
-  if (type === "SHEEP") return 5;
-  if (type === "COW") return 7;
-  return 1;
-}
-
 function getAnimalEfficiency(animal: {
   type: "CHICKEN" | "SHEEP" | "COW";
   bornAt: Date;
   lastFedAt: Date;
+  hp?: number | null;
 }) {
-  const now = Date.now();
-
-  const totalLifeMs = getAnimalLifeDays(animal.type) * 24 * 60 * 60 * 1000;
-
-  const ageMs = now - new Date(animal.bornAt).getTime();
-
-  if (ageMs >= totalLifeMs) {
-    return {
-      lifePercent: 0,
-      efficiencyPercent: 0,
-      daysLeft: 0,
-    };
-  }
-
-  const daysLeft = Math.max(0, (totalLifeMs - ageMs) / (24 * 60 * 60 * 1000));
-
-  const hoursWithoutFeed =
-    (now - new Date(animal.lastFedAt).getTime()) / (60 * 60 * 1000);
-
-  const efficiencyLoss = Math.floor(hoursWithoutFeed / 12) * 10;
-
-  const efficiencyPercent = Math.max(0, 100 - efficiencyLoss);
-
-  const lifePercent = Math.max(
-    0,
-    Math.round(((totalLifeMs - ageMs) / totalLifeMs) * 100),
-  );
-
+  const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
+  const lifeMs = lifeDays * 24 * 60 * 60 * 1000;
+  const remainingMs = Math.max(0, lifeMs - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
+  const lifePercent = Math.max(0, Math.min(100, Math.ceil(remainingMs / lifeMs * 100)));
+  const hoursWithoutFeed = (Date.now() - new Date(animal.lastFedAt).getTime()) / 3600000;
+  const efficiencyLoss = Math.floor(Math.max(0, hoursWithoutFeed) / 12) * 10;
   return {
     lifePercent,
-    efficiencyPercent,
-    daysLeft: Math.ceil(daysLeft),
+    efficiencyPercent: lifePercent === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
+    daysLeft: remainingMs / 86400000,
   };
 }
 
@@ -203,16 +175,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         type: animal.type,
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
       });
 
-      if (preCheckStats.lifePercent <= 0) {
-        deadAnimalDeletes.push(
-          prisma.animal.delete({
-            where: { id: animal.id },
-          }),
-        );
-        continue;
-      }
 
       const cfg = ANIMAL_PRODUCTION[animal.type];
       const passedSec = Math.floor(
@@ -297,16 +262,9 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         type: animal.type,
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
       });
 
-      if (animalStats.lifePercent <= 0) {
-        deadAnimalDeletes.push(
-          prisma.animal.delete({
-            where: { id: animal.id },
-          }),
-        );
-        continue;
-      }
 
       if (animalStats.efficiencyPercent <= 0) {
         continue;
@@ -429,8 +387,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         storageWool * SELL_PRICES.wool +
         storageMilk * SELL_PRICES.milk;
 
-      // Transfer stored Points to balance on automatic sale.
-      autoSellPointsAdd = user.storage?.pendingPoints ?? 0;
+      // No Points on auto-sale: already credited during production.
+      autoSellPointsAdd = 0;
 
       storageEggs = 0;
       storageWool = 0;
@@ -459,7 +417,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
         coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-        points: { increment: autoSellPointsAdd },
+        points: { increment: pointsAdd },
         lastSeenAt: now,
       },
     });
@@ -473,13 +431,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                 eggs: eggsAdd,
                 wool: woolAdd,
                 milk: milkAdd,
-                pendingPoints: pointsAdd,
               }
             : {
                 eggs: { increment: eggsAdd },
                 wool: { increment: woolAdd },
                 milk: { increment: milkAdd },
-                pendingPoints: { increment: pointsAdd },
               },
       });
     }
@@ -507,6 +463,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         lastClaim: Date;
         bornAt: Date;
         lastFedAt: Date;
+        hp?: number | null;
       },
       feedCycles: number,
     ) {
@@ -514,9 +471,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         type: animal.type,
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
       });
 
-      if (stats.lifePercent <= 0 || stats.efficiencyPercent <= 0) {
+      if (stats.efficiencyPercent <= 0) {
         return 0;
       }
 
@@ -586,6 +544,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         level: number;
         bornAt: Date;
         lastFedAt: Date;
+        hp?: number | null;
       }[],
     ) {
       if (animals.length <= 0) return 0;
@@ -595,9 +554,10 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           type: animal.type,
           bornAt: animal.bornAt,
           lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
         });
 
-        if (stats.lifePercent <= 0 || stats.efficiencyPercent <= 0) {
+        if (stats.efficiencyPercent <= 0) {
           return sum;
         }
 
@@ -649,6 +609,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               type: animal.type,
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
             });
 
             return {
@@ -675,6 +636,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               type: animal.type,
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
             });
 
             return {
@@ -701,6 +663,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               type: animal.type,
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
+        hp: animal.hp,
             });
 
             return {
@@ -737,6 +700,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).lifePercent,
                 0,
               ) / chickenAnimals.length,
@@ -752,6 +716,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).lifePercent,
                 0,
               ) / sheepAnimals.length,
@@ -767,6 +732,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).lifePercent,
                 0,
               ) / cowAnimals.length,
@@ -782,6 +748,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).efficiencyPercent,
                 0,
               ) / chickenAnimals.length,
@@ -797,6 +764,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).efficiencyPercent,
                 0,
               ) / sheepAnimals.length,
@@ -812,6 +780,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     type: a.type,
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
+                    hp: a.hp,
                   }).efficiencyPercent,
                 0,
               ) / cowAnimals.length,
@@ -835,7 +804,6 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         milk: user.storage.milk ?? 0,
         total: storageTotal,
         capacity: user.storage.capacity ?? 1000,
-        pendingPoints: user.storage.pendingPoints ?? 0,
         sellValue:
           (user.storage.eggs ?? 0) * 6 +
           (user.storage.wool ?? 0) * 15 +

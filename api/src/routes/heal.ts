@@ -111,7 +111,13 @@ router.post("/", async (req: TgAuthedRequest, res) => {
             : [];
     }
 
-    animalsToHeal = animalsToHeal.filter((animal) => (animal.hp ?? 100) < 100);
+    const currentLifePercent = (animal: (typeof user.animals)[number]) => {
+      const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
+      const duration = lifeDays * 86400000;
+      const remaining = Math.max(0, duration - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
+      return Math.max(0, Math.min(100, Math.ceil(remaining / duration * 100)));
+    };
+    animalsToHeal = animalsToHeal.filter((animal) => currentLifePercent(animal) < 100);
 
     if (animalsToHeal.length <= 0) {
       return res.status(400).json({ error: "No animals need healing" });
@@ -127,7 +133,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         type,
         animal.level ?? 1,
         (animal as any).rarity || "normal",
-        (animal as any).hp ?? 100,
+        currentLifePercent(animal),
       );
 
       const rarity = String((animal as any).rarity || "normal").toLowerCase();
@@ -195,8 +201,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
           userId: user.id,
         },
         data: {
-          bornAt: now,
           lastFedAt: now,
+          bornAt: now,
           hp: 100,
         } as any,
       });
