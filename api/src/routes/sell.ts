@@ -1,3 +1,4 @@
+import { acquireWarehouseLock } from "../lib/warehouseLock";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -30,12 +31,14 @@ function pointsPerCycle(type: "CHICKEN" | "SHEEP" | "COW", level: number) {
 }
 
 router.post("/", async (req: TgAuthedRequest, res) => {
+  let releaseWarehouseLock: (() => Promise<void>) | undefined;
   try {
     if (!req.telegramUser?.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const telegramId = BigInt(req.telegramUser.id);
+    releaseWarehouseLock = await acquireWarehouseLock(telegramId);
 
     const user = await prisma.user.findUnique({
       where: { telegramId },
@@ -158,6 +161,8 @@ router.post("/", async (req: TgAuthedRequest, res) => {
   } catch (e) {
     console.error("SELL ERROR:", e);
     return res.status(500).json({ error: "Server error" });
+  } finally {
+    if (releaseWarehouseLock) await releaseWarehouseLock();
   }
 });
 

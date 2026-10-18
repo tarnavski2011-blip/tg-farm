@@ -1,3 +1,4 @@
+import { acquireWarehouseLock } from "../lib/warehouseLock";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -90,12 +91,14 @@ function getAnimalEfficiency(animal: {
 }
 
 router.get("/", async (req: TgAuthedRequest, res) => {
+  let releaseWarehouseLock: (() => Promise<void>) | undefined;
   try {
     if (!req.telegramUser?.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const telegramId = BigInt(req.telegramUser.id);
+    releaseWarehouseLock = await acquireWarehouseLock(telegramId);
 
     let user = await prisma.user.findUnique({
       where: { telegramId },
@@ -195,7 +198,30 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       if (animal.type === "SHEEP") feedAvailable = sheepFeedLeft;
       if (animal.type === "COW") feedAvailable = cowFeedLeft;
 
-      if (feedAvailable <= 0 && vipActiveNow) {
+      const currentStorageTotal =
+        (user.storage?.eggs ?? 0) +
+        (user.storage?.wool ?? 0) +
+        (user.storage?.milk ?? 0);
+
+      const storageFreeSpace = Math.max(
+        0,
+        (user.storage?.capacity ?? 1000) - currentStorageTotal - reservedStorage,
+      );
+
+      let producedPerCycle = getAnimalProducedPerCycle(
+        animal.type,
+        animal.level,
+      );
+      producedPerCycle = Math.max(
+        1,
+        Math.floor(producedPerCycle * ((animal as any).breedBonus ?? 1)),
+      );
+
+      const maxCyclesByStorage = Math.floor(
+        storageFreeSpace / producedPerCycle,
+      );
+
+      if (maxCyclesByStorage > 0 && feedAvailable <= 0 && vipActiveNow) {
         const feedPrice = AUTO_FEED_PRICES[animal.type];
 
         if (userCoinsLeft >= feedPrice) {
@@ -219,29 +245,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         continue;
       }
 
-      const currentStorageTotal =
-        (user.storage?.eggs ?? 0) +
-        (user.storage?.wool ?? 0) +
-        (user.storage?.milk ?? 0);
-
-      const storageFreeSpace = Math.max(
-        0,
-        (user.storage?.capacity ?? 1000) - currentStorageTotal - reservedStorage,
-      );
-
-      let producedPerCycle = getAnimalProducedPerCycle(
-        animal.type,
-        animal.level,
-      );
-      producedPerCycle = Math.max(
-        1,
-        Math.floor(producedPerCycle * ((animal as any).breedBonus ?? 1)),
-      );
-
       const maxCyclesByFeed = Math.floor(feedAvailable / 1);
-      const maxCyclesByStorage = Math.floor(
-        storageFreeSpace / producedPerCycle,
-      );
 
       const usedCycles = Math.min(
         fullCycles,
@@ -249,12 +253,11 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         maxCyclesByStorage,
       );
       if (usedCycles <= 0) {
-        animalUpdates.push(
-          prisma.animal.update({
-            where: { id: animal.id },
-            data: { lastClaim: now },
-          }),
-        );
+        // Full warehouse: don't consume feed or accumulate catch-up production.
+        animalUpdates.push(prisma.animal.update({
+          where: { id: animal.id },
+          data: { lastClaim: now },
+        }));
         continue;
       }
 
@@ -879,6 +882,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       error: "Server error",
       details: String(e),
     });
+  } finally {
+    if (releaseWarehouseLock) await releaseWarehouseLock();
   }
 });
 
