@@ -1196,10 +1196,10 @@
       }
       .side-btn span { font-size: 27px; }
       .side-btn strong { font-size: 11px; }
-      .side-btn.daily, .side-btn.vip { top: 204px; }
-      .side-btn.tasks, .side-btn.boosts { top: 278px; }
-      .side-btn.refs, .side-btn.wallet { top: 352px; }
-      .side-btn.wheel-side { top: 426px; }
+      .side-btn.daily, .side-btn.vip { top: 239px; }
+      .side-btn.tasks, .side-btn.boosts { top: 313px; }
+      .side-btn.refs, .side-btn.wallet { top: 387px; }
+      .side-btn.wheel-side { top: 461px; }
       .bottom-nav { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 92px minmax(0,1fr) minmax(0,1fr); gap: 4px; padding: 5px; }
       .nav-btn { min-width: 0; height: 62px; padding: 3px 1px; }
       .nav-btn span { font-size: 25px; }
@@ -1432,21 +1432,6 @@
       const BOT_USERNAME = "my_farm_clicker_bot";
 
       let tonConnectUI = null;
-      // Saved payout address is deliberately independent of TonConnect sessions.
-      function payoutAddressKey() {
-        return `farm_payout_address_${getMyTelegramId() || "anonymous"}`;
-      }
-      function getSavedPayoutAddress() {
-        try { return localStorage.getItem(payoutAddressKey()) || ""; } catch { return ""; }
-      }
-      function savePayoutAddress(value) {
-        try {
-          const address = value.trim();
-          if (address) localStorage.setItem(payoutAddressKey(), address);
-          else localStorage.removeItem(payoutAddressKey());
-        } catch (e) { console.warn("Unable to save payout address", e); }
-      }
-
       // Convert a TON raw address (0:64 hex chars) into a user-friendly
       // non-bounceable mainnet address (UQ...). CRC16-XMODEM is required by TON.
       function tonFriendlyAddress(raw) {
@@ -3346,10 +3331,12 @@
                     <input
                       id="withdrawTonAddress"
                       class="input-box"
-                      placeholder="Твоя адреса гаманця для виводу GRAM"
+                      placeholder="Встав TON-адресу для виведення (EQ... або UQ...)"
+                      autocomplete="off"
                       value=""
                     />
 
+                    <div class="note" style="margin:6px 0 10px;">Перед кожною заявкою вручну встав адресу TON-гаманця, на який хочеш отримати GRAM.</div>
                     <input
                       id="withdrawPointsAmount"
                       class="input-box"
@@ -3379,13 +3366,9 @@
         const walletAddressBox = document.getElementById("walletAddressBox");
         const withdrawTonAddress =
           document.getElementById("withdrawTonAddress");
-        // Manual choice wins even when TonConnect reconnects later.
-        if (withdrawTonAddress) {
-          withdrawTonAddress.value = getSavedPayoutAddress() || tonFriendlyAddress(connectedAddress);
-          withdrawTonAddress.addEventListener("input", () => {
-            savePayoutAddress(withdrawTonAddress.value);
-          });
-        }
+        // The payout address must be entered manually for every withdrawal.
+        // Do not restore it from TonConnect or localStorage.
+        if (withdrawTonAddress) withdrawTonAddress.value = "";
         function updateWalletConnection(wallet) {
           // A status event may arrive after this modal was closed or rebuilt.
           if (!walletAddressBox?.isConnected) return;
@@ -3396,9 +3379,6 @@
             connectWalletBtn.disabled = !!address;
           }
           if (disconnectWalletBtn) disconnectWalletBtn.disabled = !address;
-          if (withdrawTonAddress && !getSavedPayoutAddress()) {
-            withdrawTonAddress.value = tonFriendlyAddress(address);
-          }
         }
         updateWalletConnection(tonUI?.wallet);
         if (tonUI) {
@@ -3422,9 +3402,6 @@
               }
 
               updateWalletConnection(tc.wallet || wallet);
-              if (withdrawTonAddress && !getSavedPayoutAddress()) {
-                withdrawTonAddress.value = tonFriendlyAddress(address);
-              }
 
               showToast("Гаманець підключено");
             } catch (e) {
@@ -3441,7 +3418,7 @@
               await tc.disconnect();
 
               updateWalletConnection(null);
-              // Keep a manually selected payout address after disconnect.
+              // Payout address is always entered manually.
 
               showToast("Гаманець відключено");
             } catch (e) {
@@ -3524,6 +3501,11 @@
             const tonAddress = document.getElementById("withdrawTonAddress")?.value.trim() || "";
             const pointsAmount = Number(document.getElementById("withdrawPointsAmount")?.value);
 
+            if (!tonAddress) {
+              showToast("Встав адресу гаманця для виведення");
+              withdrawTonAddress?.focus();
+              return;
+            }
             if (!validTonAddress(tonAddress)) {
               showToast("Введи правильну TON адресу");
               return;
