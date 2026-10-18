@@ -26,6 +26,7 @@ import paymentsRouter from "./routes/payments";
 import testPaymentRouter from "./routes/testPayment";
 import paymentLogsRouter from "./routes/paymentLogs";
 import adminPaymentsRouter from "./routes/adminPayments";
+import adminDashboardRouter, { requireAdminSession } from "./routes/adminDashboard";
 import leaderboardRouter from "./routes/leaderboard";
 import adminLeaderboardRewardsRouter from "./routes/adminLeaderboardRewards";
 import adminWalletRouter from "./routes/adminWallet";
@@ -41,6 +42,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false, limit: "4kb" }));
 
 app.get("/", (_req, res) => {
   res.send("tg-farm-api is running");
@@ -50,6 +52,8 @@ app.get("/", (_req, res) => {
 app.use("/telegram", telegramRouter);
 
 // адмінка без Telegram auth
+app.use("/admin", adminDashboardRouter);
+app.use("/admin/payments", requireAdminSession);
 app.use("/admin", adminPaymentsRouter);
 
 // payment logs
