@@ -1447,6 +1447,46 @@
         } catch (e) { console.warn("Unable to save payout address", e); }
       }
 
+      // Convert a TON raw address (0:64 hex chars) into a user-friendly
+      // non-bounceable mainnet address (UQ...). CRC16-XMODEM is required by TON.
+      function tonFriendlyAddress(raw) {
+        const match = /^(-?\d+):([0-9a-fA-F]{64})$/.exec((raw || "").trim());
+        if (!match) return raw || "";
+        const workchain = Number(match[1]);
+        if (workchain !== 0 && workchain !== -1) return raw;
+        const bytes = new Uint8Array(36);
+        bytes[0] = 0x51; // non-bounceable, mainnet
+        bytes[1] = workchain & 255;
+        for (let i = 0; i < 32; i++) bytes[i + 2] = parseInt(match[2].slice(i * 2, i * 2 + 2), 16);
+        let crc = 0;
+        for (let i = 0; i < 34; i++) {
+          crc ^= bytes[i] << 8;
+          for (let j = 0; j < 8; j++) crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
+        }
+        bytes[34] = crc >> 8;
+        bytes[35] = crc & 255;
+        return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+
+      function validTonAddress(value) {
+        const address = (value || "").trim();
+        if (/^(-?\d+):[0-9a-fA-F]{64}$/.test(address)) {
+          return /^(-?1|0):/.test(address);
+        }
+        if (!/^[A-Za-z0-9_-]{48}$/.test(address)) return false;
+        try {
+          const binary = atob(address.replace(/-/g, "+").replace(/_/g, "/"));
+          const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+          if (bytes.length !== 36 || ![0x11, 0x51, 0x91, 0xd1].includes(bytes[0]) || ![0, 255].includes(bytes[1])) return false;
+          let crc = 0;
+          for (let i = 0; i < 34; i++) {
+            crc ^= bytes[i] << 8;
+            for (let j = 0; j < 8; j++) crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
+          }
+          return bytes[34] === (crc >> 8) && bytes[35] === (crc & 255);
+        } catch { return false; }
+      }
+
       // Encode a TON text comment as a single-cell BOC (base64).
       function tonCommentPayload(comment) {
         const textBytes = new TextEncoder().encode(comment);
@@ -3341,7 +3381,7 @@
           document.getElementById("withdrawTonAddress");
         // Manual choice wins even when TonConnect reconnects later.
         if (withdrawTonAddress) {
-          withdrawTonAddress.value = getSavedPayoutAddress() || connectedAddress;
+          withdrawTonAddress.value = getSavedPayoutAddress() || tonFriendlyAddress(connectedAddress);
           withdrawTonAddress.addEventListener("input", () => {
             savePayoutAddress(withdrawTonAddress.value);
           });
@@ -3357,7 +3397,7 @@
           }
           if (disconnectWalletBtn) disconnectWalletBtn.disabled = !address;
           if (withdrawTonAddress && !getSavedPayoutAddress()) {
-            withdrawTonAddress.value = address;
+            withdrawTonAddress.value = tonFriendlyAddress(address);
           }
         }
         updateWalletConnection(tonUI?.wallet);
@@ -3383,7 +3423,7 @@
 
               updateWalletConnection(tc.wallet || wallet);
               if (withdrawTonAddress && !getSavedPayoutAddress()) {
-                withdrawTonAddress.value = address;
+                withdrawTonAddress.value = tonFriendlyAddress(address);
               }
 
               showToast("Гаманець підключено");
@@ -3484,7 +3524,7 @@
             const tonAddress = document.getElementById("withdrawTonAddress")?.value.trim() || "";
             const pointsAmount = Number(document.getElementById("withdrawPointsAmount")?.value);
 
-            if (!tonAddress || tonAddress.length < 20) {
+            if (!validTonAddress(tonAddress)) {
               showToast("Введи правильну TON адресу");
               return;
             }
@@ -3501,7 +3541,7 @@
             withdrawBtn.textContent = "⏳ Надсилання заявки...";
             try {
               const resp = await apiPost("/wallet/request-withdraw", {
-                tonAddress,
+                tonAddress: tonFriendlyAddress(tonAddress),
                 pointsAmount,
               });
               setResult(resp.data);
