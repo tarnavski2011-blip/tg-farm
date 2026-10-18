@@ -1141,6 +1141,36 @@
           grid-template-columns: 56px 1fr 92px;
         }
       }
+      /* Mobile header: keep full balances visible without clipping. */
+      .premium-top {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .premium-top .player-box {
+        grid-column: 1 / -1;
+      }
+      .premium-top .resource-box {
+        min-width: 0;
+        grid-template-columns: 23px minmax(0, 1fr);
+        gap: 4px;
+        padding: 8px 5px;
+      }
+      .premium-top .resource-box > div:last-child { min-width: 0; }
+      .premium-top .resource-icon { font-size: 21px; }
+      .premium-top .resource-value {
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.3px;
+        text-overflow: clip;
+      }
+      .premium-top .resource-sub { font-size: 9px; }
+      .warehouse-upgrade {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1.15;
+      }
     </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -1213,7 +1243,7 @@
             <div class="warehouse-cap" id="warehouseText">0 / 0</div>
           </div>
           <div class="warehouse-upgrade">
-            UPGRADE<br /><small>🪙 2,500</small>
+            📦 Відкрити склад
           </div>
         </button>
 
@@ -1533,6 +1563,15 @@
         coinsEl.textContent = data?.coins ?? 0;
         diamondsEl.textContent = data?.diamonds ?? 0;
         pointsEl.textContent = data?.points ?? 0;
+        // Fit the entire number into its card, including on narrow phones.
+        [coinsEl, diamondsEl, pointsEl].forEach((el) => {
+          el.style.fontSize = "16px";
+          let size = 16;
+          while (el.scrollWidth > el.clientWidth && size > 9) {
+            size -= 1;
+            el.style.fontSize = `${size}px`;
+          }
+        });
         xpEl.textContent = `${data?.xp ?? 0}/${data?.xpNeeded ?? 0}`;
         levelBadgeEl.textContent = `LVL ${newLevel}`;
         const boost = data?.boost?.active ? "ON" : "OFF";
