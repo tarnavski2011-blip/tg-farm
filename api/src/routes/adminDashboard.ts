@@ -62,12 +62,47 @@ router.get("/dashboard", async (req,res) => {
   const html=`<header><div><h1>🚜 My Farm Clicker · Admin V1</h1><div class="muted">Статистика на ${esc(date(now))}</div></div><form method="post" action="/admin/dashboard/logout"><button>Вийти</button></form></header>${nav}
   <div class="grid">${tile("Всього гравців",fmt(users))}${tile("Нові за 7 днів",fmt(new7))}${tile("Активні за 24 год",fmt(active24),"За lastSeenAt")}${tile("Активні за 7 днів",fmt(active7),"За lastSeenAt")}${tile("Тварин у грі",fmt(animals))}${tile("Заявки в очікуванні",fmt(pending))}${tile("Поповнень TON",fmt(deposits._count._all))}${tile("Успішних Stars-покупок",fmt(purchases._count._all))}</div>
   <section class="panel" id="economy"><h2>💰 Економіка</h2><div class="grid">${tile("Points на балансах",fmt(balances._sum.points||0))}${tile("Points на складах",fmt(storage._sum.pendingPoints||0))}${tile("Points у заявках",fmt(pendingSum._sum.pointsAmount||0))}${tile("Сума заявок (поле tonAmount)",fmt(pendingSum._sum.tonAmount||0))}${tile("Coins",fmt(balances._sum.coins||0))}${tile("Diamonds",fmt(balances._sum.diamonds||0))}${tile("TON поповнено",fmt(deposits._sum.amount||0))}${tile("Сума схвалених заявок",fmt(paid._sum.tonAmount||0))}</div><p class="muted warning">⚠️ Поле tonAmount у базі не доводить, що виплату GRAM виконано. «Схвалено» не означає «виплачено». Резерв гаманця та реальний борг не розраховуються без перевіреного курсу й історії транзакцій.</p></section>
-  <section class="panel" id="players"><h2>👥 Гравці</h2><form class="row" method="get" action="/admin/dashboard"><input name="q" placeholder="Нікнейм або точний Telegram ID" value="${esc(q)}"><button>Знайти</button><a href="/admin/dashboard">Очистити</a></form><div class="tablewrap"><table><thead><tr><th>Гравець</th><th>Telegram ID</th><th>Рівень</th><th>Coins</th><th>Points</th><th>Diamonds</th><th>Тварини</th><th>Остання активність</th></tr></thead><tbody>${recentUsers.map((u: any)=>`<tr><td>${userName(u)}</td><td>${esc(u.telegramId.toString())}</td><td>${u.level}</td><td>${fmt(u.coins)}</td><td>${fmt(u.points)}</td><td>${fmt(u.diamonds)}</td><td>${u._count.animals}</td><td>${date(u.lastSeenAt)}</td></tr>`).join("")||'<tr><td colspan="8">Немає результатів</td></tr>'}</tbody></table></div>${pagination}</section>
+  <section class="panel" id="players"><h2>👥 Гравці</h2><form class="row" method="get" action="/admin/dashboard"><input name="q" placeholder="Нікнейм або точний Telegram ID" value="${esc(q)}"><button>Знайти</button><a href="/admin/dashboard">Очистити</a></form><div class="tablewrap"><table><thead><tr><th>Гравець</th><th>Telegram ID</th><th>Рівень</th><th>Coins</th><th>Points</th><th>Diamonds</th><th>Тварини</th><th>Остання активність</th></tr></thead><tbody>${recentUsers.map((u: any)=>`<tr><td><a href="/admin/dashboard/player/${encodeURIComponent(u.telegramId.toString())}">${userName(u)} ↗</a></td><td>${esc(u.telegramId.toString())}</td><td>${u.level}</td><td>${fmt(u.coins)}</td><td>${fmt(u.points)}</td><td>${fmt(u.diamonds)}</td><td>${u._count.animals}</td><td>${date(u.lastSeenAt)}</td></tr>`).join("")||'<tr><td colspan="8">Немає результатів</td></tr>'}</tbody></table></div>${pagination}</section>
   <section class="panel" id="withdrawals"><h2>💸 Останні заявки</h2><div class="tablewrap"><table><tr><th>ID</th><th>Гравець</th><th>Points</th><th>tonAmount</th><th>Статус</th><th>Дата</th></tr>${withdrawals.map((w: any)=>`<tr><td>${w.id}</td><td>${userName(w.user)}</td><td>${fmt(w.pointsAmount)}</td><td>${fmt(w.tonAmount)}</td><td>${esc(w.status)}</td><td>${date(w.createdAt)}</td></tr>`).join("")}</table></div></section>
   <section class="panel" id="deposits"><h2>💎 Останні TON-поповнення</h2><div class="tablewrap"><table><tr><th>Гравець</th><th>TON</th><th>Дата</th></tr>${recentDeposits.map((d: any)=>`<tr><td>${userName(d.user)}</td><td>${fmt(d.amount)}</td><td>${date(d.createdAt)}</td></tr>`).join("")}</table></div></section>
   <section class="panel" id="purchases"><h2>⭐ Останні покупки Stars</h2><div class="tablewrap"><table><tr><th>ID</th><th>Гравець</th><th>Продукт</th><th>Сума</th><th>Валюта</th><th>Статус</th></tr>${recentPurchases.map((p: any)=>`<tr><td>${p.id}</td><td>${userName(p.user)}</td><td>${esc(p.productCode)}</td><td>${fmt(p.amount)}</td><td>${esc(p.currency)}</td><td>${esc(p.status)}</td></tr>`).join("")}</table></div></section><p class="muted">V1 · тільки перегляд · Дані з PostgreSQL</p>`;
   return res.send(page("Статистика",html));
  } catch(e) { console.error("ADMIN DASHBOARD:",e); return res.status(500).send(page("Помилка",`<section class="panel"><h2>Не вдалося завантажити статистику</h2><p>Перевір логи API на Render.</p></section>`)); }
+});
+router.get("/dashboard/player/:telegramId", async (req,res) => {
+ res.set("Cache-Control", "no-store");
+ if (!authorized(req)) return res.redirect(303,"/admin/dashboard");
+ const raw = String(req.params.telegramId || "");
+ if (!/^\d{1,18}$/.test(raw)) return res.status(400).send(page("Помилка",'<section class="panel">Невірний Telegram ID</section>'));
+ try {
+  const user = await prisma.user.findUnique({where:{telegramId:BigInt(raw)},select:{
+   id:true,telegramId:true,nickname:true,createdAt:true,lastSeenAt:true,level:true,xp:true,
+   coins:true,points:true,diamonds:true,tonBalance:true,warehouseLevel:true,labLevel:true,
+   chickenFeed:true,sheepFeed:true,cowFeed:true,vipUntil:true,boostUntil:true,
+   animals:{orderBy:[{type:"asc"},{level:"desc"}],select:{id:true,type:true,level:true,hp:true,rarity:true,breedBonus:true,slotIndex:true,createdAt:true}},
+   storage:{select:{eggs:true,wool:true,milk:true,capacity:true,pendingPoints:true,updatedAt:true}},
+   referrals:{select:{id:true}},
+   payments:{orderBy:{createdAt:"desc"},take:30,select:{id:true,productCode:true,amount:true,currency:true,status:true,createdAt:true,paidAt:true}},
+   tonDeposits:{orderBy:{createdAt:"desc"},take:30,select:{id:true,amount:true,createdAt:true}},
+   withdrawals:{orderBy:{createdAt:"desc"},take:30,select:{id:true,pointsAmount:true,tonAmount:true,status:true,createdAt:true}}
+  }});
+  if (!user) return res.status(404).send(page("Не знайдено",'<section class="panel">Гравця не знайдено. <a href="/admin/dashboard#players">Назад до списку</a></section>'));
+  const tile=(label:string,value:unknown)=>`<div class="tile"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+  const tr=(cells:unknown[])=>`<tr>${cells.map(v=>`<td>${esc(v)}</td>`).join("")}</tr>`;
+  const table=(heads:string[],rows:string[],empty="Немає записів")=>`<div class="tablewrap"><table><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")||`<tr><td colspan="${heads.length}">${esc(empty)}</td></tr>`}</tbody></table></div>`;
+  const s=user.storage;
+  const name=esc(user.nickname||user.telegramId.toString());
+  const html=`<header><div><h1>👤 ${name}</h1><div class="muted">Telegram ID: ${esc(user.telegramId.toString())} · ID у базі: ${user.id}</div></div><a href="/admin/dashboard#players">← До списку гравців</a></header>
+  <div class="grid">${tile("Рівень",user.level)}${tile("XP",fmt(user.xp))}${tile("Coins",fmt(user.coins))}${tile("Points",fmt(user.points))}${tile("Diamonds",fmt(user.diamonds))}${tile("TON баланс у грі",fmt(user.tonBalance))}${tile("Тварин",user.animals.length)}${tile("Рефералів",user.referrals.length)}</div>
+  <section class="panel"><h2>👤 Профіль та розвиток</h2><p>Зареєстрований: ${date(user.createdAt)}<br>Остання активність: ${date(user.lastSeenAt)}<br>Рівень складу: ${user.warehouseLevel} · Лабораторія: ${user.labLevel}<br>VIP до: ${user.vipUntil?date(user.vipUntil):"Немає"} · Буст до: ${user.boostUntil?date(user.boostUntil):"Немає"}</p></section>
+  <section class="panel"><h2>🐔 Тварини (${user.animals.length})</h2>${table(["ID","Тип","Рівень","HP","Рідкість","Бонус","Слот","Дата"],user.animals.map((a: any)=>tr([a.id,a.type,a.level,`${a.hp}%`,a.rarity,a.breedBonus,a.slotIndex,date(a.createdAt)])))}</section>
+  <section class="panel"><h2>📦 Склад</h2><div class="grid">${tile("Points на складі",fmt(s?.pendingPoints||0))}${tile("Яйця",fmt(s?.eggs||0))}${tile("Вовна",fmt(s?.wool||0))}${tile("Молоко",fmt(s?.milk||0))}${tile("Місткість",fmt(s?.capacity||0))}${tile("Корм курей",fmt(user.chickenFeed))}${tile("Корм овець",fmt(user.sheepFeed))}${tile("Корм корів",fmt(user.cowFeed))}</div></section>
+  <section class="panel"><h2>💸 Заявки на виведення (останні 30)</h2>${table(["ID","Points","tonAmount (поле БД)","Статус","Дата"],user.withdrawals.map((w: any)=>tr([w.id,fmt(w.pointsAmount),fmt(w.tonAmount),w.status,date(w.createdAt)])))}</section>
+  <section class="panel"><h2>💎 TON-поповнення (останні 30)</h2>${table(["ID","TON","Дата"],user.tonDeposits.map((d: any)=>tr([d.id,fmt(d.amount),date(d.createdAt)])))}</section>
+  <section class="panel"><h2>⭐ Stars-покупки (останні 30)</h2>${table(["ID","Продукт","Сума","Валюта","Статус","Створено","Оплачено"],user.payments.map((p: any)=>tr([p.id,p.productCode,fmt(p.amount),p.currency,p.status,date(p.createdAt),p.paidAt?date(p.paidAt):"—"])))}</section>
+  <p class="muted">Admin V1.2 · Тільки перегляд. Pending Stars не є підтвердженою оплатою. Approved-заявка не підтверджує фактичний переказ GRAM.</p>`;
+  return res.send(page("Профіль гравця",html));
+ } catch(e) {console.error("ADMIN PLAYER:",e);return res.status(500).send(page("Помилка",'<section class="panel">Не вдалося завантажити профіль. Перевір логи Render.</section>'));}
 });
 router.post("/dashboard/login", (req,res)=>{
  const supplied = String(req.body?.secret || ""); const key = secret();
