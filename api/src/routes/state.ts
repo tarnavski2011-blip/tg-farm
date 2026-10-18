@@ -585,6 +585,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     return res.json({
       ok: true,
 
+      nickname: user.nickname,
       coins: user.coins,
       diamonds: user.diamonds,
       points: user.points,

@@ -16,6 +16,7 @@ enum AnimalType {
 model User {
   id                Int      @id @default(autoincrement())
   telegramId        BigInt   @unique
+  nickname          String?  @unique
 
   coins             Int      @default(0)
   diamonds          Int      @default(0)

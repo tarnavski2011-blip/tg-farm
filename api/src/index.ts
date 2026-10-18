@@ -5,6 +5,7 @@ import "dotenv/config";
 import { telegramAuth } from "./middleware/telegramAuth";
 
 import stateRouter from "./routes/state";
+import nicknameRouter from "./routes/nickname";
 import collectRouter from "./routes/collect";
 import buyAnimalRouter from "./routes/buyAnimal";
 import sellRouter from "./routes/sell";
@@ -62,6 +63,7 @@ app.use("/api", telegramAuth);
 
 // game routes
 app.use("/api/state", stateRouter);
+app.use("/api/nickname", nicknameRouter);
 app.use("/api/collect", collectRouter);
 app.use("/api/buy-animal", buyAnimalRouter);
 app.use("/api/sell", sellRouter);

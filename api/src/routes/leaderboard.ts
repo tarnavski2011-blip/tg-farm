@@ -15,6 +15,7 @@ router.get("/", async (req, res) => {
         },
         select: {
           telegramId: true,
+          nickname: true,
           coins: true,
           points: true,
         },
@@ -26,6 +27,7 @@ router.get("/", async (req, res) => {
         leaderboard: users.map((u, i) => ({
           rank: i + 1,
           telegramId: u.telegramId.toString(),
+          nickname: u.nickname,
           value: u.coins,
           coins: u.coins,
           points: u.points,
@@ -42,6 +44,7 @@ router.get("/", async (req, res) => {
         },
         select: {
           telegramId: true,
+          nickname: true,
           coins: true,
           points: true,
         },
@@ -53,6 +56,7 @@ router.get("/", async (req, res) => {
         leaderboard: users.map((u, i) => ({
           rank: i + 1,
           telegramId: u.telegramId.toString(),
+          nickname: u.nickname,
           value: u.points,
           coins: u.coins,
           points: u.points,
@@ -83,6 +87,7 @@ router.get("/", async (req, res) => {
           },
           select: {
             telegramId: true,
+            nickname: true,
             coins: true,
             points: true,
           },
@@ -91,6 +96,7 @@ router.get("/", async (req, res) => {
         return {
           rank: i + 1,
           telegramId: user?.telegramId.toString() || "unknown",
+          nickname: user?.nickname,
           value: r._count.referrerId,
           referrals: r._count.referrerId,
           coins: user?.coins ?? 0,
