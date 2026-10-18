@@ -1176,6 +1176,16 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
   <body>
+    <div id="nicknameGate" style="display:none;position:fixed;inset:0;z-index:999999;background:#102239f5;align-items:center;justify-content:center;padding:20px;">
+      <div style="width:100%;max-width:370px;background:#1c3655;border:1px solid #6686a7;border-radius:18px;padding:24px;color:white;text-align:center;box-shadow:0 20px 60px #0008">
+        <div style="font-size:36px">🚜</div>
+        <h2 style="margin:12px 0">Ласкаво просимо на ферму!</h2>
+        <p style="font-size:14px">Придумай унікальне ім'я фермера, щоб почати гру.</p>
+        <input id="firstNickname" maxlength="20" autocomplete="off" placeholder="Ім'я (3–20 символів)" style="width:100%;padding:13px;border-radius:10px;border:1px solid #8ca6c0;background:#fff;color:#142235;font-size:16px" />
+        <p id="nicknameGateError" style="color:#ffb6a8;font-size:13px;min-height:20px"></p>
+        <button id="saveFirstNickname" type="button" style="width:100%;padding:13px;border:0;border-radius:10px;background:#73d43e;color:#142235;font-weight:bold;font-size:16px">🚜 Почати гру</button>
+      </div>
+    </div>
     <div class="app">
       <div class="premium-game">
         <img
@@ -1188,9 +1198,9 @@
           <div class="player-box">
             <div class="avatar">👨‍🌾</div>
             <div>
-              <div class="player-name">Farmer</div>
+              <div class="player-name"><span id="playerNickname">Farmer</span> <button type="button" id="editNickname" aria-label="Змінити ім’я" style="background:none;border:0;color:#cde9ff;cursor:pointer;font-size:15px">✏️</button></div>
               <div class="player-lvl" id="levelBadge">LVL 1</div>
-              <div class="xp-line"><span id="premiumXpBar"></span></div>
+              <div class="xp-line"><span id="premiumXpBar"></span></div><div id="xpPercentLabel" style="font-size:11px;color:#dceeff;margin-top:4px">0% до наступного рівня</div>
             </div>
           </div>
 
@@ -1574,6 +1584,11 @@
         });
         xpEl.textContent = `${data?.xp ?? 0}/${data?.xpNeeded ?? 0}`;
         levelBadgeEl.textContent = `LVL ${newLevel}`;
+        const nickEl = document.getElementById("playerNickname");
+        if (nickEl) nickEl.textContent = data?.nickname || "Farmer";
+        updateNicknameGate(data?.nickname);
+        const percentEl = document.getElementById("xpPercentLabel");
+        if (percentEl) percentEl.textContent = `${Math.max(0, Math.min(100, Math.round(Number(data?.xpPercent ?? (Number(data?.xp ?? 0) / Math.max(1, Number(data?.xpNeeded ?? 1)) * 100)))))}% до LVL ${newLevel + 1}`;
         const boost = data?.boost?.active ? "ON" : "OFF";
         const auto = data?.autoCollect?.active ? "ON" : "OFF";
         const vip = data?.vip?.active ? "ON" : "OFF";
@@ -3517,6 +3532,7 @@
             return `<div class="tile-value">👥 ${user.referrals ?? user.value ?? 0} рефералів</div>`;
           }
 
+          const escapeNick = (name) => String(name || "Farmer").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
           const rows = (data.leaderboard || [])
             .map(
               (user) => `
@@ -3524,6 +3540,7 @@
                                     <div class="tile-title">#${user.rank} — ${activeInfo.label}</div>
                                     ${valueLine(user)}
                                     <div class="tile-row"><span>ID</span><span>${user.telegramId}</span></div>
+                                    <div class="tile-row"><span>Гравець</span><span>${escapeNick(user.nickname)}</span></div>
                                     <div class="tile-row"><span>Реферали</span><span>${user.referrals ?? 0}</span></div>
                                     <div class="tile-row"><span>Coins</span><span>${user.coins ?? 0}</span></div>
                                     <div class="tile-row"><span>Points</span><span>${user.points ?? 0}</span></div>
@@ -3737,6 +3754,42 @@
       setTimeout(bindMainButtonsSafe, 300);
       setTimeout(bindMainButtonsSafe, 1200);
 
+      function updateNicknameGate(nickname) {
+        const gate = document.getElementById("nicknameGate");
+        if (!gate) return;
+        const missing = !nickname;
+        gate.style.display = missing ? "flex" : "none";
+      }
+      async function saveNickname(nickname) {
+        try {
+          const res = await apiPost("/nickname", { nickname });
+          if (!res.ok) return { error: res.data?.error || "Помилка збереження" };
+          if (currentState) currentState.nickname = res.data.nickname;
+          document.getElementById("playerNickname").textContent = res.data.nickname;
+          updateNicknameGate(res.data.nickname);
+          return { ok: true };
+        } catch (_) {
+          return { error: "Немає з'єднання із сервером. Спробуйте ще раз." };
+        }
+      }
+      document.getElementById("saveFirstNickname")?.addEventListener("click", async () => {
+        const button = document.getElementById("saveFirstNickname");
+        const input = document.getElementById("firstNickname");
+        const error = document.getElementById("nicknameGateError");
+        if (button.disabled) return;
+        button.disabled = true;
+        error.textContent = "";
+        const result = await saveNickname(input.value.trim());
+        button.disabled = false;
+        if (result.error) error.textContent = result.error;
+      });
+      document.getElementById("editNickname")?.addEventListener("click", async () => {
+        const current = document.getElementById("playerNickname")?.textContent || "";
+        const nickname = window.prompt("Нове унікальне ім’я (3–20 символів):", current);
+        if (nickname === null) return;
+        const result = await saveNickname(nickname.trim());
+        showToast(result.error || "Ім’я збережено");
+      });
       loadState();
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
