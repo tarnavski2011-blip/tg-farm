@@ -1432,6 +1432,20 @@
       const BOT_USERNAME = "my_farm_clicker_bot";
 
       let tonConnectUI = null;
+      // Saved payout address is deliberately independent of TonConnect sessions.
+      function payoutAddressKey() {
+        return `farm_payout_address_${getMyTelegramId() || "anonymous"}`;
+      }
+      function getSavedPayoutAddress() {
+        try { return localStorage.getItem(payoutAddressKey()) || ""; } catch { return ""; }
+      }
+      function savePayoutAddress(value) {
+        try {
+          const address = value.trim();
+          if (address) localStorage.setItem(payoutAddressKey(), address);
+          else localStorage.removeItem(payoutAddressKey());
+        } catch (e) { console.warn("Unable to save payout address", e); }
+      }
 
       // Encode a TON text comment as a single-cell BOC (base64).
       function tonCommentPayload(comment) {
@@ -3202,11 +3216,14 @@
           availableTon > 0 ? (availableTon * 0.95).toFixed(2) : "0";
 
         let connectedAddress = "";
+        let tonUI = null;
         try {
-          const tc = getTonConnectUI();
-          connectedAddress = tc?.wallet?.account?.address || "";
-        } catch {
-          connectedAddress = "";
+          tonUI = getTonConnectUI();
+          // TonConnect restores an existing session asynchronously on startup.
+          if (tonUI.connectionRestored) await tonUI.connectionRestored;
+          connectedAddress = tonUI.wallet?.account?.address || "";
+        } catch (e) {
+          console.warn("TonConnect session restore failed", e);
         }
 
         modalBody.innerHTML = `
@@ -3290,7 +3307,7 @@
                       id="withdrawTonAddress"
                       class="input-box"
                       placeholder="Твоя адреса гаманця для виводу GRAM"
-                      value="${connectedAddress}"
+                      value=""
                     />
 
                     <input
@@ -3322,6 +3339,34 @@
         const walletAddressBox = document.getElementById("walletAddressBox");
         const withdrawTonAddress =
           document.getElementById("withdrawTonAddress");
+        // Manual choice wins even when TonConnect reconnects later.
+        if (withdrawTonAddress) {
+          withdrawTonAddress.value = getSavedPayoutAddress() || connectedAddress;
+          withdrawTonAddress.addEventListener("input", () => {
+            savePayoutAddress(withdrawTonAddress.value);
+          });
+        }
+        function updateWalletConnection(wallet) {
+          // A status event may arrive after this modal was closed or rebuilt.
+          if (!walletAddressBox?.isConnected) return;
+          const address = wallet?.account?.address || "";
+          walletAddressBox.textContent = address || "Не підключено";
+          if (connectWalletBtn) {
+            connectWalletBtn.textContent = address ? "✅ Гаманець підключено" : "🔗 Підключити гаманець";
+            connectWalletBtn.disabled = !!address;
+          }
+          if (disconnectWalletBtn) disconnectWalletBtn.disabled = !address;
+          if (withdrawTonAddress && !getSavedPayoutAddress()) {
+            withdrawTonAddress.value = address;
+          }
+        }
+        updateWalletConnection(tonUI?.wallet);
+        if (tonUI) {
+          // Live status changes also cover wallet app reconnect/disconnect events.
+          tonUI.onStatusChange(wallet => updateWalletConnection(wallet), error => {
+            console.warn("TonConnect status error", error);
+          });
+        }
 
         if (connectWalletBtn) {
           connectWalletBtn.onclick = async () => {
@@ -3336,8 +3381,10 @@
                 return;
               }
 
-              if (walletAddressBox) walletAddressBox.textContent = address;
-              if (withdrawTonAddress) withdrawTonAddress.value = address;
+              updateWalletConnection(tc.wallet || wallet);
+              if (withdrawTonAddress && !getSavedPayoutAddress()) {
+                withdrawTonAddress.value = address;
+              }
 
               showToast("Гаманець підключено");
             } catch (e) {
@@ -3353,9 +3400,8 @@
               const tc = getTonConnectUI();
               await tc.disconnect();
 
-              if (walletAddressBox)
-                walletAddressBox.textContent = "Не підключено";
-              if (withdrawTonAddress) withdrawTonAddress.value = "";
+              updateWalletConnection(null);
+              // Keep a manually selected payout address after disconnect.
 
               showToast("Гаманець відключено");
             } catch (e) {
