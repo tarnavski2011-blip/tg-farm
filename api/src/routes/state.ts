@@ -156,7 +156,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
     let pointsAdd = 0;
     let autoFeedCoinsSpent = 0;
     let autoSellCoinsAdd = 0;
-    let autoSellPointsAdd = 0; // sale awards no Points
+    let autoSellPointsAdd = 0;
     let reservedStorage = 0;
     const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
     const autoSellActiveNow =
@@ -387,8 +387,8 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         storageWool * SELL_PRICES.wool +
         storageMilk * SELL_PRICES.milk;
 
-      // No Points on auto-sale: already credited during production.
-      autoSellPointsAdd = 0;
+      // Transfer previously accumulated warehouse Points on automatic sale.
+      autoSellPointsAdd = user.storage?.pendingPoints ?? 0;
 
       storageEggs = 0;
       storageWool = 0;
@@ -417,12 +417,12 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         sheepFeed: sheepFeedLeft,
         cowFeed: cowFeedLeft,
         coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-        points: { increment: pointsAdd },
+        points: { increment: autoSellPointsAdd },
         lastSeenAt: now,
       },
     });
 
-    if (autoSellCoinsAdd > 0 || totalAdd > 0) {
+    if (autoSellCoinsAdd > 0 || totalAdd > 0 || pointsAdd > 0) {
       await prisma.storage.update({
         where: { userId: user.id },
         data:
@@ -431,11 +431,13 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                 eggs: eggsAdd,
                 wool: woolAdd,
                 milk: milkAdd,
+                pendingPoints: pointsAdd,
               }
             : {
                 eggs: { increment: eggsAdd },
                 wool: { increment: woolAdd },
                 milk: { increment: milkAdd },
+                pendingPoints: { increment: pointsAdd },
               },
       });
     }
@@ -804,6 +806,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         milk: user.storage.milk ?? 0,
         total: storageTotal,
         capacity: user.storage.capacity ?? 1000,
+        pendingPoints: user.storage.pendingPoints ?? 0,
         sellValue:
           (user.storage.eggs ?? 0) * 6 +
           (user.storage.wool ?? 0) * 15 +
