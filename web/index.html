@@ -1155,15 +1155,21 @@
         gap: 4px;
         padding: 8px 5px;
       }
-      .premium-top .resource-box > div:last-child { min-width: 0; }
-      .premium-top .resource-icon { font-size: 21px; }
+      .premium-top .resource-box > div:last-child {
+        min-width: 0;
+      }
+      .premium-top .resource-icon {
+        font-size: 21px;
+      }
       .premium-top .resource-value {
         font-size: 16px;
         font-variant-numeric: tabular-nums;
         letter-spacing: -0.3px;
         text-overflow: clip;
       }
-      .premium-top .resource-sub { font-size: 9px; }
+      .premium-top .resource-sub {
+        font-size: 9px;
+      }
       .warehouse-upgrade {
         display: flex;
         align-items: center;
@@ -1178,9 +1184,15 @@
         padding: 9px;
         min-height: 86px;
       }
-      .warehouse-icon { font-size: 34px; }
-      .warehouse-info { min-width: 0; }
-      .warehouse-title { font-size: 15px; }
+      .warehouse-icon {
+        font-size: 34px;
+      }
+      .warehouse-info {
+        min-width: 0;
+      }
+      .warehouse-title {
+        font-size: 15px;
+      }
       .warehouse-upgrade {
         min-height: 54px;
         padding: 7px 5px;
@@ -1194,39 +1206,159 @@
         border-radius: 13px;
         gap: 2px;
       }
-      .side-btn span { font-size: 27px; }
-      .side-btn strong { font-size: 11px; }
-      .side-btn.daily, .side-btn.vip { top: 239px; }
-      .side-btn.tasks, .side-btn.boosts { top: 313px; }
-      .side-btn.refs, .side-btn.wallet { top: 387px; }
-      .side-btn.wheel-side { top: 461px; }
-      .bottom-nav { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 92px minmax(0,1fr) minmax(0,1fr); gap: 4px; padding: 5px; }
-      .nav-btn { min-width: 0; height: 62px; padding: 3px 1px; }
-      .nav-btn span { font-size: 25px; }
-      .nav-btn strong { font-size: 10px; }
-      button { -webkit-tap-highlight-color: rgba(255,255,255,.12); touch-action: manipulation; transition: filter .12s ease, box-shadow .12s ease, opacity .12s ease; }
-      button:active:not(:disabled) { filter: brightness(1.3); box-shadow: inset 0 3px 9px rgba(0,0,0,.3), 0 0 0 2px rgba(255,255,255,.25); }
-      button:disabled { opacity: .65; cursor: wait; }
+      .side-btn span {
+        font-size: 27px;
+      }
+      .side-btn strong {
+        font-size: 11px;
+      }
+      .side-btn.daily,
+      .side-btn.vip {
+        top: 239px;
+      }
+      .side-btn.tasks,
+      .side-btn.boosts {
+        top: 313px;
+      }
+      .side-btn.refs,
+      .side-btn.wallet {
+        top: 387px;
+      }
+      .side-btn.wheel-side {
+        top: 461px;
+      }
+      .bottom-nav {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 92px minmax(
+            0,
+            1fr
+          ) minmax(0, 1fr);
+        gap: 4px;
+        padding: 5px;
+      }
+      .nav-btn {
+        min-width: 0;
+        height: 62px;
+        padding: 3px 1px;
+      }
+      .nav-btn span {
+        font-size: 25px;
+      }
+      .nav-btn strong {
+        font-size: 10px;
+      }
+      button {
+        -webkit-tap-highlight-color: rgba(255, 255, 255, 0.12);
+        touch-action: manipulation;
+        transition:
+          filter 0.12s ease,
+          box-shadow 0.12s ease,
+          opacity 0.12s ease;
+      }
+      button:active:not(:disabled) {
+        filter: brightness(1.3);
+        box-shadow:
+          inset 0 3px 9px rgba(0, 0, 0, 0.3),
+          0 0 0 2px rgba(255, 255, 255, 0.25);
+      }
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
       @media (max-width: 390px) {
-        .warehouse-panel { grid-template-columns: 38px minmax(0,1fr) 88px; gap: 5px; padding: 7px; }
-        .warehouse-icon { font-size: 29px; }
-        .warehouse-upgrade { font-size: 11px; padding: 5px 3px; }
-        .bottom-nav { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 82px minmax(0,1fr) minmax(0,1fr); }
-        .premium-tap { width: 82px !important; height: 82px !important; }
+        .warehouse-panel {
+          grid-template-columns: 38px minmax(0, 1fr) 88px;
+          gap: 5px;
+          padding: 7px;
+        }
+        .warehouse-icon {
+          font-size: 29px;
+        }
+        .warehouse-upgrade {
+          font-size: 11px;
+          padding: 5px 3px;
+        }
+        .bottom-nav {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 82px minmax(
+              0,
+              1fr
+            ) minmax(0, 1fr);
+        }
+        .premium-tap {
+          width: 82px !important;
+          height: 82px !important;
+        }
       }
     </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
   <body>
-    <div id="nicknameGate" style="display:none;position:fixed;inset:0;z-index:999999;background:#102239f5;align-items:center;justify-content:center;padding:20px;">
-      <div style="width:100%;max-width:370px;background:#1c3655;border:1px solid #6686a7;border-radius:18px;padding:24px;color:white;text-align:center;box-shadow:0 20px 60px #0008">
-        <div style="font-size:36px">🚜</div>
-        <h2 style="margin:12px 0">Ласкаво просимо на ферму!</h2>
-        <p style="font-size:14px">Придумай унікальне ім'я фермера, щоб почати гру.</p>
-        <input id="firstNickname" maxlength="20" autocomplete="off" placeholder="Ім'я (3–20 символів)" style="width:100%;padding:13px;border-radius:10px;border:1px solid #8ca6c0;background:#fff;color:#142235;font-size:16px" />
-        <p id="nicknameGateError" style="color:#ffb6a8;font-size:13px;min-height:20px"></p>
-        <button id="saveFirstNickname" type="button" style="width:100%;padding:13px;border:0;border-radius:10px;background:#73d43e;color:#142235;font-weight:bold;font-size:16px">🚜 Почати гру</button>
+    <div
+      id="nicknameGate"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: #102239f5;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      "
+    >
+      <div
+        style="
+          width: 100%;
+          max-width: 370px;
+          background: #1c3655;
+          border: 1px solid #6686a7;
+          border-radius: 18px;
+          padding: 24px;
+          color: white;
+          text-align: center;
+          box-shadow: 0 20px 60px #0008;
+        "
+      >
+        <div style="font-size: 36px">🚜</div>
+        <h2 style="margin: 12px 0">Ласкаво просимо на ферму!</h2>
+        <p style="font-size: 14px">
+          Придумай унікальне ім'я фермера, щоб почати гру.
+        </p>
+        <input
+          id="firstNickname"
+          maxlength="20"
+          autocomplete="off"
+          placeholder="Ім'я (3–20 символів)"
+          style="
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: 1px solid #8ca6c0;
+            background: #fff;
+            color: #142235;
+            font-size: 16px;
+          "
+        />
+        <p
+          id="nicknameGateError"
+          style="color: #ffb6a8; font-size: 13px; min-height: 20px"
+        ></p>
+        <button
+          id="saveFirstNickname"
+          type="button"
+          style="
+            width: 100%;
+            padding: 13px;
+            border: 0;
+            border-radius: 10px;
+            background: #73d43e;
+            color: #142235;
+            font-weight: bold;
+            font-size: 16px;
+          "
+        >
+          🚜 Почати гру
+        </button>
       </div>
     </div>
     <div class="app">
@@ -1241,9 +1373,31 @@
           <div class="player-box">
             <div class="avatar">👨‍🌾</div>
             <div>
-              <div class="player-name"><span id="playerNickname">Farmer</span> <button type="button" id="editNickname" aria-label="Змінити ім’я" style="background:none;border:0;color:#cde9ff;cursor:pointer;font-size:15px">✏️</button></div>
+              <div class="player-name">
+                <span id="playerNickname">Farmer</span>
+                <button
+                  type="button"
+                  id="editNickname"
+                  aria-label="Змінити ім’я"
+                  style="
+                    background: none;
+                    border: 0;
+                    color: #cde9ff;
+                    cursor: pointer;
+                    font-size: 15px;
+                  "
+                >
+                  ✏️
+                </button>
+              </div>
               <div class="player-lvl" id="levelBadge">LVL 1</div>
-              <div class="xp-line"><span id="premiumXpBar"></span></div><div id="xpPercentLabel" style="font-size:11px;color:#dceeff;margin-top:4px">0% до наступного рівня</div>
+              <div class="xp-line"><span id="premiumXpBar"></span></div>
+              <div
+                id="xpPercentLabel"
+                style="font-size: 11px; color: #dceeff; margin-top: 4px"
+              >
+                0% до наступного рівня
+              </div>
             </div>
           </div>
 
@@ -1295,9 +1449,7 @@
             <div class="warehouse-bar"><span id="warehouseFill"></span></div>
             <div class="warehouse-cap" id="warehouseText">0 / 0</div>
           </div>
-          <div class="warehouse-upgrade">
-            📦 Відкрити склад
-          </div>
+          <div class="warehouse-upgrade">📦 Відкрити склад</div>
         </button>
 
         <div class="premium-status" id="boostStatus">
@@ -1437,14 +1589,20 @@
         return `farm_payout_address_${getMyTelegramId() || "anonymous"}`;
       }
       function getSavedPayoutAddress() {
-        try { return localStorage.getItem(payoutAddressKey()) || ""; } catch { return ""; }
+        try {
+          return localStorage.getItem(payoutAddressKey()) || "";
+        } catch {
+          return "";
+        }
       }
       function savePayoutAddress(value) {
         try {
           const address = value.trim();
           if (address) localStorage.setItem(payoutAddressKey(), address);
           else localStorage.removeItem(payoutAddressKey());
-        } catch (e) { console.warn("Unable to save payout address", e); }
+        } catch (e) {
+          console.warn("Unable to save payout address", e);
+        }
       }
 
       // Convert a TON raw address (0:64 hex chars) into a user-friendly
@@ -1457,15 +1615,20 @@
         const bytes = new Uint8Array(36);
         bytes[0] = 0x51; // non-bounceable, mainnet
         bytes[1] = workchain & 255;
-        for (let i = 0; i < 32; i++) bytes[i + 2] = parseInt(match[2].slice(i * 2, i * 2 + 2), 16);
+        for (let i = 0; i < 32; i++)
+          bytes[i + 2] = parseInt(match[2].slice(i * 2, i * 2 + 2), 16);
         let crc = 0;
         for (let i = 0; i < 34; i++) {
           crc ^= bytes[i] << 8;
-          for (let j = 0; j < 8; j++) crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
+          for (let j = 0; j < 8; j++)
+            crc = ((crc << 1) ^ (crc & 0x8000 ? 0x1021 : 0)) & 0xffff;
         }
         bytes[34] = crc >> 8;
         bytes[35] = crc & 255;
-        return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        return btoa(String.fromCharCode(...bytes))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
       }
 
       function validTonAddress(value) {
@@ -1476,15 +1639,23 @@
         if (!/^[A-Za-z0-9_-]{48}$/.test(address)) return false;
         try {
           const binary = atob(address.replace(/-/g, "+").replace(/_/g, "/"));
-          const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-          if (bytes.length !== 36 || ![0x11, 0x51, 0x91, 0xd1].includes(bytes[0]) || ![0, 255].includes(bytes[1])) return false;
+          const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+          if (
+            bytes.length !== 36 ||
+            ![0x11, 0x51, 0x91, 0xd1].includes(bytes[0]) ||
+            ![0, 255].includes(bytes[1])
+          )
+            return false;
           let crc = 0;
           for (let i = 0; i < 34; i++) {
             crc ^= bytes[i] << 8;
-            for (let j = 0; j < 8; j++) crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
+            for (let j = 0; j < 8; j++)
+              crc = ((crc << 1) ^ (crc & 0x8000 ? 0x1021 : 0)) & 0xffff;
           }
-          return bytes[34] === (crc >> 8) && bytes[35] === (crc & 255);
-        } catch { return false; }
+          return bytes[34] === crc >> 8 && bytes[35] === (crc & 255);
+        } catch {
+          return false;
+        }
       }
 
       // Encode a TON text comment as a single-cell BOC (base64).
@@ -1497,19 +1668,35 @@
         // BOC: magic, flags (CRC32C), offset size, cells, roots,
         // absent, total cells size, root index, cell descriptors, cell data.
         const bytes = [
-          0xb5, 0xee, 0x9c, 0x72, 0x41, 0x01,
-          0x01, 0x01, 0x00, data.length + 2, 0x00,
-          0x00, data.length * 2, ...data,
+          0xb5,
+          0xee,
+          0x9c,
+          0x72,
+          0x41,
+          0x01,
+          0x01,
+          0x01,
+          0x00,
+          data.length + 2,
+          0x00,
+          0x00,
+          data.length * 2,
+          ...data,
         ];
         let crc = 0xffffffff;
         for (const b of bytes) {
           crc ^= b;
           for (let i = 0; i < 8; i++) {
-            crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0);
+            crc = (crc >>> 1) ^ (crc & 1 ? 0x82f63b78 : 0);
           }
         }
         crc = (crc ^ 0xffffffff) >>> 0;
-        bytes.push(crc & 255, (crc >>> 8) & 255, (crc >>> 16) & 255, (crc >>> 24) & 255);
+        bytes.push(
+          crc & 255,
+          (crc >>> 8) & 255,
+          (crc >>> 16) & 255,
+          (crc >>> 24) & 255,
+        );
         return btoa(String.fromCharCode(...bytes));
       }
 
@@ -1685,7 +1872,8 @@
         if (nickEl) nickEl.textContent = data?.nickname || "Farmer";
         updateNicknameGate(data?.nickname);
         const percentEl = document.getElementById("xpPercentLabel");
-        if (percentEl) percentEl.textContent = `${Math.max(0, Math.min(100, Math.round(Number(data?.xpPercent ?? (Number(data?.xp ?? 0) / Math.max(1, Number(data?.xpNeeded ?? 1)) * 100)))))}% до LVL ${newLevel + 1}`;
+        if (percentEl)
+          percentEl.textContent = `${Math.max(0, Math.min(100, Math.round(Number(data?.xpPercent ?? (Number(data?.xp ?? 0) / Math.max(1, Number(data?.xpNeeded ?? 1))) * 100))))}% до LVL ${newLevel + 1}`;
         const boost = data?.boost?.active ? "ON" : "OFF";
         const auto = data?.autoCollect?.active ? "ON" : "OFF";
         const vip = data?.vip?.active ? "ON" : "OFF";
@@ -1731,7 +1919,8 @@
         modal.classList.add("show");
       }
       function closeModal() {
-        if (typeof stopGramBalanceRefresh === "function") stopGramBalanceRefresh();
+        if (typeof stopGramBalanceRefresh === "function")
+          stopGramBalanceRefresh();
         modal.classList.remove("show");
       }
       modal.addEventListener("click", (e) => {
@@ -1969,7 +2158,8 @@
         const safeLevel = Math.max(1, Math.min(4, Number(level || 1)));
         const base = costs[type]?.[safeLevel];
         if (!base) return null;
-        const multiplier = multipliers[String(rarity || "normal").toLowerCase()] ?? 1;
+        const multiplier =
+          multipliers[String(rarity || "normal").toLowerCase()] ?? 1;
         return {
           coins: Math.floor(base.coins * multiplier),
           diamonds: Math.floor(base.diamonds * multiplier),
@@ -2222,7 +2412,7 @@
                                     <div class="tile-row"><span>🎲 Chance</span><span>${chance}%</span></div>`;
                                 })()
                           }
-                          <div class="tile-row"><span>⏳ Days</span><span>${card.daysLeft ?? 0}</span></div>
+
 
                           <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
                           <div class="mini-bar"><span style="width:${hp}%"></span></div>
@@ -2237,30 +2427,21 @@
         <span>❤️ Heal cost</span>
         <span>
           ${(() => {
-            const rarityMulti =
-              card.rarity === "legendary"
-                ? 3
-                : card.rarity === "epic"
-                  ? 2
-                  : card.rarity === "rare"
-                    ? 1.5
-                    : 1;
-
             const missingHp = Math.max(0, 100 - hp);
             const hpMulti = missingHp / 100;
 
             const healPrices = {
               CHICKEN: {
                 coins: { 1: 500, 2: 1000, 3: 2000 },
-                points: { 4: 5000, 5: 12000 },
+                points: { 4: 2160, 5: 6480 },
               },
               SHEEP: {
                 coins: { 1: 1500, 2: 3000, 3: 6000 },
-                points: { 4: 15000, 5: 35000 },
+                points: { 4: 2880, 5: 7680 },
               },
               COW: {
                 coins: { 1: 5000, 2: 10000, 3: 20000 },
-                points: { 4: 30000, 5: 70000 },
+                points: { 4: 3840, 5: 9600 },
               },
             };
 
@@ -2268,14 +2449,10 @@
             const data = healPrices[type];
 
             if (lvl <= 3) {
-              return `${Math.max(
-                1,
-                Math.floor(data.coins[lvl] * rarityMulti * hpMulti),
-              )} 🪙`;
+              return `${Math.max(1, Math.floor(data.coins[lvl] * hpMulti))} 🪙`;
             }
 
-            const diamondCost = lvl === 4 ? (card.rarity !== "normal" ? 10 : 5) : (card.rarity !== "normal" ? 20 : 10);
-            return `${Math.max(1, Math.floor(data.points[lvl] * rarityMulti * hpMulti))} ⭐ + ${diamondCost} 💎`;
+            return `${Math.max(1, Math.floor(data.points[lvl] * hpMulti))} ⭐`;
           })()}
         </span>
       </div>
@@ -2517,9 +2694,9 @@
                                             <div class="tile-title">💰 Продаж</div>
                                             <div class="tile-value" style="display:flex;justify-content:space-between;gap:12px;">
                                            <span>+${totalCoins} coins 💰</span>
-                                           <span>+${
-                                             Number(s.pendingPoints ?? 0)
-                                           } points ⭐</span>
+                                           <span>+${Number(
+                                             s.pendingPoints ?? 0,
+                                           )} points ⭐</span>
                                            </div>
                                             <button class="buy-btn green" id="sellAllBtn">Продати все</button>
                                           </div>
@@ -3233,8 +3410,11 @@
             const newValue = `${result.data.tonBalance} GRAM`;
             if (value.textContent !== newValue) value.textContent = newValue;
           }
-        } catch (e) { console.warn("GRAM balance refresh:", e); }
-        finally { gramBalanceRefreshBusy = false; }
+        } catch (e) {
+          console.warn("GRAM balance refresh:", e);
+        } finally {
+          gramBalanceRefreshBusy = false;
+        }
       }
       async function openWalletModal() {
         stopGramBalanceRefresh();
@@ -3371,7 +3551,6 @@
         showModal();
         gramBalanceRefreshTimer = setInterval(refreshGramBalance, 12000);
 
-
         const connectWalletBtn = document.getElementById("connectWalletBtn");
         const disconnectWalletBtn = document.getElementById(
           "disconnectWalletBtn",
@@ -3381,7 +3560,8 @@
           document.getElementById("withdrawTonAddress");
         // Manual choice wins even when TonConnect reconnects later.
         if (withdrawTonAddress) {
-          withdrawTonAddress.value = getSavedPayoutAddress() || tonFriendlyAddress(connectedAddress);
+          withdrawTonAddress.value =
+            getSavedPayoutAddress() || tonFriendlyAddress(connectedAddress);
           withdrawTonAddress.addEventListener("input", () => {
             savePayoutAddress(withdrawTonAddress.value);
           });
@@ -3392,7 +3572,9 @@
           const address = wallet?.account?.address || "";
           walletAddressBox.textContent = address || "Не підключено";
           if (connectWalletBtn) {
-            connectWalletBtn.textContent = address ? "✅ Гаманець підключено" : "🔗 Підключити гаманець";
+            connectWalletBtn.textContent = address
+              ? "✅ Гаманець підключено"
+              : "🔗 Підключити гаманець";
             connectWalletBtn.disabled = !!address;
           }
           if (disconnectWalletBtn) disconnectWalletBtn.disabled = !address;
@@ -3403,9 +3585,12 @@
         updateWalletConnection(tonUI?.wallet);
         if (tonUI) {
           // Live status changes also cover wallet app reconnect/disconnect events.
-          tonUI.onStatusChange(wallet => updateWalletConnection(wallet), error => {
-            console.warn("TonConnect status error", error);
-          });
+          tonUI.onStatusChange(
+            (wallet) => updateWalletConnection(wallet),
+            (error) => {
+              console.warn("TonConnect status error", error);
+            },
+          );
         }
 
         if (connectWalletBtn) {
@@ -3451,7 +3636,9 @@
           };
         }
 
-        const copyDepositDetailsBtn = document.getElementById("copyDepositDetailsBtn");
+        const copyDepositDetailsBtn = document.getElementById(
+          "copyDepositDetailsBtn",
+        );
         if (copyDepositDetailsBtn) {
           copyDepositDetailsBtn.onclick = async () => {
             const userId = getMyTelegramId();
@@ -3475,11 +3662,18 @@
           depositTonBtn.onclick = async () => {
             try {
               const comment = `USER_${getMyTelegramId()}`;
-              const amount = prompt("Введи суму GRAM для поповнення (мережа TON):", "0.1");
+              const amount = prompt(
+                "Введи суму GRAM для поповнення (мережа TON):",
+                "0.1",
+              );
 
               const amountTon = Number(amount);
               if (amount === null) return;
-              if (!Number.isFinite(amountTon) || amountTon < 0.01 || amountTon > 1000000) {
+              if (
+                !Number.isFinite(amountTon) ||
+                amountTon < 0.01 ||
+                amountTon > 1000000
+              ) {
                 showToast("Введи суму від 0.01 GRAM");
                 return;
               }
@@ -3498,7 +3692,9 @@
                 return;
               }
 
-              showToast("Підтвердь платіж у гаманці. Якщо він зависне, закрий вікно та скористайся ручним переказом.");
+              showToast(
+                "Підтвердь платіж у гаманці. Якщо він зависне, закрий вікно та скористайся ручним переказом.",
+              );
               await tc.sendTransaction({
                 validUntil: Math.floor(Date.now() / 1000) + 600,
                 messages: [
@@ -3510,10 +3706,14 @@
                 ],
               });
 
-              showToast("Платіж підтверджено гаманцем. Очікуй зарахування після перевірки мережі.");
+              showToast(
+                "Платіж підтверджено гаманцем. Очікуй зарахування після перевірки мережі.",
+              );
             } catch (e) {
               console.error(e);
-              showToast("Не вдалося підтвердити платіж. Скористайся ручним переказом з коментарем USER_ID.");
+              showToast(
+                "Не вдалося підтвердити платіж. Скористайся ручним переказом з коментарем USER_ID.",
+              );
             }
           };
         }
@@ -3521,14 +3721,21 @@
         const withdrawBtn = document.getElementById("requestWithdrawBtn");
         if (withdrawBtn) {
           withdrawBtn.onclick = async () => {
-            const tonAddress = document.getElementById("withdrawTonAddress")?.value.trim() || "";
-            const pointsAmount = Number(document.getElementById("withdrawPointsAmount")?.value);
+            const tonAddress =
+              document.getElementById("withdrawTonAddress")?.value.trim() || "";
+            const pointsAmount = Number(
+              document.getElementById("withdrawPointsAmount")?.value,
+            );
 
             if (!validTonAddress(tonAddress)) {
               showToast("Введи правильну TON адресу");
               return;
             }
-            if (!Number.isFinite(pointsAmount) || !Number.isInteger(pointsAmount) || pointsAmount < 100000) {
+            if (
+              !Number.isFinite(pointsAmount) ||
+              !Number.isInteger(pointsAmount) ||
+              pointsAmount < 100000
+            ) {
               showToast("Мінімальний вивід 100 000 Points");
               return;
             }
@@ -3679,7 +3886,18 @@
             return `<div class="tile-value">👥 ${user.referrals ?? user.value ?? 0} рефералів</div>`;
           }
 
-          const escapeNick = (name) => String(name || "Farmer").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+          const escapeNick = (name) =>
+            String(name || "Farmer").replace(
+              /[&<>"']/g,
+              (c) =>
+                ({
+                  "&": "&amp;",
+                  "<": "&lt;",
+                  ">": "&gt;",
+                  '"': "&quot;",
+                  "'": "&#39;",
+                })[c],
+            );
           const rows = (data.leaderboard || [])
             .map(
               (user) => `
@@ -3910,33 +4128,43 @@
       async function saveNickname(nickname) {
         try {
           const res = await apiPost("/nickname", { nickname });
-          if (!res.ok) return { error: res.data?.error || "Помилка збереження" };
+          if (!res.ok)
+            return { error: res.data?.error || "Помилка збереження" };
           if (currentState) currentState.nickname = res.data.nickname;
-          document.getElementById("playerNickname").textContent = res.data.nickname;
+          document.getElementById("playerNickname").textContent =
+            res.data.nickname;
           updateNicknameGate(res.data.nickname);
           return { ok: true };
         } catch (_) {
           return { error: "Немає з'єднання із сервером. Спробуйте ще раз." };
         }
       }
-      document.getElementById("saveFirstNickname")?.addEventListener("click", async () => {
-        const button = document.getElementById("saveFirstNickname");
-        const input = document.getElementById("firstNickname");
-        const error = document.getElementById("nicknameGateError");
-        if (button.disabled) return;
-        button.disabled = true;
-        error.textContent = "";
-        const result = await saveNickname(input.value.trim());
-        button.disabled = false;
-        if (result.error) error.textContent = result.error;
-      });
-      document.getElementById("editNickname")?.addEventListener("click", async () => {
-        const current = document.getElementById("playerNickname")?.textContent || "";
-        const nickname = window.prompt("Нове унікальне ім’я (3–20 символів):", current);
-        if (nickname === null) return;
-        const result = await saveNickname(nickname.trim());
-        showToast(result.error || "Ім’я збережено");
-      });
+      document
+        .getElementById("saveFirstNickname")
+        ?.addEventListener("click", async () => {
+          const button = document.getElementById("saveFirstNickname");
+          const input = document.getElementById("firstNickname");
+          const error = document.getElementById("nicknameGateError");
+          if (button.disabled) return;
+          button.disabled = true;
+          error.textContent = "";
+          const result = await saveNickname(input.value.trim());
+          button.disabled = false;
+          if (result.error) error.textContent = result.error;
+        });
+      document
+        .getElementById("editNickname")
+        ?.addEventListener("click", async () => {
+          const current =
+            document.getElementById("playerNickname")?.textContent || "";
+          const nickname = window.prompt(
+            "Нове унікальне ім’я (3–20 символів):",
+            current,
+          );
+          if (nickname === null) return;
+          const result = await saveNickname(nickname.trim());
+          showToast(result.error || "Ім’я збережено");
+        });
       loadState();
 
       /* PREMIUM UI BRIDGE - keeps old working backend logic */
