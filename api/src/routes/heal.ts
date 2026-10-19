@@ -1,3 +1,4 @@
+import { getCurrentHp } from "../lib/animalHp";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -6,25 +7,18 @@ const router = Router();
 
 type AnimalType = "CHICKEN" | "SHEEP" | "COW";
 
-const HEAL_MULTIPLIER: Record<string, number> = {
-  normal: 1,
-  rare: 1.5,
-  epic: 2,
-  legendary: 3,
-};
-
 const HEAL_COSTS = {
   CHICKEN: {
     coins: { 1: 500, 2: 1000, 3: 2000 },
-    points: { 4: 5000, 5: 12000 },
+    points: { 4: 2160, 5: 6480 },
   },
   SHEEP: {
     coins: { 1: 1500, 2: 3000, 3: 6000 },
-    points: { 4: 15000, 5: 35000 },
+    points: { 4: 2880, 5: 7680 },
   },
   COW: {
     coins: { 1: 5000, 2: 10000, 3: 20000 },
-    points: { 4: 30000, 5: 70000 },
+    points: { 4: 3840, 5: 9600 },
   },
 } as const;
 
@@ -43,19 +37,16 @@ function normalizeLevel(level: number) {
 function getHealCost(
   type: AnimalType,
   levelRaw: number,
-  rarity: string,
+  _rarity: string,
   hp: number,
 ) {
   const level = normalizeLevel(levelRaw || 1);
-
-  const rarityMultiplier =
-    HEAL_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
 
   const missingHp = Math.max(0, 100 - (hp ?? 100));
   const hpMultiplier = missingHp / 100;
 
   if (level <= 3) {
-    const base = HEAL_COSTS[type].coins[level as 1 | 2 | 3] * rarityMultiplier;
+    const base = HEAL_COSTS[type].coins[level as 1 | 2 | 3];
 
     return {
       currency: "coins" as const,
@@ -64,7 +55,7 @@ function getHealCost(
     };
   }
 
-  const base = HEAL_COSTS[type].points[level as 4 | 5] * rarityMultiplier;
+  const base = HEAL_COSTS[type].points[level as 4 | 5];
 
   return {
     currency: "points" as const,
@@ -111,13 +102,11 @@ router.post("/", async (req: TgAuthedRequest, res) => {
             : [];
     }
 
-    const currentLifePercent = (animal: (typeof user.animals)[number]) => {
-      const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
-      const duration = lifeDays * 86400000;
-      const remaining = Math.max(0, duration - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
-      return Math.max(0, Math.min(100, Math.ceil(remaining / duration * 100)));
-    };
-    animalsToHeal = animalsToHeal.filter((animal) => currentLifePercent(animal) < 100);
+    const currentLifePercent = (animal: (typeof user.animals)[number]) =>
+      getCurrentHp(animal);
+    animalsToHeal = animalsToHeal.filter(
+      (animal) => currentLifePercent(animal) < 100,
+    );
 
     if (animalsToHeal.length <= 0) {
       return res.status(400).json({ error: "No animals need healing" });
@@ -136,9 +125,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
         currentLifePercent(animal),
       );
 
-      const rarity = String((animal as any).rarity || "normal").toLowerCase();
-      const bred = rarity !== "normal";
-      const diamondCost = cost.level === 4 ? (bred ? 10 : 5) : cost.level === 5 ? (bred ? 20 : 10) : 0;
+      const diamondCost = 0;
       totalDiamondsCost += diamondCost;
       if (cost.currency === "coins") {
         totalCoinsCost += cost.amount;
@@ -174,38 +161,52 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     }
 
     if ((user.diamonds ?? 0) < totalDiamondsCost) {
-      return res.status(400).json({ error: "Not enough diamonds", need: totalDiamondsCost, have: user.diamonds ?? 0 });
+      return res
+        .status(400)
+        .json({
+          error: "Not enough diamonds",
+          need: totalDiamondsCost,
+          have: user.diamonds ?? 0,
+        });
     }
 
     const now = new Date();
-    const animalIds = animalsToHeal.map((animal) => animal.id);
 
     const result = await prisma.$transaction(async (tx) => {
       const paid = await tx.user.updateMany({
-        where: { id: user.id, coins: { gte: totalCoinsCost }, points: { gte: totalPointsCost }, diamonds: { gte: totalDiamondsCost } },
+        where: {
+          id: user.id,
+          coins: { gte: totalCoinsCost },
+          points: { gte: totalPointsCost },
+          diamonds: { gte: totalDiamondsCost },
+        },
         data: {
           coins: { decrement: totalCoinsCost },
           points: { decrement: totalPointsCost },
           diamonds: { decrement: totalDiamondsCost },
         },
       });
-      if (paid.count !== 1) throw new Error("Insufficient balance at payment time");
+      if (paid.count !== 1)
+        throw new Error("Insufficient balance at payment time");
       const updatedUser = await tx.user.findUniqueOrThrow({
         where: { id: user.id },
         select: { coins: true, points: true, diamonds: true },
       });
 
-      await tx.animal.updateMany({
-        where: {
-          id: { in: animalIds },
-          userId: user.id,
-        },
-        data: {
-          lastFedAt: now,
-          bornAt: now,
-          hp: 100,
-        } as any,
-      });
+      // Conditional updates prevent charging twice for a concurrent heal.
+      for (const animal of animalsToHeal) {
+        const updated = await tx.animal.updateMany({
+          where: {
+            id: animal.id,
+            userId: user.id,
+            hpUpdatedAt: animal.hpUpdatedAt,
+            hp: animal.hp,
+          },
+          data: { hp: 100, hpUpdatedAt: now, lastClaim: now },
+        });
+        if (updated.count !== 1)
+          throw new Error("Animal health changed during healing; retry");
+      }
 
       return updatedUser;
     });

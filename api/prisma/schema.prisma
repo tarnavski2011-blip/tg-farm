@@ -101,6 +101,7 @@ model Animal {
   breedBonus   Float      @default(1.0)
   slotIndex    Int        @default(1)
   hp           Int        @default(100)
+  hpUpdatedAt  DateTime   @default(now())
 
   bornAt       DateTime   @default(now())
   lastFedAt    DateTime   @default(now())

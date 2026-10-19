@@ -1,3 +1,4 @@
+import { getCurrentHp } from "../lib/animalHp";
 import { Router, Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { prisma } from "../prisma";
@@ -265,6 +266,7 @@ router.get("/dashboard/player/:telegramId", async (req, res) => {
             type: true,
             level: true,
             hp: true,
+            hpUpdatedAt: true,
             bornAt: true,
             rarity: true,
             breedBonus: true,
@@ -330,19 +332,8 @@ router.get("/dashboard/player/:telegramId", async (req, res) => {
     const table = (heads: string[], rows: string[], empty = "Немає записів") =>
       `<div class="tablewrap"><table><thead><tr>${heads.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("") || `<tr><td colspan="${heads.length}">${esc(empty)}</td></tr>`}</tbody></table></div>`;
     // Match the HP currently displayed by the player state endpoint.
-    // NOTE: state.ts still uses the legacy lifespan calculation; this is display-only.
-    const displayedHp = (a: { type: string; bornAt: Date }) => {
-      const lifeDays = a.type === "CHICKEN" ? 3 : a.type === "SHEEP" ? 5 : 7;
-      const lifeMs = lifeDays * 24 * 60 * 60 * 1000;
-      const remainingMs = Math.max(
-        0,
-        lifeMs - Math.max(0, Date.now() - new Date(a.bornAt).getTime()),
-      );
-      return Math.max(
-        0,
-        Math.min(100, Math.ceil((remainingMs / lifeMs) * 100)),
-      );
-    };
+    const displayedHp = (a: { hp: number; hpUpdatedAt: Date }) =>
+      getCurrentHp(a);
     const s = user.storage;
     const name = esc(user.nickname || user.telegramId.toString());
     const html = `<header><div><h1>👤 ${name}</h1><div class="muted">Telegram ID: ${esc(user.telegramId.toString())} · ID у базі: ${user.id}</div></div><a href="/admin/dashboard#players">← До списку гравців</a></header>

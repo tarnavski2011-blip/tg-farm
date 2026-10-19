@@ -1,3 +1,4 @@
+import { getCurrentHp } from "../lib/animalHp";
 import { acquireWarehouseLock } from "../lib/warehouseLock";
 import { Router } from "express";
 import { prisma } from "../prisma";
@@ -73,20 +74,18 @@ function getAnimalPointsPerCycle(
 
 function getAnimalEfficiency(animal: {
   type: "CHICKEN" | "SHEEP" | "COW";
-  bornAt: Date;
   lastFedAt: Date;
+  bornAt?: Date;
   hp?: number | null;
+  hpUpdatedAt: Date;
 }) {
-  const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
-  const lifeMs = lifeDays * 24 * 60 * 60 * 1000;
-  const remainingMs = Math.max(0, lifeMs - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
-  const lifePercent = Math.max(0, Math.min(100, Math.ceil(remainingMs / lifeMs * 100)));
+  const hp = getCurrentHp({hp: animal.hp ?? 100, hpUpdatedAt: animal.hpUpdatedAt});
   const hoursWithoutFeed = (Date.now() - new Date(animal.lastFedAt).getTime()) / 3600000;
   const efficiencyLoss = Math.floor(Math.max(0, hoursWithoutFeed) / 12) * 10;
   return {
-    lifePercent,
-    efficiencyPercent: lifePercent === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
-    daysLeft: remainingMs / 86400000,
+    lifePercent: hp, // compatibility with existing response fields
+    efficiencyPercent: hp === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
+    daysLeft: 0, // no lifespan
   };
 }
 
@@ -179,10 +178,18 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
       });
 
 
       const cfg = ANIMAL_PRODUCTION[animal.type];
+      if (preCheckStats.lifePercent <= 0) {
+        // Do not accumulate production time while the animal is at 0 HP.
+        animalUpdates.push(prisma.animal.update({
+          where: { id: animal.id }, data: { lastClaim: now },
+        }));
+        continue;
+      }
       const passedSec = Math.floor(
         (now.getTime() - animal.lastClaim.getTime()) / 1000,
       );
@@ -266,6 +273,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
       });
 
 
@@ -469,6 +477,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         bornAt: Date;
         lastFedAt: Date;
         hp?: number | null;
+        hpUpdatedAt: Date;
       },
       feedCycles: number,
     ) {
@@ -477,6 +486,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         bornAt: animal.bornAt,
         lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
       });
 
       if (stats.efficiencyPercent <= 0) {
@@ -550,6 +560,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
         bornAt: Date;
         lastFedAt: Date;
         hp?: number | null;
+        hpUpdatedAt: Date;
       }[],
     ) {
       if (animals.length <= 0) return 0;
@@ -560,6 +571,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           bornAt: animal.bornAt,
           lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
         });
 
         if (stats.efficiencyPercent <= 0) {
@@ -616,6 +628,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
             });
 
             return {
@@ -643,6 +656,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
             });
 
             return {
@@ -670,6 +684,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
               bornAt: animal.bornAt,
               lastFedAt: animal.lastFedAt,
         hp: animal.hp,
+        hpUpdatedAt: animal.hpUpdatedAt,
             });
 
             return {
@@ -707,6 +722,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).lifePercent,
                 0,
               ) / chickenAnimals.length,
@@ -723,6 +739,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).lifePercent,
                 0,
               ) / sheepAnimals.length,
@@ -739,6 +756,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).lifePercent,
                 0,
               ) / cowAnimals.length,
@@ -755,6 +773,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).efficiencyPercent,
                 0,
               ) / chickenAnimals.length,
@@ -771,6 +790,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).efficiencyPercent,
                 0,
               ) / sheepAnimals.length,
@@ -787,6 +807,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
                     bornAt: a.bornAt,
                     lastFedAt: a.lastFedAt,
                     hp: a.hp,
+                    hpUpdatedAt: a.hpUpdatedAt,
                   }).efficiencyPercent,
                 0,
               ) / cowAnimals.length,
