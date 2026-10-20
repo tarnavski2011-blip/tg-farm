@@ -1115,6 +1115,11 @@
       .premium-menu-fallback {
         display: none !important;
       }
+      /* Secondary actions now live in the bottom Menu sheet. */
+      .side-btn,
+      .farm-guide-launch {
+        display: none !important;
+      }
       #resultBox {
         display: none !important;
       }
@@ -1615,7 +1620,7 @@
           <div id="xp">0</div>
           <button id="loadStateBtn" type="button">load</button>
           <button id="refreshBtn" type="button">refresh</button>
-          <button id="feedBtn" type="button">feed</button>
+          <button id="feedBtnLegacy" type="button">feed</button>
           <button
             id="leaderboardBtn"
             type="button"
@@ -1753,20 +1758,6 @@
         </div>
         <p class="farm-menu-subtitle">Усі додаткові можливості твоєї ферми</p>
         <div class="farm-menu-items">
-          <button class="farm-menu-item" type="button" data-farm-menu="shop">
-            <span class="farm-menu-icon">🛒</span
-            ><span class="farm-menu-copy"
-              ><strong>Магазин</strong
-              ><small>Товари та покупки для ферми</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="guide">
-            <span class="farm-menu-icon">📖</span
-            ><span class="farm-menu-copy"
-              ><strong>Як грати?</strong
-              ><small>Покрокова інструкція для новачків</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
           <button class="farm-menu-item" type="button" data-farm-menu="profile">
             <span class="farm-menu-icon">👤</span
             ><span class="farm-menu-copy"
@@ -1774,10 +1765,18 @@
               ><small>Статистика та обліковий запис</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="quests">
-            <span class="farm-menu-icon">📋</span
+          <button class="farm-menu-item" type="button" data-farm-menu="shop">
+            <span class="farm-menu-icon">🛒</span
             ><span class="farm-menu-copy"
-              ><strong>Завдання</strong><small>Місії та нагороди</small></span
+              ><strong>Магазин</strong
+              ><small>Товари та покупки для ферми</small></span
+            ><span class="farm-menu-chevron">›</span>
+          </button>
+          <button class="farm-menu-item" type="button" data-farm-menu="wallet">
+            <span class="farm-menu-icon">👛</span
+            ><span class="farm-menu-copy"
+              ><strong>Гаманець</strong
+              ><small>TON та операції з балансом</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
           <button class="farm-menu-item" type="button" data-farm-menu="daily">
@@ -1794,18 +1793,17 @@
               ><small>Щоденне обертання</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
+          <button class="farm-menu-item" type="button" data-farm-menu="quests">
+            <span class="farm-menu-icon">📋</span
+            ><span class="farm-menu-copy"
+              ><strong>Завдання</strong><small>Місії та нагороди</small></span
+            ><span class="farm-menu-chevron">›</span>
+          </button>
           <button class="farm-menu-item" type="button" data-farm-menu="boost">
             <span class="farm-menu-icon">🚀</span
             ><span class="farm-menu-copy"
               ><strong>VIP та Boosts</strong
               ><small>Прискорення й бонуси</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="wallet">
-            <span class="farm-menu-icon">👛</span
-            ><span class="farm-menu-copy"
-              ><strong>Гаманець</strong
-              ><small>TON та операції з балансом</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
           <button class="farm-menu-item" type="button" data-farm-menu="refs">
@@ -1818,6 +1816,13 @@
             <span class="farm-menu-icon">🏆</span
             ><span class="farm-menu-copy"
               ><strong>Рейтинг</strong><small>Лідери ферми</small></span
+            ><span class="farm-menu-chevron">›</span>
+          </button>
+          <button class="farm-menu-item" type="button" data-farm-menu="guide">
+            <span class="farm-menu-icon">📖</span
+            ><span class="farm-menu-copy"
+              ><strong>Як грати?</strong
+              ><small>Покрокова інструкція для новачків</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
         </div>
