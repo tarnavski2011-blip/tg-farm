@@ -1674,8 +1674,8 @@
           <button class="tap-btn premium-tap" id="tapBtn" type="button">
             TAP!
           </button>
-          <button class="nav-btn" id="shopBtn" type="button">
-            <span>🛒</span><strong>Shop</strong>
+          <button class="nav-btn" id="feedBtn" type="button">
+            <span>🌾</span><strong>Feed</strong>
           </button>
           <button
             class="nav-btn"
@@ -1753,6 +1753,13 @@
         </div>
         <p class="farm-menu-subtitle">Усі додаткові можливості твоєї ферми</p>
         <div class="farm-menu-items">
+          <button class="farm-menu-item" type="button" data-farm-menu="shop">
+            <span class="farm-menu-icon">🛒</span
+            ><span class="farm-menu-copy"
+              ><strong>Магазин</strong
+              ><small>Товари та покупки для ферми</small></span
+            ><span class="farm-menu-chevron">›</span>
+          </button>
           <button class="farm-menu-item" type="button" data-farm-menu="guide">
             <span class="farm-menu-icon">📖</span
             ><span class="farm-menu-copy"
@@ -4646,6 +4653,7 @@
           closeFarmMenu();
       });
       const farmMenuActions = {
+        shop: openShopModal,
         guide: openFarmGuide,
         profile: openProfileModal,
         quests: openQuestsModal,
