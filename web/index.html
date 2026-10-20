@@ -204,6 +204,82 @@
           transform: translateX(-50%) translateY(-70px) scale(1.12);
         }
       }
+      .farm-guide-launch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: calc(100% - 24px);
+        max-width: 460px;
+        margin: 8px auto;
+        padding: 11px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 13px;
+        background: rgba(10, 35, 60, 0.88);
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        position: relative;
+        z-index: 2;
+      }
+      .farm-guide-launch span {
+        font-size: 11px;
+        color: #bfe7ff;
+        font-weight: 600;
+      }
+      .farm-guide-progress {
+        display: flex;
+        gap: 5px;
+        margin: 12px 0 16px;
+      }
+      .farm-guide-progress i {
+        flex: 1;
+        height: 5px;
+        border-radius: 6px;
+        background: #334155;
+      }
+      .farm-guide-progress i.active {
+        background: #78d94b;
+      }
+      .farm-guide-card {
+        padding: 20px 14px;
+        border-radius: 15px;
+        background: #1e293b;
+        text-align: center;
+        color: #e2e8f0;
+        line-height: 1.55;
+      }
+      .farm-guide-card .emoji {
+        font-size: 43px;
+      }
+      .farm-guide-card h3 {
+        margin: 8px 0;
+        color: white;
+        font-size: 20px;
+      }
+      .farm-guide-controls {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .farm-guide-controls button {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-weight: 800;
+        cursor: pointer;
+        background: #334155;
+        color: white;
+      }
+      .farm-guide-controls button.next {
+        background: #78d94b;
+        color: #11220d;
+      }
+      .farm-guide-controls button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
       .modal {
         position: fixed;
         inset: 0;
@@ -1228,10 +1304,9 @@
         top: 461px;
       }
       .bottom-nav {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 92px minmax(
-            0,
-            1fr
-          ) minmax(0, 1fr);
+        grid-template-columns:
+          minmax(0, 1fr) minmax(0, 1fr) 92px minmax(0, 1fr)
+          minmax(0, 1fr);
         gap: 4px;
         padding: 5px;
       }
@@ -1278,10 +1353,9 @@
           padding: 5px 3px;
         }
         .bottom-nav {
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 82px minmax(
-              0,
-              1fr
-            ) minmax(0, 1fr);
+          grid-template-columns:
+            minmax(0, 1fr) minmax(0, 1fr) 82px minmax(0, 1fr)
+            minmax(0, 1fr);
         }
         .premium-tap {
           width: 82px !important;
@@ -1441,6 +1515,10 @@
             top
           </button>
         </div>
+
+        <button class="farm-guide-launch" id="farmGuideBtn" type="button">
+          📖 Як грати? <span>Покрокова інструкція →</span>
+        </button>
 
         <button class="warehouse-panel" id="storageBtn" type="button">
           <div class="warehouse-icon">🏚️</div>
@@ -4331,6 +4409,94 @@
         const el = document.getElementById(id);
         if (el) el.addEventListener("click", handler);
       }
+
+      // Onboarding is WEB-only; no API or database changes.
+      const farmGuideSteps = [
+        [
+          "👆",
+          "Зароби Coins",
+          "Натискай TAP: кожен тап дає 1 Coin. Перша курка коштує 100 Coins.",
+        ],
+        [
+          "🐔",
+          "Купи першу курку",
+          "Відкрий Animals → купівля та придбай курку за Coins.",
+        ],
+        [
+          "🌾",
+          "Обов'язково купи корм",
+          "Натисни Feed і придбай корм для курей. Без корму тварина не виробляє ресурси!",
+        ],
+        [
+          "🥚",
+          "Дочекайся виробництва",
+          "Курка виробляє ресурси приблизно кожні 20 секунд. Ферма працює навіть коли Telegram закритий, доки є корм, HP і місце на складі.",
+        ],
+        [
+          "📦",
+          "Продай ресурси",
+          "Відкрий Warehouse (Склад) та продай накопичені ресурси. Саме після продажу нараховуються Points і XP.",
+        ],
+        [
+          "❤️",
+          "Стеж за HP",
+          "Кожні 3 години тварина втрачає 5% HP. При 0% виробництво зупиняється. Лікуй тварин: рівні 1–3 за Coins, 4–5 за Points.",
+        ],
+        [
+          "🚀",
+          "Розвивай ферму",
+          "Купуй інших тварин, покращуй їх, розширюй склад, виконуй Tasks і забирай Daily-нагороди. Повернися пізніше, щоб продати нові ресурси!",
+        ],
+      ];
+      let farmGuideStep = 0;
+      function renderFarmGuide() {
+        const item = farmGuideSteps[farmGuideStep];
+        modalTitle.textContent = `📖 Як грати? · ${farmGuideStep + 1}/${farmGuideSteps.length}`;
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `
+          <div class="farm-guide-progress">${farmGuideSteps.map((_, i) => `<i class="${i <= farmGuideStep ? "active" : ""}"></i>`).join("")}</div>
+          <div class="farm-guide-card"><div class="emoji">${item[0]}</div><h3>${item[1]}</h3><p>${item[2]}</p></div>
+          <div class="farm-guide-controls"><button id="farmGuidePrev" ${farmGuideStep === 0 ? "disabled" : ""}>← Назад</button><button class="next" id="farmGuideNext">${farmGuideStep === farmGuideSteps.length - 1 ? "Завершити ✓" : "Далі →"}</button></div>`;
+        document.getElementById("farmGuidePrev").onclick = () => {
+          if (farmGuideStep > 0) {
+            farmGuideStep--;
+            renderFarmGuide();
+          }
+        };
+        document.getElementById("farmGuideNext").onclick = () => {
+          if (farmGuideStep < farmGuideSteps.length - 1) {
+            farmGuideStep++;
+            renderFarmGuide();
+          } else closeModal();
+        };
+      }
+      function openFarmGuide() {
+        farmGuideStep = 0;
+        renderFarmGuide();
+        showModal();
+      }
+      bindButton("farmGuideBtn", openFarmGuide);
+      // Only once per Telegram user and browser; do not interrupt nickname setup.
+      let farmGuideAutoChecked = false;
+      const applyStateBeforeGuide = applyState;
+      applyState = function (data) {
+        applyStateBeforeGuide(data);
+        if (farmGuideAutoChecked || !data?.nickname) return;
+        farmGuideAutoChecked = true;
+        try {
+          const userKey = String(
+            data?.telegramId || tg?.initDataUnsafe?.user?.id || "local",
+          );
+          const key = `myFarmGuideSeen_v1_${userKey}`;
+          if (localStorage.getItem(key)) return;
+          localStorage.setItem(key, "1");
+          setTimeout(() => {
+            if (!modal.classList.contains("show")) openFarmGuide();
+          }, 800);
+        } catch (_) {
+          /* Manual guide remains available if storage is blocked. */
+        }
+      };
 
       bindButton("animalsBtn", openAnimalsModal);
       bindButton("storageBtn", openStorageModal);
