@@ -403,51 +403,132 @@
         margin-top: 8px;
         font-weight: 700;
       }
+      /* Daily fortune wheel — visual-only update; the server awards prizes. */
       .wheel-wrap {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 14px;
+        gap: 15px;
+        width: 100%;
+        padding: 8px 0 14px;
       }
-      .wheel-disc {
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        border: 8px solid #1d4ed8;
-        background: conic-gradient(
-          #60a5fa 0 60deg,
-          #1e40af 60deg 120deg,
-          #93c5fd 120deg 180deg,
-          #2563eb 180deg 240deg,
-          #60a5fa 240deg 300deg,
-          #1e40af 300deg 360deg
-        );
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      .wheel-headline {
+        text-align: center;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #cbd5e1;
+      }
+      .wheel-stage {
         position: relative;
-        transition: transform 3s cubic-bezier(0.18, 0.89, 0.32, 1.08);
+        width: min(100%, 320px);
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.4));
       }
-      .wheel-center {
+      .wheel-stage::before {
+        content: "";
         position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 72px;
-        height: 72px;
+        inset: 0;
         border-radius: 50%;
-        background: #0f172a;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        border: 4px solid #60a5fa;
+        background: radial-gradient(
+          circle,
+          #fde68a 61%,
+          #b45309 71%,
+          #fbbf24 76%,
+          #78350f 80%,
+          transparent 82%
+        );
       }
-      .wheel-pointer {
+      .wheel-svg {
+        position: relative;
+        width: 91%;
+        height: 91%;
+        overflow: visible;
+      }
+      .wheel-rotor {
+        transform-origin: 150px 150px;
+      }
+      .wheel-arrow {
+        position: absolute;
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
         width: 0;
         height: 0;
-        border-left: 14px solid transparent;
-        border-right: 14px solid transparent;
-        border-top: 22px solid #f8fafc;
-        margin-bottom: -8px;
+        border-left: 17px solid transparent;
+        border-right: 17px solid transparent;
+        border-top: 34px solid #fff3bf;
+        filter: drop-shadow(0 3px 2px #713f12);
+      }
+      .wheel-hub {
+        position: absolute;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 5px solid #fde68a;
+        background: radial-gradient(
+          circle at 30% 25%,
+          #fef3c7,
+          #d97706 65%,
+          #92400e
+        );
+        box-shadow: 0 4px 12px #0008;
+        display: grid;
+        place-items: center;
+        font-size: 26px;
+        pointer-events: none;
+      }
+      .wheel-spin-btn {
+        width: min(100%, 280px);
+        min-height: 51px;
+        border-radius: 15px;
+        font-weight: 900;
+        font-size: 16px;
+        border: 1px solid #fde68a;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        color: #422006;
+        box-shadow:
+          0 5px 0 #92400e,
+          0 10px 20px #0004;
+        cursor: pointer;
+      }
+      .wheel-spin-btn:disabled {
+        opacity: 0.58;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .wheel-info {
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 13px;
+      }
+      .wheel-result {
+        width: 100%;
+        padding: 13px;
+        border: 1px solid #fbbf24;
+        border-radius: 14px;
+        background: rgba(251, 191, 36, 0.12);
+        text-align: center;
+        font-weight: 800;
+        font-size: 17px;
+        animation: wheel-pop 0.35s ease-out;
+      }
+      @keyframes wheel-pop {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wheel-result {
+          animation: none;
+        }
       }
       .share-row {
         display: grid;
@@ -3405,104 +3486,129 @@
         });
       }
       async function openWheelModal() {
-        modalTitle.textContent = "🎰 Wheel";
+        modalTitle.textContent = "🎡 Колесо фортуни";
         modalTabs.style.display = "none";
-
-        // 👉 перевірка чи можна крутити
         const state = await apiGet("/wheel/state");
-
-        let canSpin = false;
-
-        if (state.ok && state.data) {
-          canSpin = (state.data.cooldownSec ?? 0) <= 0;
+        if (!state.ok || !state.data) {
+          modalBody.innerHTML = `<div class="note">Не вдалося завантажити колесо. Спробуй пізніше.</div>`;
+          showModal();
+          return;
         }
 
+        const prizes = [
+          { type: "coins", amount: 50, text: "50", emoji: "🪙" },
+          { type: "coins", amount: 100, text: "100", emoji: "🪙" },
+          { type: "coins", amount: 200, text: "200", emoji: "🪙" },
+          { type: "diamonds", amount: 1, text: "1", emoji: "💎" },
+          { type: "diamonds", amount: 3, text: "3", emoji: "💎" },
+          { type: "diamonds", amount: 5, text: "5", emoji: "💎" },
+          { type: "freeSpin", amount: 1, text: "FREE", emoji: "🎟️" },
+          { type: "nothing", amount: 0, text: "0", emoji: "🍀" },
+        ];
+        const colors = [
+          "#16a34a",
+          "#0284c7",
+          "#7c3aed",
+          "#db2777",
+          "#0891b2",
+          "#9333ea",
+          "#ea580c",
+          "#475569",
+        ];
+        const polar = (radius, deg) => {
+          const r = (deg * Math.PI) / 180;
+          return [150 + radius * Math.sin(r), 150 - radius * Math.cos(r)];
+        };
+        const sectors = prizes
+          .map((prize, i) => {
+            const a = polar(137, i * 45 - 22.5),
+              b = polar(137, i * 45 + 22.5);
+            const center = polar(87, i * 45);
+            return `<path d="M150 150 L${a[0].toFixed(2)} ${a[1].toFixed(2)} A137 137 0 0 1 ${b[0].toFixed(2)} ${b[1].toFixed(2)} Z" fill="${colors[i]}" stroke="#fde68a" stroke-width="2"/>
+            <text x="${center[0].toFixed(2)}" y="${(center[1] - 7).toFixed(2)}" font-size="23" text-anchor="middle">${prize.emoji}</text>
+            <text x="${center[0].toFixed(2)}" y="${(center[1] + 14).toFixed(2)}" font-size="16" font-weight="900" text-anchor="middle" fill="white" stroke="#0006" stroke-width="2" paint-order="stroke">${prize.text}</text>`;
+          })
+          .join("");
+        const cooldown = Math.max(0, Number(state.data.cooldownSec || 0));
+        const bonus = Math.max(0, Number(state.data.bonusSpins || 0));
+        let canSpin =
+          state.data.canSpin === true || cooldown === 0 || bonus > 0;
+        const timeText = cooldown
+          ? `${Math.floor(cooldown / 3600)} год ${Math.floor((cooldown % 3600) / 60)} хв до наступного щоденного обертання`
+          : "Одне безкоштовне обертання щодня";
         modalBody.innerHTML = `
-                                              <div class="wheel-wrap">
-                                                <div class="wheel-pointer"></div>
-
-                                                <div style="display:flex; justify-content:center;">
-                                                  <svg width="260" height="260" viewBox="0 0 260 260">
-
-                                                    <g id="wheelRotor" style="transform-origin:130px 130px; transition: transform 3s ease;">
-
-                                                      <path d="M130 130 L130 18 A112 112 0 0 1 209.2 50.8 Z" fill="#60a5fa"/>
-                                                      <path d="M130 130 L209.2 50.8 A112 112 0 0 1 242 130 Z" fill="#1e40af"/>
-                                                      <path d="M130 130 L242 130 A112 112 0 0 1 209.2 209.2 Z" fill="#93c5fd"/>
-                                                      <path d="M130 130 L209.2 209.2 A112 112 0 0 1 130 242 Z" fill="#2563eb"/>
-                                                      <path d="M130 130 L130 242 A112 112 0 0 1 50.8 209.2 Z" fill="#60a5fa"/>
-                                                      <path d="M130 130 L50.8 209.2 A112 112 0 0 1 18 130 Z" fill="#1e40af"/>
-                                                      <path d="M130 130 L18 130 A112 112 0 0 1 50.8 50.8 Z" fill="#93c5fd"/>
-                                                      <path d="M130 130 L50.8 50.8 A112 112 0 0 1 130 18 Z" fill="#2563eb"/>
-
-                                                      <g transform="rotate(22.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">50</text></g>
-                                                      <g transform="rotate(67.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">100</text></g>
-                                                      <g transform="rotate(112.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">200</text></g>
-                                                      <g transform="rotate(157.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎1</text></g>
-                                                      <g transform="rotate(202.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎3</text></g>
-                                                      <g transform="rotate(247.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">💎5</text></g>
-                                                      <g transform="rotate(292.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">FREE</text></g>
-                                                      <g transform="rotate(337.5 130 130)"><text x="130" y="45" fill="#fff" font-size="12" text-anchor="middle">0</text></g>
-
-                                                    </g>
-
-                                                    <circle cx="130" cy="130" r="40" fill="#0f172a"/>
-                                                    <text x="130" y="138" fill="#fff" font-size="14" text-anchor="middle">SPIN</text>
-
-                                                  </svg>
-                                                </div>
-
-                                                <button class="buy-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>
-                                                  ${canSpin ? "Крутити" : "Вже крутив сьогодні"}
-                                                </button>
-                                              </div>
-                                            `;
-
+          <div class="wheel-wrap">
+            <div class="wheel-headline">🍀 Випробуй удачу та забери свою нагороду!</div>
+            <div class="wheel-stage">
+              <div class="wheel-arrow"></div>
+              <svg class="wheel-svg" viewBox="0 0 300 300" role="img" aria-label="Колесо з вісьмома можливими нагородами">
+                <g id="wheelRotor" class="wheel-rotor">
+                  <circle cx="150" cy="150" r="145" fill="#fbbf24" stroke="#fff3bf" stroke-width="5"/>
+                  ${sectors}
+                  <circle cx="150" cy="150" r="140" fill="none" stroke="#fef3c7" stroke-width="5"/>
+                </g>
+              </svg>
+              <div class="wheel-hub">🌟</div>
+            </div>
+            <button class="wheel-spin-btn" id="spinWheelBtn" ${canSpin ? "" : "disabled"}>${canSpin ? "🎡 КРУТИТИ КОЛЕСО" : "⏳ Обертання недоступне"}</button>
+            <div class="wheel-info" id="wheelInfo">${bonus ? `🎟️ Додаткових обертань: ${bonus} · ` : ""}${timeText}</div>
+            <div id="wheelPrizeResult" aria-live="polite"></div>
+          </div>`;
         showModal();
-
         const btn = document.getElementById("spinWheelBtn");
         const rotor = document.getElementById("wheelRotor");
-
         btn.onclick = async () => {
-          if (!canSpin) {
-            showToast("Сьогодні вже крутив");
+          if (!canSpin || btn.disabled) return;
+          btn.disabled = true;
+          btn.textContent = "🎡 Визначаємо приз...";
+          // Ask the API first; animation never chooses or changes the prize.
+          let res;
+          try {
+            res = await apiPost("/wheel/spin");
+          } catch (e) {
+            res = { ok: false, data: { error: "Помилка з’єднання" } };
+          }
+          if (!res.ok || !res.data?.reward) {
+            showToast(res.data?.error || "Не вдалося обернути колесо");
+            btn.disabled = false;
+            btn.textContent = "🎡 КРУТИТИ КОЛЕСО";
             return;
           }
-
-          // 👉 блокуємо кнопку одразу
-          btn.disabled = true;
-          btn.textContent = "Крутимо...";
-
-          let deg = 1800 + Math.random() * 720;
-          rotor.style.transform = "rotate(" + deg + "deg)";
-
-          // 👉 запит на сервер
-          const res = await apiPost("/wheel/spin");
-
-          setTimeout(async () => {
-            if (res.ok) {
-              const reward = res.data?.reward;
-
-              if (reward?.type === "coins") {
-                showToast("💰 +" + reward.amount + " coins");
-              } else if (reward?.type === "diamonds") {
-                showToast("💎 +" + reward.amount);
-              } else if (reward?.type === "freeSpin") {
-                showToast("🎰 Free spin");
-              } else {
-                showToast("😅 Нічого");
-              }
-
-              await loadState();
-
-              // 👉 перезавантажуємо модалку (щоб кнопка стала disabled)
-              openWheelModal();
-            } else {
-              showToast(res.data?.error || "Помилка");
-              btn.disabled = false;
-              btn.textContent = "Крутити";
-            }
-          }, 3000);
+          const reward = res.data.reward;
+          const index = prizes.findIndex(
+            (p) => p.type === reward.type && p.amount === Number(reward.amount),
+          );
+          // Eight sectors, with the centre of sector 0 aligned to the top pointer.
+          const target = 360 * 6 + (index >= 0 ? (360 - index * 45) % 360 : 0);
+          btn.textContent = "🌀 Колесо обертається...";
+          rotor.style.transition = "transform 6s cubic-bezier(.12,.78,.12,1)";
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              rotor.style.transform = `rotate(${target}deg)`;
+            }),
+          );
+          await new Promise((resolve) => setTimeout(resolve, 6200));
+          const result = document.getElementById("wheelPrizeResult");
+          if (result && result.isConnected) {
+            const prizeText =
+              reward.type === "coins"
+                ? `🪙 +${reward.amount} Coins`
+                : reward.type === "diamonds"
+                  ? `💎 +${reward.amount} Diamonds`
+                  : reward.type === "freeSpin"
+                    ? "🎟️ Додаткове обертання!"
+                    : "🍀 Наступного разу пощастить!";
+            result.innerHTML = `<div class="wheel-result">${prizeText}</div>`;
+            btn.textContent =
+              reward.type === "freeSpin" || Number(res.data.bonusSpins) > 0
+                ? "🎡 КРУТИТИ ЩЕ"
+                : "✅ Нагороду отримано";
+            canSpin =
+              reward.type === "freeSpin" || Number(res.data.bonusSpins) > 0;
+            btn.disabled = !canSpin;
+            if (canSpin) btn.onclick = () => openWheelModal();
+          }
+          await loadState();
         };
       }
 
