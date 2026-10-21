@@ -62,9 +62,9 @@ router.post("/combo/set", async (req, res) => {
     return res.status(400).send("Невірна дата або предмети");
   try {
     await prisma.$executeRawUnsafe(
-      'INSERT INTO "DailyCombo" ("day","items") VALUES ($1,$2) ON CONFLICT ("day") DO UPDATE SET "items" = EXCLUDED."items"',
+      'INSERT INTO "DailyCombo" ("day","items") VALUES ($1,ARRAY(SELECT jsonb_array_elements_text($2::jsonb))) ON CONFLICT ("day") DO UPDATE SET "items" = EXCLUDED."items"',
       day,
-      items,
+      JSON.stringify(items),
     );
     return res.redirect(303, "/admin/combo");
   } catch (e) {

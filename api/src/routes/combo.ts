@@ -111,7 +111,11 @@ router.post("/guess", async (req: TgAuthedRequest, res) => {
     const result = await prisma.$transaction(async (tx: any) => {
       const day = comboDay();
       // Serialize guesses for the same user, including across API instances.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${user.id}, 987654)`;
+      await tx.$queryRawUnsafe(
+        "SELECT pg_advisory_xact_lock($1::int, $2::int)",
+        user.id,
+        987654,
+      );
       const previous = (await tx.$queryRawUnsafe(
         'SELECT "won" FROM "DailyComboAttempt" WHERE "day" = $1 AND "userId" = $2 ORDER BY "attemptNo"',
         day,
@@ -124,11 +128,11 @@ router.post("/guess", async (req: TgAuthedRequest, res) => {
       const answer = await comboForDay(day, tx);
       const won = answer.every((x, i) => x === req.body.items[i]);
       await tx.$executeRawUnsafe(
-        'INSERT INTO "DailyComboAttempt" ("day", "userId", "attemptNo", "items", "won") VALUES ($1,$2,$3,$4,$5)',
+        'INSERT INTO "DailyComboAttempt" ("day", "userId", "attemptNo", "items", "won") VALUES ($1,$2,$3,ARRAY(SELECT jsonb_array_elements_text($4::jsonb)),$5)',
         day,
         user.id,
         previous.length + 1,
-        req.body.items,
+        JSON.stringify(req.body.items),
         won,
       );
       if (won)
@@ -144,8 +148,10 @@ router.post("/guess", async (req: TgAuthedRequest, res) => {
         day,
       };
     });
-    if ("error" in result)
-      return res.status(result.status ?? 409).json({ error: result.error });
+    if ("error" in result) {
+      const status = typeof result.status === "number" ? result.status : 409;
+      return res.status(status).json({ error: result.error });
+    }
     return res.json(result);
   } catch (err) {
     console.error("COMBO GUESS", err);
