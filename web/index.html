@@ -1558,6 +1558,139 @@
           height: 82px !important;
         }
       }
+
+      /* Profile v2 — only the content of Menu > Profile. */
+      .profile-v2 {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-bottom: 12px;
+        color: #f8fafc;
+      }
+      .profile-v2-hero,
+      .profile-v2-panel,
+      .profile-v2-stats > div {
+        background: linear-gradient(145deg, #1e293b, #111827);
+        border: 1px solid #475569;
+        border-radius: 16px;
+        padding: 14px;
+      }
+      .profile-v2-hero {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .profile-v2-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #166534, #65a30d);
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        flex-shrink: 0;
+      }
+      .profile-v2-identity {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .profile-v2-identity strong {
+        font-size: 19px;
+        overflow-wrap: anywhere;
+      }
+      .profile-v2-identity span,
+      .profile-v2-identity small,
+      .profile-v2-sub {
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      .profile-v2-edit {
+        border: 1px solid #64748b;
+        background: #334155;
+        border-radius: 10px;
+        padding: 9px;
+        cursor: pointer;
+        color: white;
+      }
+      .profile-v2-section-title {
+        font-weight: 800;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .profile-v2-between {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 13px;
+        margin: 9px 0;
+      }
+      .profile-v2-between strong {
+        text-align: right;
+        font-size: 12px;
+      }
+      .profile-v2-track {
+        height: 11px;
+        border-radius: 12px;
+        background: #334155;
+        overflow: hidden;
+      }
+      .profile-v2-track > div {
+        height: 100%;
+        background: linear-gradient(90deg, #22c55e, #a3e635);
+        border-radius: 12px;
+      }
+      .profile-v2-sub {
+        margin-top: 8px;
+        line-height: 1.5;
+      }
+      .profile-v2-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+      }
+      .profile-v2-stats > div {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+      .profile-v2-stats small {
+        color: #cbd5e1;
+        font-size: 12px;
+      }
+      .profile-v2-stats strong {
+        font-size: 19px;
+        overflow-wrap: anywhere;
+      }
+      .profile-v2-achievements {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .profile-v2-achievement {
+        border-radius: 12px;
+        padding: 12px 4px;
+        text-align: center;
+        background: #334155;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .profile-v2-achievement span {
+        font-size: 25px;
+      }
+      .profile-v2-achievement small {
+        font-size: 11px;
+      }
+      .profile-v2-achievement.locked {
+        opacity: 0.5;
+      }
     </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -4286,89 +4419,103 @@
       }
 
       function openProfileModal() {
-        modalTitle.textContent = "👤 Profile";
+        modalTitle.textContent = "👤 Профіль фермера";
         modalTabs.style.display = "none";
-
-        const refLink =
-          typeof makeReferralLink === "function"
-            ? makeReferralLink()
-            : `https://t.me/${BOT_USERNAME}`;
-
-        const refs = currentState?.referrals || {};
-        const invited =
+        const state = currentState || {};
+        const refs = state.referrals || {};
+        const invited = Number(
           refs.invited ??
-          refs.count ??
-          refs.total ??
-          currentState?.referralsCount ??
-          currentState?.invited ??
-          0;
-
+            refs.count ??
+            refs.total ??
+            state.referralsCount ??
+            state.invited ??
+            0,
+        );
+        const cards = state.animals || {};
+        const animalList = [
+          ...(cards.chickenCards || []),
+          ...(cards.sheepCards || []),
+          ...(cards.cowCards || []),
+        ];
+        const animalCount = animalList.filter(
+          (a) => a && a.id && a.owned !== false,
+        ).length;
+        const level = Number(state.level || 1);
+        const xp = Number(state.xp || 0);
+        const xpNeeded = Number(state.xpNeeded || 0);
+        const percent =
+          xpNeeded > 0
+            ? Math.max(0, Math.min(100, Math.round((xp / xpNeeded) * 100)))
+            : 0;
+        const safeName =
+          typeof escapeNick === "function"
+            ? escapeNick(state.nickname || "Farmer")
+            : "Farmer";
+        const telegramId = String(getMyTelegramId() || "—");
+        const joined = state.createdAt || state.registeredAt || state.joinedAt;
+        const joinedText =
+          joined && !Number.isNaN(new Date(joined).getTime())
+            ? new Date(joined).toLocaleDateString("uk-UA")
+            : "Немає даних";
+        const achievements = [
+          { icon: "🌱", title: "Перший крок", done: level >= 2 },
+          { icon: "🐔", title: "Перша тварина", done: animalCount >= 1 },
+          { icon: "🏅", title: "Рівень 10", done: level >= 10 },
+          { icon: "👥", title: "Перший друг", done: invited >= 1 },
+          { icon: "🏆", title: "Рівень 20", done: level >= 20 },
+          { icon: "🐄", title: "5 тварин", done: animalCount >= 5 },
+        ];
+        const fmt = (n) => Number(n || 0).toLocaleString("uk-UA");
         modalBody.innerHTML = `
-                      <div class="modal-grid">
-                        <div class="tile full">
-                          <div class="tile-title">Farmer</div>
-                          <div class="tile-value">LVL ${currentState?.level ?? 1}</div>
-                          <div class="tile-row"><span>Coins</span><span>${currentState?.coins ?? 0}</span></div>
-                          <div class="tile-row"><span>Points</span><span>${currentState?.points ?? 0}</span></div>
-                          <div class="tile-row"><span>Diamonds</span><span>${currentState?.diamonds ?? 0}</span></div>
-                        </div>
-
-                        <div class="tile full">
-                          <div class="tile-title">👥 Referrals</div>
-                          <div class="tile-value">Invited: ${invited}</div>
-                          <div class="tile-row"><span>New player</span><span>+1000 coins / +10 💎</span></div>
-                          <div class="tile-row"><span>You get</span><span>+500 coins</span></div>
-                          <div class="tile-row"><span>You get</span><span>+5000 points</span></div>
-                          <div class="tile-row"><span>You get</span><span>+5 💎</span></div>
-                        </div>
-
-                        <div class="tile full">
-                          <div class="tile-title">Referral link</div>
-                          <div class="code-box" style="word-break:break-all">${refLink}</div>
-                          <button class="buy-btn green" id="copyProfileRefBtn">Copy link</button>
-                        </div>
-
-                        <div class="tile full">
-                          <div class="tile-title">🎁 Milestones</div>
-                          <div class="tile-row"><span>1 referral</span><span>+5 💎</span></div>
-                          <div class="tile-row"><span>5 referrals</span><span>+25 💎</span></div>
-                          <div class="tile-row"><span>10 referrals</span><span>VIP 24h</span></div>
-                          <div class="tile-row"><span>25 referrals</span><span>+100 💎</span></div>
-                          <div class="tile-row"><span>50 referrals</span><span>VIP 7d</span></div>
-                        </div>
-
-                        <div class="tile full">
-                          <button class="buy-btn" id="openRefsFromProfileBtn">Open referrals</button>
-                          <button class="buy-btn gold" id="openTopFromProfileBtn">Leaderboard</button>
-                        </div>
-                      </div>
-                    `;
-
+          <div class="profile-v2">
+            <div class="profile-v2-hero">
+              <div class="profile-v2-avatar">👨‍🌾</div>
+              <div class="profile-v2-identity"><strong>${safeName}</strong><span>🌾 Фермер · Рівень ${level}</span><small>Telegram ID: ${telegramId}</small></div>
+              <button class="profile-v2-edit" id="profileV2EditName" type="button" aria-label="Змінити ім’я">✏️</button>
+            </div>
+            <div class="profile-v2-panel">
+              <div class="profile-v2-section-title">📈 Прогрес рівня</div>
+              <div class="profile-v2-between"><strong>LVL ${level}</strong><span>${fmt(xp)} / ${fmt(xpNeeded)} XP</span></div>
+              <div class="profile-v2-track"><div style="width:${percent}%"></div></div>
+              <div class="profile-v2-sub">${percent}% до наступного рівня</div>
+            </div>
+            <div class="profile-v2-stats">
+              <div><small>🪙 Coins</small><strong>${fmt(state.coins)}</strong></div>
+              <div><small>⭐ Points</small><strong>${fmt(state.points)}</strong></div>
+              <div><small>💎 Diamonds</small><strong>${fmt(state.diamonds)}</strong></div>
+              <div><small>🐾 Тварин</small><strong>${fmt(animalCount)}</strong></div>
+            </div>
+            <div class="profile-v2-panel">
+              <div class="profile-v2-section-title">🏆 Досягнення <span>${achievements.filter((a) => a.done).length}/${achievements.length}</span></div>
+              <div class="profile-v2-achievements">${achievements.map((a) => `<div class="profile-v2-achievement ${a.done ? "earned" : "locked"}"><span>${a.done ? a.icon : "🔒"}</span><small>${a.title}</small></div>`).join("")}</div>
+              <div class="profile-v2-sub">Досягнення показують прогрес і не нараховують окремих нагород.</div>
+            </div>
+            <div class="profile-v2-panel">
+              <div class="profile-v2-section-title">📋 Інформація та статистика</div>
+              <div class="profile-v2-between"><span>📅 Дата реєстрації</span><strong>${joinedText}</strong></div>
+              <div class="profile-v2-between"><span>👥 Запрошено друзів</span><strong>${fmt(invited)}</strong></div>
+              <div class="profile-v2-between"><span>🥇 Місце в рейтингу</span><strong>У розділі «Рейтинг»</strong></div>
+              <div class="profile-v2-sub">Загальний заробіток Coins і Points покажемо, коли додамо його облік на сервері.</div>
+            </div>
+            <button class="buy-btn green" id="profileV2EditNameBottom" type="button">✏️ Змінити ім’я</button>
+          </div>`;
         showModal();
-
+        const editName = async () => {
+          const nickname = window.prompt(
+            "Нове унікальне ім’я (3–20 символів):",
+            state.nickname || "",
+          );
+          if (nickname === null) return;
+          const result = await saveNickname(nickname.trim());
+          showToast(result.error || "Ім’я збережено");
+          if (!result.error) openProfileModal();
+        };
         document
-          .getElementById("copyProfileRefBtn")
-          ?.addEventListener("click", async () => {
-            try {
-              await navigator.clipboard.writeText(refLink);
-              showToast("Referral link copied");
-            } catch {
-              showToast(refLink);
-            }
-          });
-
+          .getElementById("profileV2EditName")
+          ?.addEventListener("click", editName);
         document
-          .getElementById("openRefsFromProfileBtn")
-          ?.addEventListener("click", () => {
-            if (typeof openRefsModal === "function") openRefsModal();
-          });
-
-        document
-          .getElementById("openTopFromProfileBtn")
-          ?.addEventListener("click", () => {
-            if (typeof openLeaderboardModal === "function")
-              openLeaderboardModal("referrals");
-          });
+          .getElementById("profileV2EditNameBottom")
+          ?.addEventListener("click", editName);
       }
 
       function safeBind(id, fn) {
