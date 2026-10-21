@@ -4418,19 +4418,22 @@
         }
       }
 
-      function openProfileModal() {
+      async function openProfileModal() {
         modalTitle.textContent = "👤 Профіль фермера";
         modalTabs.style.display = "none";
         const state = currentState || {};
-        const refs = state.referrals || {};
-        const invited = Number(
-          refs.invited ??
-            refs.count ??
-            refs.total ??
-            state.referralsCount ??
-            state.invited ??
-            0,
-        );
+        // The authoritative referral count is returned by /referrals as totalRefs.
+        // It is not guaranteed to be included in the general game state.
+        let invited = null;
+        try {
+          const referralResponse = await apiGet("/referrals");
+          if (referralResponse.ok && referralResponse.data) {
+            const total = Number(referralResponse.data.totalRefs);
+            if (Number.isFinite(total) && total >= 0) invited = total;
+          }
+        } catch (error) {
+          console.warn("Could not load referral count for profile", error);
+        }
         const cards = state.animals || {};
         const animalList = [
           ...(cards.chickenCards || []),
@@ -4461,7 +4464,11 @@
           { icon: "🌱", title: "Перший крок", done: level >= 2 },
           { icon: "🐔", title: "Перша тварина", done: animalCount >= 1 },
           { icon: "🏅", title: "Рівень 10", done: level >= 10 },
-          { icon: "👥", title: "Перший друг", done: invited >= 1 },
+          {
+            icon: "👥",
+            title: "Перший друг",
+            done: invited !== null && invited >= 1,
+          },
           { icon: "🏆", title: "Рівень 20", done: level >= 20 },
           { icon: "🐄", title: "5 тварин", done: animalCount >= 5 },
         ];
@@ -4493,7 +4500,7 @@
             <div class="profile-v2-panel">
               <div class="profile-v2-section-title">📋 Інформація та статистика</div>
               <div class="profile-v2-between"><span>📅 Дата реєстрації</span><strong>${joinedText}</strong></div>
-              <div class="profile-v2-between"><span>👥 Запрошено друзів</span><strong>${fmt(invited)}</strong></div>
+              <div class="profile-v2-between"><span>👥 Запрошено друзів</span><strong>${invited === null ? "—" : fmt(invited)}</strong></div>
               <div class="profile-v2-between"><span>🥇 Місце в рейтингу</span><strong>У розділі «Рейтинг»</strong></div>
               <div class="profile-v2-sub">Загальний заробіток Coins і Points покажемо, коли додамо його облік на сервері.</div>
             </div>
