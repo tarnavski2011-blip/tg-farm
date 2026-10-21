@@ -2248,6 +2248,7 @@
           if (res.ok) {
             applyState(res.data);
             setStatus("ok");
+            if (!dailyAutoOpened) setTimeout(openDailyOnStart, 700);
           } else {
             setStatus("error");
           }
@@ -3317,85 +3318,67 @@
           </div>`;
       }
 
-      async function openDailyModal() {
-        modalTitle.textContent = "🎁 Daily";
-        modalTabs.style.display = "none";
-
+      let dailyAutoOpened = false;
+      async function openDailyModal(auto = false) {
         const res = await apiGet("/daily");
-        setResult(res.data);
-
-        if (!res.ok) {
-          modalBody.innerHTML = `<div class="note">Помилка</div>`;
-          showModal();
+        if (!res.ok || !res.data?.rewards) {
+          if (!auto) showToast("Не вдалося завантажити календар");
           return;
         }
-
-        const day = res.data?.day ?? 1;
-        const claimed = res.data?.claimed ?? false;
-
-        // нагороди на 7 днів
-        const rewards = [
-          { coins: 50 },
-          { coins: 100 },
-          { coins: 200 },
-          { diamonds: 1 },
-          { diamonds: 3 },
-          { diamonds: 5 },
-          { coins: 500, diamonds: 5 },
-        ];
-
+        if (
+          auto &&
+          (res.data.claimed ||
+            document.querySelector(".modal.show, .modal.active"))
+        )
+          return;
+        modalTitle.textContent = "🎁 Щоденні нагороди · 30 днів";
+        modalTabs.style.display = "none";
+        const { day, claimed, streak, rewards, missedDays } = res.data;
+        const rewardText = (r) =>
+          [
+            r.coins ? `🪙 ${r.coins}` : "",
+            r.points ? `⭐ ${r.points}` : "",
+            r.diamonds ? `💎 ${r.diamonds}` : "",
+            r.vipHours ? `👑 VIP ${r.vipHours} год` : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
         modalBody.innerHTML = `
-                                  <div class="daily-grid">
-                                    ${rewards
-                                      .map((r, i) => {
-                                        const d = i + 1;
-
-                                        let text = "";
-                                        if (r.coins) text += `💰 ${r.coins}`;
-                                        if (r.diamonds)
-                                          text += `💎 ${r.diamonds}`;
-
-                                        let cls = "daily-item";
-
-                                        if (d < day) cls += " done";
-                                        if (d === day) cls += " active";
-                                        if (claimed && d === day)
-                                          cls += " done";
-
-                                        return `
-                                        <div class="${cls}">
-                                          <div class="day">Day ${d}</div>
-                                          <div class="reward">${text}</div>
-                                        </div>
-                                      `;
-                                      })
-                                      .join("")}
-                                  </div>
-
-                                  <button class="buy-btn" id="dailyBtn" ${claimed ? "disabled" : ""}>
-                                    ${claimed ? "Вже забрано" : "Забрати"}
-                                  </button>
-                                `;
-
+          <div class="note" style="text-align:center;margin-bottom:12px">🎁 Заходь щодня! Один пропуск дозволений, після двох поспіль прогрес скидається.<div style="margin-top:6px">${missedDays === 1 ? "⏳ Один пропуск використано" : `📅 День ${day} із 30`}</div></div>
+          <div class="daily-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">
+            ${rewards
+              .map(
+                (
+                  r,
+                ) => `<div class="daily-item ${r.day === day ? "active" : ""} ${r.day < day || (claimed && r.day === day) ? "done" : ""}" style="min-width:0;padding:7px 2px;text-align:center">
+              <div class="day" style="font-size:11px">${r.day <= streak && (r.day < day || claimed) ? "✓ " : ""}День ${r.day}</div>
+              <div class="reward" style="font-size:11px;overflow-wrap:anywhere">${rewardText(r)}</div>
+            </div>`,
+              )
+              .join("")}
+          </div>
+          <div class="note" style="text-align:center;margin-top:12px">${claimed ? "✅ Сьогодні нагороду отримано" : `Сьогодні: ${rewardText(res.data.todayReward)}`}</div>
+          <button class="buy-btn" id="dailyClaim30Btn" ${claimed ? "disabled" : ""}>${claimed ? "✅ Забрано" : "🎁 Забрати нагороду"}</button>`;
         showModal();
-
-        if (!claimed) {
-          document.getElementById("dailyBtn").onclick = async () => {
+        const button = document.getElementById("dailyClaim30Btn");
+        if (!claimed && button)
+          button.onclick = async () => {
+            button.disabled = true;
             const r = await apiPost("/daily");
-            setResult(r.data);
-
             if (r.ok) {
-              if (!handleXpResult(r.data?.xp)) {
-                showToast("🎁 Нагорода отримана");
-              }
-
+              showToast("🎁 Нагорода за день " + r.data.day + " отримана!");
               await loadState();
-              openDailyModal();
+              await openDailyModal();
             } else {
               showToast(r.data?.error || "Помилка");
+              button.disabled = false;
             }
           };
-        }
+      }
+      async function openDailyOnStart() {
+        if (dailyAutoOpened) return;
+        dailyAutoOpened = true;
+        await openDailyModal(true);
       }
       async function openQuestsModal(activeGroup = "daily") {
         modalTitle.textContent = "📜 Квести";
