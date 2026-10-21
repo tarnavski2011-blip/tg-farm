@@ -112,7 +112,7 @@ router.post("/guess", async (req: TgAuthedRequest, res) => {
       const day = comboDay();
       // Serialize guesses for the same user, including across API instances.
       await tx.$queryRawUnsafe(
-        "SELECT pg_advisory_xact_lock($1::int, $2::int)",
+        "SELECT 1::int AS locked FROM (SELECT pg_advisory_xact_lock($1::int, $2::int)) AS lock_row",
         user.id,
         987654,
       );
