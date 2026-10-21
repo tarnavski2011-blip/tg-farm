@@ -15,6 +15,8 @@ import labRouter from "./routes/lab";
 import dailyRouter from "./routes/daily";
 import questsRouter from "./routes/quests";
 import wheelRouter from "./routes/wheel";
+import comboRouter from "./routes/combo";
+import adminComboRouter from "./routes/adminCombo";
 import shopRouter from "./routes/shop";
 import walletRouter from "./routes/wallet";
 import walletConnectRouter from "./routes/walletConnect";
@@ -26,7 +28,9 @@ import paymentsRouter from "./routes/payments";
 import testPaymentRouter from "./routes/testPayment";
 import paymentLogsRouter from "./routes/paymentLogs";
 import adminPaymentsRouter from "./routes/adminPayments";
-import adminDashboardRouter, { requireAdminSession } from "./routes/adminDashboard";
+import adminDashboardRouter, {
+  requireAdminSession,
+} from "./routes/adminDashboard";
 import leaderboardRouter from "./routes/leaderboard";
 import adminLeaderboardRewardsRouter from "./routes/adminLeaderboardRewards";
 import adminWalletRouter from "./routes/adminWallet";
@@ -53,6 +57,7 @@ app.use("/telegram", telegramRouter);
 
 // адмінка без Telegram auth
 app.use("/admin", adminDashboardRouter);
+app.use("/admin", adminComboRouter);
 app.use("/admin/payments", requireAdminSession);
 app.use("/admin", adminPaymentsRouter);
 
@@ -76,6 +81,7 @@ app.use("/api/lab", labRouter);
 app.use("/api/daily", dailyRouter);
 app.use("/api/quests", questsRouter);
 app.use("/api/wheel", wheelRouter);
+app.use("/api/combo", comboRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/wallet", walletRouter);
 app.use("/api/wallet", walletConnectRouter);

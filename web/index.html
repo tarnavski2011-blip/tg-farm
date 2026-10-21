@@ -2007,6 +2007,13 @@
               ><small>Щоденне обертання</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
+          <button class="farm-menu-item" type="button" data-farm-menu="combo">
+            <span class="farm-menu-icon">🧩</span
+            ><span class="farm-menu-copy"
+              ><strong>Комбо дня</strong
+              ><small>3 спроби · 500 Points</small></span
+            ><span class="farm-menu-chevron">›</span>
+          </button>
           <button class="farm-menu-item" type="button" data-farm-menu="quests">
             <span class="farm-menu-icon">📋</span
             ><span class="farm-menu-copy"
@@ -3601,6 +3608,89 @@
           };
         });
       }
+      async function openComboModal() {
+        modalTitle.textContent = "🧩 Комбо дня";
+        modalTabs.style.display = "none";
+        modalBody.innerHTML = `<div class="note">Завантажуємо комбо...</div>`;
+        showModal();
+        let response;
+        try {
+          response = await apiGet("/combo/state");
+        } catch (e) {
+          response = { ok: false };
+        }
+        if (!response?.ok || !response.data?.items) {
+          modalBody.innerHTML = `<div class="note">Не вдалося завантажити комбо. Перевір оновлення API та бази даних.</div>`;
+          return;
+        }
+        const state = response.data;
+        const chosen = [];
+        const lookup = Object.fromEntries(
+          state.items.map((item) => [item.id, item]),
+        );
+        const escCombo = (v) =>
+          String(v)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        let busy = false;
+        const draw = (message = "") => {
+          const locked = state.won || state.attemptsLeft <= 0;
+          modalBody.innerHTML = `<div style="text-align:center;margin-bottom:14px"><div style="font-size:16px;font-weight:800">🎁 500 Points за правильне комбо</div><div style="margin-top:6px;color:#cbd5e1">Знайди 3 предмети у правильному порядку</div><div style="margin-top:6px">🎯 Спроб залишилося: <b>${state.attemptsLeft}</b> / 3</div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0">${[0, 1, 2].map((i) => `<div style="padding:12px 5px;border:1px dashed #64748b;border-radius:12px;text-align:center;background:#172338"><div style="font-size:12px">№ ${i + 1}</div><div style="font-size:30px">${chosen[i] ? lookup[chosen[i]].emoji : "❔"}</div></div>`).join("")}</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">${state.items.map((item) => `<button type="button" data-combo-item="${item.id}" ${locked || chosen.includes(item.id) || busy ? "disabled" : ""} style="border:1px solid #475569;border-radius:12px;background:#1e293b;color:white;padding:10px 2px;opacity:${chosen.includes(item.id) ? ".45" : "1"}"><div style="font-size:25px">${item.emoji}</div><div style="font-size:11px">${escCombo(item.name)}</div></button>`).join("")}</div>
+            <div style="display:flex;gap:8px;margin-top:14px"><button id="comboClear" ${locked || busy ? "disabled" : ""} style="flex:1;padding:12px;border-radius:12px">Очистити</button><button id="comboCheck" ${locked || busy || chosen.length !== 3 ? "disabled" : ""} style="flex:2;padding:12px;border-radius:12px;background:#fbbf24;color:#422006;font-weight:800">Перевірити</button></div>
+            <div style="text-align:center;margin-top:12px;min-height:35px" aria-live="polite">${message || (state.won ? "🎉 Комбо розгадано! +500 Points" : state.attemptsLeft === 0 ? "⏳ Нове комбо завтра" : "")}</div><div style="text-align:center;font-size:12px;color:#94a3b8">Нове комбо щодня о 00:00 за часом Чехії</div>`;
+          modalBody.querySelectorAll("[data-combo-item]").forEach(
+            (button) =>
+              (button.onclick = () => {
+                if (chosen.length < 3 && !busy && !locked) {
+                  chosen.push(button.dataset.comboItem);
+                  draw();
+                }
+              }),
+          );
+          const clear = document.getElementById("comboClear");
+          if (clear)
+            clear.onclick = () => {
+              chosen.length = 0;
+              draw();
+            };
+          const check = document.getElementById("comboCheck");
+          if (check)
+            check.onclick = async () => {
+              if (busy || chosen.length !== 3 || locked) return;
+              busy = true;
+              draw("⏳ Перевіряємо...");
+              let result;
+              try {
+                result = await apiPost("/combo/guess", {
+                  items: chosen.slice(),
+                });
+              } catch (e) {
+                result = { ok: false, data: { error: "Помилка мережі" } };
+              }
+              busy = false;
+              if (!result.ok) {
+                draw(escCombo(result.data?.error || "Помилка"));
+                return;
+              }
+              state.attemptsLeft = result.data.attemptsLeft;
+              state.won = result.data.won;
+              chosen.length = 0;
+              draw(
+                result.data.won
+                  ? "🎉 Правильно! +500 Points нараховано!"
+                  : state.attemptsLeft > 0
+                    ? "❌ Неправильно. Спробуй ще!"
+                    : "❌ Спроби закінчилися. Нове комбо завтра.",
+              );
+              if (result.data.won) await loadState();
+            };
+        };
+        draw();
+      }
+
       async function openWheelModal() {
         modalTitle.textContent = "🎡 Колесо фортуни";
         modalTabs.style.display = "none";
@@ -4833,6 +4923,7 @@
         quests: openQuestsModal,
         daily: openDailyModal,
         wheel: openWheelModal,
+        combo: openComboModal,
         boost: openBoostersModal,
         wallet: openWalletModal,
         refs: openRefsModal,
