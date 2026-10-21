@@ -213,3 +213,22 @@ model TonDeposit {
 
   @@index([userId])
 }
+
+// Daily combo: three unique farm items per day, shared across all players.
+model DailyCombo {
+  day   String   @id
+  items String[]
+}
+
+model DailyComboAttempt {
+  id        Int      @id @default(autoincrement())
+  day       String
+  userId    Int
+  attemptNo Int
+  items     String[]
+  won       Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([day, userId, attemptNo])
+  @@index([day, won])
+}
