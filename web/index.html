@@ -3533,13 +3533,15 @@
             .toLowerCase();
 
           if (raw.includes("daily")) return "daily";
+          if (raw.includes("weekly")) return "weekly";
+          if (raw.includes("special")) return "special";
           if (raw.includes("progress")) return "progress";
           if (raw.includes("achievement")) return "achievement";
 
           return "progress";
         }
 
-        const grouped = { daily: [], progress: [], achievement: [] };
+        const grouped = { daily: [], weekly: [], achievement: [], special: [] };
 
         quests.forEach((q) => {
           grouped[detectGroup(q)].push(q);
@@ -3588,8 +3590,9 @@
         modalBody.innerHTML = `
                       <div class="quest-tabs">
                         <button class="quest-tab-btn ${activeGroup === "daily" ? "active" : ""}" data-qtab="daily">Щоденні</button>
-                        <button class="quest-tab-btn ${activeGroup === "progress" ? "active" : ""}" data-qtab="progress">Прогрес</button>
+                        <button class="quest-tab-btn ${activeGroup === "weekly" ? "active" : ""}" data-qtab="weekly">Щотижневі</button>
                         <button class="quest-tab-btn ${activeGroup === "achievement" ? "active" : ""}" data-qtab="achievement">Досягнення</button>
+                        <button class="quest-tab-btn ${activeGroup === "special" ? "active" : ""}" data-qtab="special">Особливі</button>
                       </div>
                       <div class="modal-grid">
                         ${renderGroup(activeGroup)}
