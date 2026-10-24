@@ -2879,10 +2879,6 @@
             0,
             Math.min(100, Number(card.hp ?? card.lifePercent ?? 100)),
           );
-          const efficiency = Math.max(
-            0,
-            Math.min(100, Number(card.efficiencyPercent ?? 100)),
-          );
           const canBreed = Number(card.level ?? 1) >= 5;
 
           return `
@@ -2918,9 +2914,6 @@
 
                           <div class="tile-row"><span>❤️ HP</span><span>${hp}%</span></div>
                           <div class="mini-bar"><span style="width:${hp}%"></span></div>
-
-                          <div class="tile-row"><span>⚡ Efficiency</span><span>${efficiency}%</span></div>
-                          <div class="mini-bar"><span style="width:${efficiency}%"></span></div>
 
                           <div class="animal-actions">
                             <button class="animal-small-btn" data-upgrade-modal="${card.id}">⬆️ Upgrade</button>
