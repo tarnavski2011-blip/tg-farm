@@ -3546,20 +3546,33 @@
         });
 
         function renderQuestCard(q) {
+          const isChannel = q.code === "telegram_channel";
           const progress =
             typeof q.progress === "number" && typeof q.target === "number"
               ? `<div class="tile-row"><span>Прогрес</span><span>${q.progress} / ${q.target}</span></div>`
               : "";
-
+          const status = q.claimed
+            ? "Виконано · нагороду отримано"
+            : isChannel
+              ? "Перевір підписку"
+              : q.done
+                ? "Готово"
+                : "Не готово";
+          const actions = isChannel
+            ? q.claimed
+              ? `<button class="buy-btn green" disabled>Нагороду отримано</button>`
+              : `<a class="buy-btn" data-channel-link="1" href="https://t.me/myfarmclickerofficial" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:10px;">📢 Підписатися на канал</a>
+                 <button class="buy-btn" data-quest="telegram_channel">✅ Перевірити підписку</button>`
+            : `<button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
+                 ${q.claimed ? "Забрано" : "Забрати"}
+               </button>`;
           return `
                         <div class="tile">
                           <div class="tile-title">${q.title}</div>
-                          <div class="tile-value">${q.done ? "Готово" : "Не готово"}</div>
+                          <div class="tile-value">${status}</div>
                           ${progress}
                           <div class="tile-row"><span>Нагорода</span><span>${q.reward}</span></div>
-                          <button class="buy-btn ${q.claimed ? "green" : ""}" data-quest="${q.code}" ${q.claimed ? "disabled" : ""}>
-                            ${q.claimed ? "Забрано" : "Забрати"}
-                          </button>
+                          ${actions}
                         </div>
                       `;
         }
@@ -3587,6 +3600,15 @@
 
         modalBody.querySelectorAll("[data-qtab]").forEach((btn) => {
           btn.onclick = () => openQuestsModal(btn.dataset.qtab);
+        });
+
+        modalBody.querySelectorAll("[data-channel-link]").forEach((link) => {
+          link.addEventListener("click", (event) => {
+            if (tg?.openTelegramLink) {
+              event.preventDefault();
+              tg.openTelegramLink("https://t.me/myfarmclickerofficial");
+            }
+          });
         });
 
         modalBody.querySelectorAll("[data-quest]").forEach((btn) => {
