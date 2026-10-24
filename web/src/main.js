@@ -191,7 +191,10 @@ function questCard(q) {
           claimed
             ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
             : isChannel
-              ? `<a class="ach-btn" href="https://t.me/myfarmclickerofficial" target="_blank" rel="noopener noreferrer">Підписатися</a> <button class="ach-btn" data-quest-claim="telegram_channel">Перевірити підписку</button>`
+              ? `<div style="display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;">
+                   <button type="button" class="ach-btn" data-channel-subscribe="1" style="display:block;width:100%;min-height:44px;white-space:normal;cursor:pointer;">📢 Підписатися на канал</button>
+                   <button type="button" class="ach-btn" data-quest-claim="telegram_channel" style="display:block;width:100%;min-height:44px;white-space:normal;cursor:pointer;">✅ Перевірити підписку</button>
+                 </div>`
               : completed
                 ? `<button class="ach-btn" data-quest-claim="${q.code}">Отримати нагороду</button>`
                 : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
@@ -1122,6 +1125,17 @@ function bindHandlers() {
         buyWithStars(btn.getAttribute("data-stars-buy") || ""),
       ),
     );
+  });
+
+  document.querySelectorAll("[data-channel-subscribe]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const url = "https://t.me/myfarmclickerofficial";
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(url);
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    });
   });
 
   document.querySelectorAll("[data-quest-claim]").forEach((btn) => {
