@@ -126,6 +126,7 @@ function achievementCard(a) {
     `${a.rewardCoins && a.rewardDiamonds ? " · " : ""}` +
     `${a.rewardDiamonds ? `💎 ${a.rewardDiamonds}` : ""}`;
 
+  const isChannel = /telegram.channel|channel.subscribe|підпишись на telegram/i.test(`${a.code ?? ""} ${a.title ?? ""}`);
   return `
     <div class="ach-card ${a.claimed ? "ach-claimed" : a.completed ? "ach-ready" : ""}">
       <div class="ach-top">
@@ -147,8 +148,13 @@ function achievementCard(a) {
         ${
           a.claimed
             ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
+            : isChannel
+              ? `<div style="display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;">
+                   <button type="button" class="ach-btn" data-channel-subscribe="1" style="display:block;width:100%;min-height:44px;white-space:normal;cursor:pointer;">📢 Підписатися на канал</button>
+                   <button type="button" class="ach-btn" data-ach-claim="${a.code}" style="display:block;width:100%;min-height:44px;white-space:normal;cursor:pointer;">✅ Перевірити підписку</button>
+                 </div>`
             : a.completed
-              ? `<button class="ach-btn" data-ach-claim="${a.code}">Claim reward</button>`
+              ? `<button class="ach-btn" data-ach-claim="${a.code}">Забрати</button>`
               : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
         }
       </div>
