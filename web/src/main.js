@@ -144,7 +144,7 @@ function achievementCard(a) {
         <div class="ach-fill" style="width:${percent}%"></div>
       </div>
       <div class="ach-bottom">
-        
+        <div class="ach-status">${a.claimed ? "Забрано" : a.completed ? "Готово" : "В процесі"}</div>
         ${
           a.claimed
             ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
@@ -155,7 +155,7 @@ function achievementCard(a) {
                  </div>`
             : a.completed
               ? `<button class="ach-btn" data-ach-claim="${a.code}">Забрати</button>`
-              : `<button class="ach-btn disabled-btn" disabled>Забрати</button>`
+              : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
         }
       </div>
     </div>
@@ -185,14 +185,14 @@ function questCard(q) {
         <div class="ach-reward">${rewardText || "Нагорода"}</div>
       </div>
       <div class="ach-progress-head">
-        <span>Прогрес</span>
+        <span>${completed ? "Готово" : "В процесі"}</span>
         <span>${percent}%</span>
       </div>
       <div class="ach-track">
         <div class="ach-fill" style="width:${percent}%"></div>
       </div>
       <div class="ach-bottom">
-        
+        <div class="ach-status">${claimed ? "Забрано" : completed ? "Готово" : "Ще не готово"}</div>
         ${
           claimed
             ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
@@ -203,7 +203,7 @@ function questCard(q) {
                  </div>`
               : completed
                 ? `<button class="ach-btn" data-quest-claim="${q.code}">Отримати нагороду</button>`
-                : `<button class="ach-btn disabled-btn" disabled>Забрати</button>`
+                : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
         }
       </div>
     </div>

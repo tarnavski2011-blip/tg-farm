@@ -1691,11 +1691,32 @@
       .profile-v2-achievement.locked {
         opacity: 0.5;
       }
+
+      #levelsTopButton { position:fixed; top:calc(env(safe-area-inset-top, 0px) + 10px); right:12px; z-index:2500; border:1px solid #eab308; background:#17243a; color:#fef08a; padding:9px 13px; border-radius:16px; font-weight:800; box-shadow:0 4px 18px #0008; cursor:pointer; }
+      #levelsOverlay { display:none; position:fixed; inset:0; z-index:9999; background:#000c; align-items:center; justify-content:center; padding:16px; }
+      #levelsOverlay.open { display:flex; }
+      .levelsPanel { width:min(100%,460px); max-height:90dvh; background:#111d30; color:#f1f5f9; border:1px solid #465672; border-radius:20px; display:flex; flex-direction:column; overflow:hidden; }
+      .levelsHeader { display:flex; align-items:center; justify-content:space-between; padding:17px; border-bottom:1px solid #34435d; }
+      #levelsList { overflow-y:auto; padding:12px; overscroll-behavior:contain; }
+      .levelsItem { display:flex; gap:10px; align-items:center; padding:12px 6px; border-bottom:1px solid #2b3951; }
+      .levelsNumber { flex:0 0 40px; font-weight:800; color:#fde68a; }
+      .levelsReward { flex:1; font-size:13px; line-height:1.6; }
+      .levelsClaim { padding:8px 10px; border:0; border-radius:10px; color:white; background:#2563eb; font-weight:700; }
+      .levelsClaim:disabled { background:#46536b; color:#b7c0cf; }
+      #levelsClose { background:transparent; border:0; color:white; font-size:25px; padding:0 6px; }
     </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
   <body>
+    <button type="button" id="levelsTopButton">⭐ LVL 1</button>
+    <div id="levelsOverlay" role="dialog" aria-modal="true" aria-label="Рівні та нагороди">
+      <div class="levelsPanel">
+        <div class="levelsHeader"><strong>⭐ Рівні та нагороди (1–100)</strong><button id="levelsClose" aria-label="Закрити">×</button></div>
+        <div id="levelsList">Завантаження…</div>
+      </div>
+    </div>
+
     <div
       id="nicknameGate"
       style="
@@ -2295,6 +2316,43 @@
         }
         return { ok: res.ok, data: json };
       }
+      const levelsTopButton = document.getElementById("levelsTopButton");
+      const levelsOverlay = document.getElementById("levelsOverlay");
+      const levelsList = document.getElementById("levelsList");
+      document.getElementById("levelsClose").onclick = () => levelsOverlay.classList.remove("open");
+      levelsOverlay.addEventListener("click", e => { if (e.target === levelsOverlay) levelsOverlay.classList.remove("open"); });
+      async function loadLevels() {
+        levelsList.textContent = "Завантаження…";
+        try {
+          const response = await apiGet("/levels");
+          if (!response.ok || !Array.isArray(response.data?.levels)) throw Error("Не вдалося завантажити рівні");
+          levelsList.replaceChildren();
+          for (const item of response.data.levels) {
+            const row = document.createElement("div"); row.className = "levelsItem";
+            const num = document.createElement("div"); num.className = "levelsNumber"; num.textContent = `⭐ ${item.level}`;
+            const reward = document.createElement("div"); reward.className = "levelsReward";
+            reward.textContent = `${item.coins ? `🪙 ${item.coins}` : ""}${item.coins && item.diamonds ? "  •  " : ""}${item.diamonds ? `💎 ${item.diamonds}` : ""}`;
+            const btn = document.createElement("button"); btn.className = "levelsClaim";
+            btn.textContent = item.claimed ? "Отримано ✓" : "Забрати";
+            btn.disabled = !item.claimable;
+            if (item.claimable) btn.onclick = async () => {
+              btn.disabled = true;
+              try {
+                const result = await apiPost(`/levels/${item.level}/claim`);
+                if (!result.ok) throw Error(result.data?.error || "Помилка отримання");
+                btn.textContent = "Отримано ✓";
+                const state = await apiGet("/state");
+                if (state.ok) applyState(state.data);
+              } catch (error) {
+                alert(error.message || "Помилка");
+                await loadLevels();
+              }
+            };
+            row.append(num,reward,btn); levelsList.append(row);
+          }
+        } catch (error) { levelsList.textContent = error.message || "Помилка завантаження"; }
+      }
+      levelsTopButton.onclick = () => { levelsOverlay.classList.add("open"); loadLevels(); };
       function spawnFloatingText(text) {
         const el = document.createElement("div");
         el.className = "floating";
@@ -2306,28 +2364,12 @@
         spawnFloatingText(text);
       }
 
-      function showLevelUpPopup(xpData) {
-        if (!xpData || !levelUpModal) return;
-
-        levelUpText.textContent = `LVL ${xpData.level ?? currentState?.level ?? 1}`;
-        levelUpCoins.textContent = `+${xpData.rewardCoins ?? 0} coins`;
-        levelUpDiamonds.textContent = `+${xpData.rewardDiamonds ?? 0} diamonds`;
-
-        levelUpModal.classList.add("show");
+      function showLevelUpPopup(_xpData) {
+        // Old automatic level-up popup is intentionally disabled.
       }
-
       function handleXpResult(xpData) {
-        if (xpData?.leveledUp) {
-          showLevelUpPopup(xpData);
-
-          if (xpData.level) {
-            lastKnownLevel = xpData.level;
-          }
-
-          return true;
-        }
-
-        return false;
+        if (xpData?.leveledUp && xpData.level) lastKnownLevel = xpData.level;
+        return !!xpData?.leveledUp;
       }
 
       if (levelUpCloseBtn) {
@@ -2338,19 +2380,6 @@
 
       function applyState(data) {
         const newLevel = data?.level ?? 1;
-
-        if (
-          lastKnownLevel !== null &&
-          newLevel > lastKnownLevel &&
-          levelUpModal &&
-          data?.lastLevelRewardCoins > 0
-        ) {
-          showLevelUpPopup({
-            level: newLevel,
-            rewardCoins: data?.lastLevelRewardCoins ?? 0,
-            rewardDiamonds: data?.lastLevelRewardDiamonds ?? 0,
-          });
-        }
 
         lastKnownLevel = newLevel;
         currentState = data;
@@ -2369,6 +2398,7 @@
         });
         xpEl.textContent = `${data?.xp ?? 0}/${data?.xpNeeded ?? 0}`;
         levelBadgeEl.textContent = `LVL ${newLevel}`;
+        levelsTopButton.textContent = `⭐ LVL ${newLevel}`;
         const nickEl = document.getElementById("playerNickname");
         if (nickEl) nickEl.textContent = data?.nickname || "Farmer";
         updateNicknameGate(data?.nickname);
