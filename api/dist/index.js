@@ -41,6 +41,7 @@ const cors_1 = __importDefault(require("cors"));
 require("dotenv/config");
 const telegramAuth_1 = require("./middleware/telegramAuth");
 const state_1 = __importDefault(require("./routes/state"));
+const levels_1 = __importDefault(require("./routes/levels"));
 const nickname_1 = __importDefault(require("./routes/nickname"));
 const collect_1 = __importDefault(require("./routes/collect"));
 const buyAnimal_1 = __importDefault(require("./routes/buyAnimal"));
@@ -96,6 +97,7 @@ app.use("/api/leaderboard", leaderboard_1.default);
 app.use("/api", telegramAuth_1.telegramAuth);
 // game routes
 app.use("/api/state", state_1.default);
+app.use("/api/levels", levels_1.default);
 app.use("/api/nickname", nickname_1.default);
 app.use("/api/collect", collect_1.default);
 app.use("/api/buy-animal", buyAnimal_1.default);

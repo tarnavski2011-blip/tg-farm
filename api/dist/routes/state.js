@@ -65,13 +65,10 @@ function getAnimalPointsPerCycle(type, level) {
         return level === 4 ? 8 : 20;
     return 0;
 }
-function getAnimalEfficiency(animal) {
+function getAnimalHealth(animal) {
     const hp = (0, animalHp_1.getCurrentHp)({ hp: animal.hp ?? 100, hpUpdatedAt: animal.hpUpdatedAt });
-    const hoursWithoutFeed = (Date.now() - new Date(animal.lastFedAt).getTime()) / 3600000;
-    const efficiencyLoss = Math.floor(Math.max(0, hoursWithoutFeed) / 12) * 10;
     return {
         lifePercent: hp, // compatibility with existing response fields
-        efficiencyPercent: hp === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
         daysLeft: 0, // no lifespan
     };
 }
@@ -149,7 +146,7 @@ router.get("/", async (req, res) => {
         const animalUpdates = [];
         const deadAnimalDeletes = [];
         for (const animal of user.animals) {
-            const preCheckStats = getAnimalEfficiency({
+            const preCheckStats = getAnimalHealth({
                 type: animal.type,
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
@@ -215,19 +212,18 @@ router.get("/", async (req, res) => {
                 }));
                 continue;
             }
-            const animalStats = getAnimalEfficiency({
+            const animalStats = getAnimalHealth({
                 type: animal.type,
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
                 hp: animal.hp,
                 hpUpdatedAt: animal.hpUpdatedAt,
             });
-            if (animalStats.efficiencyPercent <= 0) {
+            if (animalStats.lifePercent <= 0) {
                 continue;
             }
             let produced = usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
             produced = Math.floor(produced * (animal.breedBonus ?? 1));
-            produced = Math.floor(produced * (animalStats.efficiencyPercent / 100));
             if (user.boostUntil && user.boostUntil > now) {
                 produced *= 2;
             }
@@ -236,7 +232,6 @@ router.get("/", async (req, res) => {
             }
             let earnedPoints = usedCycles * getAnimalPointsPerCycle(animal.type, animal.level);
             earnedPoints = Math.floor(earnedPoints * (animal.breedBonus ?? 1));
-            earnedPoints = Math.floor(earnedPoints * (animalStats.efficiencyPercent / 100));
             if (user.vipUntil && user.vipUntil > now) {
                 earnedPoints = Math.ceil(earnedPoints * 1.2);
             }
@@ -373,14 +368,14 @@ router.get("/", async (req, res) => {
         const sheepAnimals = user.animals.filter((a) => a.type === "SHEEP");
         const cowAnimals = user.animals.filter((a) => a.type === "COW");
         function getReadyForAnimal(animal, feedCycles) {
-            const stats = getAnimalEfficiency({
+            const stats = getAnimalHealth({
                 type: animal.type,
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
                 hp: animal.hp,
                 hpUpdatedAt: animal.hpUpdatedAt,
             });
-            if (stats.efficiencyPercent <= 0) {
+            if (stats.lifePercent <= 0) {
                 return 0;
             }
             const passedSec = Math.floor((Date.now() - animal.lastClaim.getTime()) / 1000);
@@ -391,7 +386,6 @@ router.get("/", async (req, res) => {
             }
             let produced = usedCycles * getAnimalProducedPerCycle(animal.type, animal.level);
             produced = Math.floor(produced * (animal.breedBonus ?? 1));
-            produced = Math.floor(produced * (stats.efficiencyPercent / 100));
             if (user.boostUntil && user.boostUntil > new Date()) {
                 produced *= 2;
             }
@@ -423,20 +417,19 @@ router.get("/", async (req, res) => {
             if (animals.length <= 0)
                 return 0;
             return animals.reduce((sum, animal) => {
-                const stats = getAnimalEfficiency({
+                const stats = getAnimalHealth({
                     type: animal.type,
                     bornAt: animal.bornAt,
                     lastFedAt: animal.lastFedAt,
                     hp: animal.hp,
                     hpUpdatedAt: animal.hpUpdatedAt,
                 });
-                if (stats.efficiencyPercent <= 0) {
+                if (stats.lifePercent <= 0) {
                     return sum;
                 }
                 const cyclesPerHour = 3600 / ANIMAL_PRODUCTION[type].seconds;
                 let produced = cyclesPerHour * getAnimalProducedPerCycle(type, animal.level);
                 produced = Math.floor(produced * (animal.breedBonus ?? 1));
-                produced = Math.floor(produced * (stats.efficiencyPercent / 100));
                 if (user.boostUntil && user.boostUntil > new Date()) {
                     produced *= 2;
                 }
@@ -466,7 +459,7 @@ router.get("/", async (req, res) => {
                 chickenCards: chickenAnimals
                     .sort((a, b) => (a.slotIndex ?? 1) - (b.slotIndex ?? 1))
                     .map((animal) => {
-                    const stats = getAnimalEfficiency({
+                    const stats = getAnimalHealth({
                         type: animal.type,
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
@@ -483,14 +476,13 @@ router.get("/", async (req, res) => {
                         hp: stats.lifePercent,
                         upgradeFails: animal.upgradeFails ?? 0,
                         lifePercent: stats.lifePercent,
-                        efficiencyPercent: stats.efficiencyPercent,
                         daysLeft: stats.daysLeft,
                     };
                 }),
                 sheepCards: sheepAnimals
                     .sort((a, b) => (a.slotIndex ?? 1) - (b.slotIndex ?? 1))
                     .map((animal) => {
-                    const stats = getAnimalEfficiency({
+                    const stats = getAnimalHealth({
                         type: animal.type,
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
@@ -507,14 +499,13 @@ router.get("/", async (req, res) => {
                         hp: stats.lifePercent,
                         upgradeFails: animal.upgradeFails ?? 0,
                         lifePercent: stats.lifePercent,
-                        efficiencyPercent: stats.efficiencyPercent,
                         daysLeft: stats.daysLeft,
                     };
                 }),
                 cowCards: cowAnimals
                     .sort((a, b) => (a.slotIndex ?? 1) - (b.slotIndex ?? 1))
                     .map((animal) => {
-                    const stats = getAnimalEfficiency({
+                    const stats = getAnimalHealth({
                         type: animal.type,
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
@@ -531,7 +522,6 @@ router.get("/", async (req, res) => {
                         hp: stats.lifePercent,
                         upgradeFails: animal.upgradeFails ?? 0,
                         lifePercent: stats.lifePercent,
-                        efficiencyPercent: stats.efficiencyPercent,
                         daysLeft: stats.daysLeft,
                     };
                 }),
@@ -546,7 +536,7 @@ router.get("/", async (req, res) => {
                     : 0,
                 chickenLife: chickenAnimals.length
                     ? Math.round(chickenAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
+                        getAnimalHealth({
                             type: a.type,
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
@@ -556,7 +546,7 @@ router.get("/", async (req, res) => {
                     : 0,
                 sheepLife: sheepAnimals.length
                     ? Math.round(sheepAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
+                        getAnimalHealth({
                             type: a.type,
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
@@ -566,43 +556,13 @@ router.get("/", async (req, res) => {
                     : 0,
                 cowLife: cowAnimals.length
                     ? Math.round(cowAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
+                        getAnimalHealth({
                             type: a.type,
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
                             hpUpdatedAt: a.hpUpdatedAt,
                         }).lifePercent, 0) / cowAnimals.length)
-                    : 0,
-                chickenEfficiency: chickenAnimals.length
-                    ? Math.round(chickenAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
-                            type: a.type,
-                            bornAt: a.bornAt,
-                            lastFedAt: a.lastFedAt,
-                            hp: a.hp,
-                            hpUpdatedAt: a.hpUpdatedAt,
-                        }).efficiencyPercent, 0) / chickenAnimals.length)
-                    : 0,
-                sheepEfficiency: sheepAnimals.length
-                    ? Math.round(sheepAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
-                            type: a.type,
-                            bornAt: a.bornAt,
-                            lastFedAt: a.lastFedAt,
-                            hp: a.hp,
-                            hpUpdatedAt: a.hpUpdatedAt,
-                        }).efficiencyPercent, 0) / sheepAnimals.length)
-                    : 0,
-                cowEfficiency: cowAnimals.length
-                    ? Math.round(cowAnimals.reduce((sum, a) => sum +
-                        getAnimalEfficiency({
-                            type: a.type,
-                            bornAt: a.bornAt,
-                            lastFedAt: a.lastFedAt,
-                            hp: a.hp,
-                            hpUpdatedAt: a.hpUpdatedAt,
-                        }).efficiencyPercent, 0) / cowAnimals.length)
                     : 0,
                 chickenProductionPerHour: Math.floor(getEffectivePerHour("CHICKEN", chickenAnimals)),
                 sheepProductionPerHour: Math.floor(getEffectivePerHour("SHEEP", sheepAnimals)),

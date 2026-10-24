@@ -38,27 +38,28 @@ router.post("/", (0, antiSpam_1.antiSpamPerUser)(1000, 8), (0, requestLock_1.req
     let level = user.level;
     let coinsBonus = 0;
     let diamondsBonus = 0;
+    const pendingRewards = [];
     // 🔥 LEVEL UP
-    while (xp >= getXpNeeded(level)) {
+    while (level < 100 && xp >= getXpNeeded(level)) {
         xp -= getXpNeeded(level);
         level++;
-        coinsBonus += 25;
-        if (level % 5 === 0) {
-            diamondsBonus += 5;
-        }
-        if (level % 10 === 0) {
-            diamondsBonus += 15;
-        }
+        const coins = 25;
+        const diamonds = (level % 5 === 0 ? 5 : 0) + (level % 10 === 0 ? 15 : 0);
+        coinsBonus += coins;
+        diamondsBonus += diamonds;
+        pendingRewards.push({ userId: user.id, level, coins, diamonds });
     }
-    const updated = await prisma_1.prisma.user.update({
-        where: { telegramId },
-        data: {
-            coins: { increment: 1 + coinsBonus },
-            diamonds: { increment: diamondsBonus },
-            xp,
-            level,
-            lastTapAt: new Date(),
-        },
+    if (level >= 100)
+        xp = 0;
+    const updated = await prisma_1.prisma.$transaction(async (tx) => {
+        const result = await tx.user.update({
+            where: { telegramId },
+            data: { coins: { increment: 1 }, xp, level, lastTapAt: new Date() },
+        });
+        if (pendingRewards.length) {
+            await tx.levelReward.createMany({ data: pendingRewards, skipDuplicates: true });
+        }
+        return result;
     });
     return res.json({
         coins: updated.coins,

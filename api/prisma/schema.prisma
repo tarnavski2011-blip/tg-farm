@@ -29,6 +29,8 @@ model User {
 
   level             Int      @default(1)
   xp                Int      @default(0)
+  rewardStartLevel  Int      @default(1)
+  levelRewards      LevelReward[]
 
   feedUntil         DateTime?
   feedActivatedAt   DateTime?
@@ -254,4 +256,16 @@ model QuestPeriodClaim {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, period, code])
   @@index([userId, period])
+}
+
+model LevelReward {
+  id Int @id @default(autoincrement())
+  userId Int
+  level Int
+  coins Int @default(0)
+  diamonds Int @default(0)
+  claimedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, level])
+  @@index([userId, claimedAt])
 }

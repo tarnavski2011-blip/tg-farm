@@ -21,6 +21,7 @@ export async function addXp(userId: number, amount: number) {
   let levelsGained = 0;
   let rewardCoins = 0;
   let rewardDiamonds = 0;
+  const pendingRewards: { userId: number; level: number; coins: number; diamonds: number }[] = [];
 
   while (xp >= getXpNeeded(level)) {
     xp -= getXpNeeded(level);
@@ -28,27 +29,23 @@ export async function addXp(userId: number, amount: number) {
     leveledUp = true;
     levelsGained += 1;
 
-    rewardCoins += level * 100;
-
-    if (level % 5 === 0) {
-      rewardDiamonds += 2;
-    }
+    const coins = level * 100;
+    const diamonds = level % 5 === 0 ? 2 : 0;
+    rewardCoins += coins;
+    rewardDiamonds += diamonds;
+    pendingRewards.push({ userId, level, coins, diamonds });
   }
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      xp,
-      level,
-      coins: { increment: rewardCoins },
-      diamonds: { increment: rewardDiamonds },
-    },
-    select: {
-      xp: true,
-      level: true,
-      coins: true,
-      diamonds: true,
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.user.update({
+      where: { id: userId },
+      data: { xp, level },
+      select: { xp: true, level: true, coins: true, diamonds: true },
+    });
+    if (pendingRewards.length) {
+      await tx.levelReward.createMany({ data: pendingRewards, skipDuplicates: true });
+    }
+    return result;
   });
 
   return {

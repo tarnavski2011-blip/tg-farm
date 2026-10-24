@@ -31,8 +31,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        coins: { increment: coinsAdded + levelResult.rewardCoins },
-        diamonds: { increment: levelResult.rewardDiamonds },
+        coins: { increment: coinsAdded },
         xp: levelResult.xp,
         level: levelResult.level,
       },
