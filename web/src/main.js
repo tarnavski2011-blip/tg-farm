@@ -137,7 +137,7 @@ function achievementCard(a) {
       </div>
       <div class="ach-progress-head">
         <span>${progress} / ${a.target}</span>
-        <span>${percent}%</span>
+        <span>${q.target ? `${q.progress ?? 0}/${q.target}` : `${percent}%`}</span>
       </div>
       <div class="ach-track">
         <div class="ach-fill" style="width:${percent}%"></div>
@@ -159,8 +159,7 @@ function achievementCard(a) {
 function questCard(q) {
   const completed = q.completed ?? q.done ?? false;
   const claimed = !!q.claimed;
-  const progress = completed ? 1 : 0;
-  const percent = completed ? 100 : 0;
+  const percent = q.target ? Math.min(100, Math.round((q.progress ?? 0) / q.target * 100)) : (completed ? 100 : 0);
 
   const rewardText =
     `${q.rewardCoins ? `💰 ${q.rewardCoins}` : q.reward ? `💰 ${q.reward}` : ""}` +
@@ -169,6 +168,7 @@ function questCard(q) {
     `${(q.rewardCoins || q.reward || q.rewardDiamonds) && q.rewardXp ? " · " : ""}` +
     `${q.rewardXp ? `⭐ ${q.rewardXp} XP` : ""}`;
 
+  const isChannel = q.code === "telegram_channel";
   return `
     <div class="ach-card ${claimed ? "ach-claimed" : completed ? "ach-ready" : ""}">
       <div class="ach-top">
@@ -190,9 +190,11 @@ function questCard(q) {
         ${
           claimed
             ? `<button class="ach-btn disabled-btn" disabled>Отримано</button>`
-            : completed
-              ? `<button class="ach-btn" data-quest-claim="${q.code}">Claim quest</button>`
-              : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
+            : isChannel
+              ? `<a class="ach-btn" href="https://t.me/myfarmclickerofficial" target="_blank" rel="noopener noreferrer">Підписатися</a> <button class="ach-btn" data-quest-claim="telegram_channel">Перевірити підписку</button>`
+              : completed
+                ? `<button class="ach-btn" data-quest-claim="${q.code}">Отримати нагороду</button>`
+                : `<button class="ach-btn disabled-btn" disabled>Ще не готово</button>`
         }
       </div>
     </div>
@@ -481,7 +483,7 @@ function renderModal(
   }
 
   if (uiState.modal === "quests") {
-    title = "📜 Quests";
+    title = "📜 Завдання";
     body = `<div class="ach-grid">${(questsData?.items ?? questsData?.quests ?? []).map(questCard).join("")}</div>`;
   }
 
