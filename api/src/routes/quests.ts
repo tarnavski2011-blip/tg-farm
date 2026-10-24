@@ -23,6 +23,34 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const CHANNEL = "@myfarmclickerofficial";
+async function isChannelMember(telegramId: bigint): Promise<boolean> {
+  const token = process.env.BOT_TOKEN;
+  if (!token) throw new Error("BOT_TOKEN is missing");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const url = `https://api.telegram.org/bot${token}/getChatMember?chat_id=${encodeURIComponent(CHANNEL)}&user_id=${telegramId.toString()}`;
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Telegram API HTTP ${response.status}`);
+    const data = (await response.json()) as {
+      ok: boolean;
+      result?: { status: string; is_member?: boolean };
+    };
+    if (!data.ok || !data.result)
+      throw new Error("Telegram membership check failed");
+    const { status, is_member } = data.result;
+    return (
+      status === "creator" ||
+      status === "administrator" ||
+      status === "member" ||
+      (status === "restricted" && is_member === true)
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 router.get("/", async (req: TgAuthedRequest, res) => {
   try {
     const telegramId = BigInt(req.telegramUser!.id);
@@ -232,6 +260,14 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       },
     ];
 
+    quests.push({
+      code: "telegram_channel",
+      title: "Підпишись на Telegram-канал",
+      group: "achievement",
+      reward: "10 💎",
+      done: false,
+      claimed: achievementClaimed.includes("telegram_channel"),
+    });
     return res.json({ ok: true, quests });
   } catch (e) {
     console.error("QUESTS ERROR:", e);
@@ -274,6 +310,46 @@ router.post("/claim", async (req: TgAuthedRequest, res) => {
 
     if (!freshUser) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (code === "telegram_channel") {
+      let subscribed: boolean;
+      try {
+        subscribed = await isChannelMember(telegramId);
+      } catch (err) {
+        console.error("TELEGRAM MEMBERSHIP ERROR:", err);
+        return res
+          .status(503)
+          .json({ error: "Не вдалося перевірити підписку. Спробуй пізніше." });
+      }
+      if (!subscribed)
+        return res.status(400).json({ error: "Спочатку підпишись на канал." });
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.achievementClaim.create({
+            data: {
+              userId: freshUser.id,
+              code,
+              claimed: true,
+              claimedAt: new Date(),
+            },
+          });
+          await tx.user.update({
+            where: { id: freshUser.id },
+            data: { diamonds: { increment: 10 } },
+          });
+        });
+      } catch (err: any) {
+        if (err?.code === "P2002")
+          return res.status(409).json({ error: "Нагороду вже отримано." });
+        throw err;
+      }
+      return res.json({
+        ok: true,
+        reward: "10 💎",
+        rewardCoins: 0,
+        rewardDiamonds: 10,
+      });
     }
 
     const today = getTodayKey();
