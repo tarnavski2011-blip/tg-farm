@@ -94,15 +94,29 @@ router.post("/withdrawals/:id/status", async (req, res) => {
         if (!["approved", "rejected"].includes(status)) {
             return res.status(400).json({ ok: false, error: "Invalid status" });
         }
-        const updated = await prisma_1.prisma.withdrawalRequest.update({
-            where: { id },
-            data: { status },
+        if (!Number.isSafeInteger(id) || id <= 0)
+            return res.status(400).json({ ok: false, error: "Invalid id" });
+        // Only a pending request may change status. The conditional update and refund
+        // are in the same transaction so repeated/concurrent rejects cannot credit twice.
+        const outcome = await prisma_1.prisma.$transaction(async (tx) => {
+            const current = await tx.withdrawalRequest.findUnique({ where: { id }, select: { userId: true, pointsAmount: true, status: true } });
+            if (!current)
+                return { kind: "missing" };
+            if (current.status !== "pending")
+                return { kind: "unchanged", status: current.status };
+            const changed = await tx.withdrawalRequest.updateMany({ where: { id, status: "pending" }, data: { status } });
+            if (changed.count !== 1)
+                return { kind: "unchanged", status: "already processed" };
+            if (status === "rejected") {
+                await tx.user.update({ where: { id: current.userId }, data: { points: { increment: current.pointsAmount } } });
+            }
+            return { kind: "updated", status, refundedPoints: status === "rejected" ? current.pointsAmount : 0 };
         });
-        return res.json({
-            ok: true,
-            id: updated.id,
-            status: updated.status,
-        });
+        if (outcome.kind === "missing")
+            return res.status(404).json({ ok: false, error: "Request not found" });
+        if (outcome.kind === "unchanged")
+            return res.status(409).json({ ok: false, error: "Request already processed", status: outcome.status });
+        return res.json({ ok: true, id, status: outcome.status, refundedPoints: outcome.refundedPoints });
     }
     catch (e) {
         console.error("ADMIN WITHDRAWALS ERROR:", e);

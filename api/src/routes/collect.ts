@@ -1,3 +1,4 @@
+import { recordQuestMetric } from "../lib/questMetrics";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -38,6 +39,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     });
 
     await addTapToday(user.id, 1);
+    await recordQuestMetric(user.id,"taps",1).catch(console.error);
 
     const referral = await prisma.referral.findFirst({
       where: { referredId: user.id },

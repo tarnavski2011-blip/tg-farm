@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const animalHp_1 = require("../lib/animalHp");
+const warehouseLock_1 = require("../lib/warehouseLock");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
@@ -64,24 +66,23 @@ function getAnimalPointsPerCycle(type, level) {
     return 0;
 }
 function getAnimalEfficiency(animal) {
-    const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
-    const lifeMs = lifeDays * 24 * 60 * 60 * 1000;
-    const remainingMs = Math.max(0, lifeMs - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
-    const lifePercent = Math.max(0, Math.min(100, Math.ceil(remainingMs / lifeMs * 100)));
+    const hp = (0, animalHp_1.getCurrentHp)({ hp: animal.hp ?? 100, hpUpdatedAt: animal.hpUpdatedAt });
     const hoursWithoutFeed = (Date.now() - new Date(animal.lastFedAt).getTime()) / 3600000;
     const efficiencyLoss = Math.floor(Math.max(0, hoursWithoutFeed) / 12) * 10;
     return {
-        lifePercent,
-        efficiencyPercent: lifePercent === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
-        daysLeft: remainingMs / 86400000,
+        lifePercent: hp, // compatibility with existing response fields
+        efficiencyPercent: hp === 0 ? 0 : Math.max(0, 100 - efficiencyLoss),
+        daysLeft: 0, // no lifespan
     };
 }
 router.get("/", async (req, res) => {
+    let releaseWarehouseLock;
     try {
         if (!req.telegramUser?.id) {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const telegramId = BigInt(req.telegramUser.id);
+        releaseWarehouseLock = await (0, warehouseLock_1.acquireWarehouseLock)(telegramId);
         let user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
             include: {
@@ -137,7 +138,7 @@ router.get("/", async (req, res) => {
         let pointsAdd = 0;
         let autoFeedCoinsSpent = 0;
         let autoSellCoinsAdd = 0;
-        let autoSellPointsAdd = 0; // sale awards no Points
+        let autoSellPointsAdd = 0;
         let reservedStorage = 0;
         const vipActiveNow = !!(user.vipUntil && user.vipUntil > now);
         const autoSellActiveNow = vipActiveNow || !!(user.autoCollectUntil && user.autoCollectUntil > now);
@@ -153,8 +154,16 @@ router.get("/", async (req, res) => {
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
                 hp: animal.hp,
+                hpUpdatedAt: animal.hpUpdatedAt,
             });
             const cfg = ANIMAL_PRODUCTION[animal.type];
+            if (preCheckStats.lifePercent <= 0) {
+                // Do not accumulate production time while the animal is at 0 HP.
+                animalUpdates.push(prisma_1.prisma.animal.update({
+                    where: { id: animal.id }, data: { lastClaim: now },
+                }));
+                continue;
+            }
             const passedSec = Math.floor((now.getTime() - animal.lastClaim.getTime()) / 1000);
             if (passedSec < cfg.seconds)
                 continue;
@@ -168,7 +177,14 @@ router.get("/", async (req, res) => {
                 feedAvailable = sheepFeedLeft;
             if (animal.type === "COW")
                 feedAvailable = cowFeedLeft;
-            if (feedAvailable <= 0 && vipActiveNow) {
+            const currentStorageTotal = (user.storage?.eggs ?? 0) +
+                (user.storage?.wool ?? 0) +
+                (user.storage?.milk ?? 0);
+            const storageFreeSpace = Math.max(0, (user.storage?.capacity ?? 1000) - currentStorageTotal - reservedStorage);
+            let producedPerCycle = getAnimalProducedPerCycle(animal.type, animal.level);
+            producedPerCycle = Math.max(1, Math.floor(producedPerCycle * (animal.breedBonus ?? 1)));
+            const maxCyclesByStorage = Math.floor(storageFreeSpace / producedPerCycle);
+            if (maxCyclesByStorage > 0 && feedAvailable <= 0 && vipActiveNow) {
                 const feedPrice = AUTO_FEED_PRICES[animal.type];
                 if (userCoinsLeft >= feedPrice) {
                     userCoinsLeft -= feedPrice;
@@ -189,16 +205,10 @@ router.get("/", async (req, res) => {
                 }));
                 continue;
             }
-            const currentStorageTotal = (user.storage?.eggs ?? 0) +
-                (user.storage?.wool ?? 0) +
-                (user.storage?.milk ?? 0);
-            const storageFreeSpace = Math.max(0, (user.storage?.capacity ?? 1000) - currentStorageTotal - reservedStorage);
-            let producedPerCycle = getAnimalProducedPerCycle(animal.type, animal.level);
-            producedPerCycle = Math.max(1, Math.floor(producedPerCycle * (animal.breedBonus ?? 1)));
             const maxCyclesByFeed = Math.floor(feedAvailable / 1);
-            const maxCyclesByStorage = Math.floor(storageFreeSpace / producedPerCycle);
             const usedCycles = Math.min(fullCycles, maxCyclesByFeed, maxCyclesByStorage);
             if (usedCycles <= 0) {
+                // Full warehouse: don't consume feed or accumulate catch-up production.
                 animalUpdates.push(prisma_1.prisma.animal.update({
                     where: { id: animal.id },
                     data: { lastClaim: now },
@@ -210,6 +220,7 @@ router.get("/", async (req, res) => {
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
                 hp: animal.hp,
+                hpUpdatedAt: animal.hpUpdatedAt,
             });
             if (animalStats.efficiencyPercent <= 0) {
                 continue;
@@ -301,8 +312,8 @@ router.get("/", async (req, res) => {
                 storageEggs * SELL_PRICES.eggs +
                     storageWool * SELL_PRICES.wool +
                     storageMilk * SELL_PRICES.milk;
-            // No Points on auto-sale: already credited during production.
-            autoSellPointsAdd = 0;
+            // Transfer previously accumulated warehouse Points on automatic sale.
+            autoSellPointsAdd = user.storage?.pendingPoints ?? 0;
             storageEggs = 0;
             storageWool = 0;
             storageMilk = 0;
@@ -326,11 +337,11 @@ router.get("/", async (req, res) => {
                 sheepFeed: sheepFeedLeft,
                 cowFeed: cowFeedLeft,
                 coins: { increment: autoSellCoinsAdd - autoFeedCoinsSpent },
-                points: { increment: pointsAdd },
+                points: { increment: autoSellPointsAdd },
                 lastSeenAt: now,
             },
         });
-        if (autoSellCoinsAdd > 0 || totalAdd > 0) {
+        if (autoSellCoinsAdd > 0 || totalAdd > 0 || pointsAdd > 0) {
             await prisma_1.prisma.storage.update({
                 where: { userId: user.id },
                 data: autoSellCoinsAdd > 0
@@ -338,11 +349,13 @@ router.get("/", async (req, res) => {
                         eggs: eggsAdd,
                         wool: woolAdd,
                         milk: milkAdd,
+                        pendingPoints: pointsAdd,
                     }
                     : {
                         eggs: { increment: eggsAdd },
                         wool: { increment: woolAdd },
                         milk: { increment: milkAdd },
+                        pendingPoints: { increment: pointsAdd },
                     },
             });
         }
@@ -365,6 +378,7 @@ router.get("/", async (req, res) => {
                 bornAt: animal.bornAt,
                 lastFedAt: animal.lastFedAt,
                 hp: animal.hp,
+                hpUpdatedAt: animal.hpUpdatedAt,
             });
             if (stats.efficiencyPercent <= 0) {
                 return 0;
@@ -414,6 +428,7 @@ router.get("/", async (req, res) => {
                     bornAt: animal.bornAt,
                     lastFedAt: animal.lastFedAt,
                     hp: animal.hp,
+                    hpUpdatedAt: animal.hpUpdatedAt,
                 });
                 if (stats.efficiencyPercent <= 0) {
                     return sum;
@@ -433,6 +448,7 @@ router.get("/", async (req, res) => {
         }
         return res.json({
             ok: true,
+            nickname: user.nickname,
             coins: user.coins,
             diamonds: user.diamonds,
             points: user.points,
@@ -455,6 +471,7 @@ router.get("/", async (req, res) => {
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
                         hp: animal.hp,
+                        hpUpdatedAt: animal.hpUpdatedAt,
                     });
                     return {
                         id: animal.id,
@@ -478,6 +495,7 @@ router.get("/", async (req, res) => {
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
                         hp: animal.hp,
+                        hpUpdatedAt: animal.hpUpdatedAt,
                     });
                     return {
                         id: animal.id,
@@ -501,6 +519,7 @@ router.get("/", async (req, res) => {
                         bornAt: animal.bornAt,
                         lastFedAt: animal.lastFedAt,
                         hp: animal.hp,
+                        hpUpdatedAt: animal.hpUpdatedAt,
                     });
                     return {
                         id: animal.id,
@@ -532,6 +551,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).lifePercent, 0) / chickenAnimals.length)
                     : 0,
                 sheepLife: sheepAnimals.length
@@ -541,6 +561,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).lifePercent, 0) / sheepAnimals.length)
                     : 0,
                 cowLife: cowAnimals.length
@@ -550,6 +571,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).lifePercent, 0) / cowAnimals.length)
                     : 0,
                 chickenEfficiency: chickenAnimals.length
@@ -559,6 +581,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).efficiencyPercent, 0) / chickenAnimals.length)
                     : 0,
                 sheepEfficiency: sheepAnimals.length
@@ -568,6 +591,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).efficiencyPercent, 0) / sheepAnimals.length)
                     : 0,
                 cowEfficiency: cowAnimals.length
@@ -577,6 +601,7 @@ router.get("/", async (req, res) => {
                             bornAt: a.bornAt,
                             lastFedAt: a.lastFedAt,
                             hp: a.hp,
+                            hpUpdatedAt: a.hpUpdatedAt,
                         }).efficiencyPercent, 0) / cowAnimals.length)
                     : 0,
                 chickenProductionPerHour: Math.floor(getEffectivePerHour("CHICKEN", chickenAnimals)),
@@ -589,6 +614,7 @@ router.get("/", async (req, res) => {
                 milk: user.storage.milk ?? 0,
                 total: storageTotal,
                 capacity: user.storage.capacity ?? 1000,
+                pendingPoints: user.storage.pendingPoints ?? 0,
                 sellValue: (user.storage.eggs ?? 0) * 6 +
                     (user.storage.wool ?? 0) * 15 +
                     (user.storage.milk ?? 0) * 30,
@@ -650,6 +676,10 @@ router.get("/", async (req, res) => {
             error: "Server error",
             details: String(e),
         });
+    }
+    finally {
+        if (releaseWarehouseLock)
+            await releaseWarehouseLock();
     }
 });
 exports.default = router;

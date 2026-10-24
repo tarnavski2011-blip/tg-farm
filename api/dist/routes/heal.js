@@ -1,26 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const questMetrics_1 = require("../lib/questMetrics");
+const animalHp_1 = require("../lib/animalHp");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
-const HEAL_MULTIPLIER = {
-    normal: 1,
-    rare: 1.5,
-    epic: 2,
-    legendary: 3,
-};
 const HEAL_COSTS = {
     CHICKEN: {
         coins: { 1: 500, 2: 1000, 3: 2000 },
-        points: { 4: 5000, 5: 12000 },
+        points: { 4: 2160, 5: 6480 },
     },
     SHEEP: {
         coins: { 1: 1500, 2: 3000, 3: 6000 },
-        points: { 4: 15000, 5: 35000 },
+        points: { 4: 2880, 5: 7680 },
     },
     COW: {
         coins: { 1: 5000, 2: 10000, 3: 20000 },
-        points: { 4: 30000, 5: 70000 },
+        points: { 4: 3840, 5: 9600 },
     },
 };
 function isAnimalType(value) {
@@ -37,20 +33,19 @@ function normalizeLevel(level) {
         return 4;
     return 5;
 }
-function getHealCost(type, levelRaw, rarity, hp) {
+function getHealCost(type, levelRaw, _rarity, hp) {
     const level = normalizeLevel(levelRaw || 1);
-    const rarityMultiplier = HEAL_MULTIPLIER[String(rarity || "normal").toLowerCase()] ?? 1;
     const missingHp = Math.max(0, 100 - (hp ?? 100));
     const hpMultiplier = missingHp / 100;
     if (level <= 3) {
-        const base = HEAL_COSTS[type].coins[level] * rarityMultiplier;
+        const base = HEAL_COSTS[type].coins[level];
         return {
             currency: "coins",
             amount: Math.max(1, Math.floor(base * hpMultiplier)),
             level,
         };
     }
-    const base = HEAL_COSTS[type].points[level] * rarityMultiplier;
+    const base = HEAL_COSTS[type].points[level];
     return {
         currency: "points",
         amount: Math.max(1, Math.floor(base * hpMultiplier)),
@@ -89,12 +84,7 @@ router.post("/", async (req, res) => {
                         ? user.animals.filter((animal) => animal.type === typeRaw)
                         : [];
         }
-        const currentLifePercent = (animal) => {
-            const lifeDays = animal.type === "CHICKEN" ? 3 : animal.type === "SHEEP" ? 5 : 7;
-            const duration = lifeDays * 86400000;
-            const remaining = Math.max(0, duration - Math.max(0, Date.now() - new Date(animal.bornAt).getTime()));
-            return Math.max(0, Math.min(100, Math.ceil(remaining / duration * 100)));
-        };
+        const currentLifePercent = (animal) => (0, animalHp_1.getCurrentHp)(animal);
         animalsToHeal = animalsToHeal.filter((animal) => currentLifePercent(animal) < 100);
         if (animalsToHeal.length <= 0) {
             return res.status(400).json({ error: "No animals need healing" });
@@ -105,9 +95,7 @@ router.post("/", async (req, res) => {
         const breakdown = animalsToHeal.map((animal) => {
             const type = animal.type;
             const cost = getHealCost(type, animal.level ?? 1, animal.rarity || "normal", currentLifePercent(animal));
-            const rarity = String(animal.rarity || "normal").toLowerCase();
-            const bred = rarity !== "normal";
-            const diamondCost = cost.level === 4 ? (bred ? 10 : 5) : cost.level === 5 ? (bred ? 20 : 10) : 0;
+            const diamondCost = 0;
             totalDiamondsCost += diamondCost;
             if (cost.currency === "coins") {
                 totalCoinsCost += cost.amount;
@@ -140,13 +128,23 @@ router.post("/", async (req, res) => {
             });
         }
         if ((user.diamonds ?? 0) < totalDiamondsCost) {
-            return res.status(400).json({ error: "Not enough diamonds", need: totalDiamondsCost, have: user.diamonds ?? 0 });
+            return res
+                .status(400)
+                .json({
+                error: "Not enough diamonds",
+                need: totalDiamondsCost,
+                have: user.diamonds ?? 0,
+            });
         }
         const now = new Date();
-        const animalIds = animalsToHeal.map((animal) => animal.id);
         const result = await prisma_1.prisma.$transaction(async (tx) => {
             const paid = await tx.user.updateMany({
-                where: { id: user.id, coins: { gte: totalCoinsCost }, points: { gte: totalPointsCost }, diamonds: { gte: totalDiamondsCost } },
+                where: {
+                    id: user.id,
+                    coins: { gte: totalCoinsCost },
+                    points: { gte: totalPointsCost },
+                    diamonds: { gte: totalDiamondsCost },
+                },
                 data: {
                     coins: { decrement: totalCoinsCost },
                     points: { decrement: totalPointsCost },
@@ -159,19 +157,23 @@ router.post("/", async (req, res) => {
                 where: { id: user.id },
                 select: { coins: true, points: true, diamonds: true },
             });
-            await tx.animal.updateMany({
-                where: {
-                    id: { in: animalIds },
-                    userId: user.id,
-                },
-                data: {
-                    lastFedAt: now,
-                    bornAt: now,
-                    hp: 100,
-                },
-            });
+            // Conditional updates prevent charging twice for a concurrent heal.
+            for (const animal of animalsToHeal) {
+                const updated = await tx.animal.updateMany({
+                    where: {
+                        id: animal.id,
+                        userId: user.id,
+                        hpUpdatedAt: animal.hpUpdatedAt,
+                        hp: animal.hp,
+                    },
+                    data: { hp: 100, hpUpdatedAt: now, lastClaim: now },
+                });
+                if (updated.count !== 1)
+                    throw new Error("Animal health changed during healing; retry");
+            }
             return updatedUser;
         });
+        await (0, questMetrics_1.recordQuestMetric)(user.id, "heals", animalsToHeal.length).catch(console.error);
         return res.json({
             ok: true,
             healed: animalsToHeal.length,

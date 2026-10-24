@@ -1,3 +1,4 @@
+import { recordQuestMetric } from "../lib/questMetrics";
 import { acquireWarehouseLock } from "../lib/warehouseLock";
 import { Router } from "express";
 import { prisma } from "../prisma";
@@ -130,6 +131,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     });
 
     await addSellToday(user.id, 1);
+    await Promise.all([recordQuestMetric(user.id,"sells",1),recordQuestMetric(user.id,"resources",eggs+wool+milk),recordQuestMetric(user.id,"points",totalPoints)]).catch(console.error);
 
     const xpResult = await addXp(user.id, Math.floor(totalCoins / 100));
 

@@ -1,3 +1,4 @@
+import { recordQuestMetric } from "../lib/questMetrics";
 import { getCurrentHp } from "../lib/animalHp";
 import { Router } from "express";
 import { prisma } from "../prisma";
@@ -211,6 +212,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
       return updatedUser;
     });
 
+    await recordQuestMetric(user.id,"heals",animalsToHeal.length).catch(console.error);
     return res.json({
       ok: true,
       healed: animalsToHeal.length,

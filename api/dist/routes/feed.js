@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const questMetrics_1 = require("../lib/questMetrics");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const economy_1 = require("../config/economy");
@@ -29,6 +30,7 @@ router.post("/", async (req, res) => {
         },
         select: { coins: true, feedUntil: true },
     });
+    await (0, questMetrics_1.recordQuestMetric)(user.id, "feeds", 1).catch(console.error);
     return res.json({
         ok: true,
         coins: updated.coins,

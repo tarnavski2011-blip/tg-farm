@@ -3,120 +3,103 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
-const DAY_MS = 24 * 60 * 60 * 1000;
-const DAILY_REWARDS = [
-    { day: 1, coins: 50, diamonds: 0 },
-    { day: 2, coins: 100, diamonds: 0 },
-    { day: 3, coins: 200, diamonds: 0 },
-    { day: 4, coins: 0, diamonds: 1 },
-    { day: 5, coins: 0, diamonds: 3 },
-    { day: 6, coins: 0, diamonds: 5 },
-    { day: 7, coins: 500, diamonds: 5 },
-];
-function getDayDiff(a, b) {
-    const aStart = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate())).getTime();
-    const bStart = new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())).getTime();
-    return Math.floor((aStart - bStart) / DAY_MS);
+const DAY_MS = 86400000;
+const rewards = Array.from({ length: 30 }, (_, i) => {
+    const day = i + 1;
+    return {
+        day,
+        coins: day % 5 === 0 || [7, 14, 21, 30].includes(day) ? 0 : 100 + i * 25,
+        points: { 5: 100, 10: 200, 15: 300, 20: 500, 25: 750 }[day] || 0,
+        diamonds: { 7: 2, 14: 3, 21: 5 }[day] || 0,
+        vipHours: day === 30 ? 24 : 0,
+    };
+});
+function dayDiff(now, last) {
+    const utcDay = (d) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return Math.floor((utcDay(now) - utcDay(last)) / DAY_MS);
 }
-function getRewardForDay(day) {
-    return DAILY_REWARDS[day - 1] ?? DAILY_REWARDS[0];
+function status(user, now) {
+    const diff = user.lastDailyAt ? dayDiff(now, user.lastDailyAt) : null;
+    const claimed = diff === 0;
+    const streak = diff !== null && diff >= 3 ? 0 : user.dailyStreak;
+    const day = claimed ? user.dailyStreak || 1 : streak >= 30 ? 1 : streak + 1;
+    return {
+        claimed,
+        streak,
+        day,
+        missedDays: diff === null ? 0 : Math.max(0, diff - 1),
+    };
 }
 router.get("/", async (req, res) => {
     try {
-        const telegramId = BigInt(req.telegramUser.id);
         const user = await prisma_1.prisma.user.findUnique({
-            where: { telegramId },
-            select: {
-                id: true,
-                dailyStreak: true,
-                lastDailyAt: true,
-            },
+            where: { telegramId: BigInt(req.telegramUser.id) },
+            select: { dailyStreak: true, lastDailyAt: true },
         });
-        if (!user) {
+        if (!user)
             return res.status(404).json({ error: "User not found" });
-        }
-        const now = new Date();
-        let streak = user.dailyStreak ?? 0;
-        let claimed = false;
-        if (user.lastDailyAt) {
-            const diff = getDayDiff(now, new Date(user.lastDailyAt));
-            if (diff === 0) {
-                claimed = true;
-            }
-            else if (diff > 1) {
-                streak = 0;
-            }
-        }
-        const nextDay = Math.min(7, streak + 1);
-        const reward = getRewardForDay(nextDay);
+        const s = status(user, new Date());
         return res.json({
             ok: true,
-            day: nextDay,
-            claimed,
-            streak,
-            rewards: DAILY_REWARDS,
-            todayReward: reward,
+            ...s,
+            rewards,
+            todayReward: rewards[s.day - 1],
         });
     }
     catch (e) {
-        console.error("DAILY GET ERROR:", e);
+        console.error("DAILY GET ERROR", e);
         return res.status(500).json({ error: "Server error" });
     }
 });
 router.post("/", async (req, res) => {
     try {
-        const telegramId = BigInt(req.telegramUser.id);
         const user = await prisma_1.prisma.user.findUnique({
-            where: { telegramId },
+            where: { telegramId: BigInt(req.telegramUser.id) },
             select: {
                 id: true,
-                coins: true,
-                diamonds: true,
                 dailyStreak: true,
                 lastDailyAt: true,
+                vipUntil: true,
             },
         });
-        if (!user) {
+        if (!user)
             return res.status(404).json({ error: "User not found" });
-        }
         const now = new Date();
-        let streak = user.dailyStreak ?? 0;
-        if (user.lastDailyAt) {
-            const diff = getDayDiff(now, new Date(user.lastDailyAt));
-            if (diff === 0) {
-                return res.status(400).json({
-                    error: "Вже забрано сьогодні",
-                });
-            }
-            if (diff > 1) {
-                streak = 0;
-            }
-        }
-        const nextDay = Math.min(7, streak + 1);
-        const reward = getRewardForDay(nextDay);
-        const nextStreak = nextDay >= 7 ? 0 : nextDay;
-        // Compare-and-set: only one request per user can claim on this UTC day.
+        const s = status(user, now);
+        if (s.claimed)
+            return res.status(400).json({ error: "Вже забрано сьогодні" });
+        const reward = rewards[s.day - 1];
         const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        const claimed = await prisma_1.prisma.user.updateMany({
-            where: { id: user.id, OR: [{ lastDailyAt: null }, { lastDailyAt: { lt: dayStart } }] },
+        const vipBase = user.vipUntil && user.vipUntil > now ? user.vipUntil : now;
+        const result = await prisma_1.prisma.user.updateMany({
+            where: {
+                id: user.id,
+                OR: [{ lastDailyAt: null }, { lastDailyAt: { lt: dayStart } }],
+            },
             data: {
                 coins: { increment: reward.coins },
+                points: { increment: reward.points },
                 diamonds: { increment: reward.diamonds },
-                dailyStreak: nextStreak,
+                ...(reward.vipHours
+                    ? {
+                        vipUntil: new Date(vipBase.getTime() + reward.vipHours * 3600000),
+                    }
+                    : {}),
+                dailyStreak: s.day,
                 lastDailyAt: now,
             },
         });
-        if (claimed.count !== 1)
+        if (result.count !== 1)
             return res.status(400).json({ error: "Вже забрано сьогодні" });
         return res.json({
             ok: true,
-            day: nextDay,
+            day: s.day,
             reward,
-            nextStreak,
+            nextStreak: s.day === 30 ? 0 : s.day,
         });
     }
     catch (e) {
-        console.error("DAILY POST ERROR:", e);
+        console.error("DAILY POST ERROR", e);
         return res.status(500).json({ error: "Server error" });
     }
 });

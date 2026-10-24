@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const questMetrics_1 = require("../lib/questMetrics");
+const warehouseLock_1 = require("../lib/warehouseLock");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const questProgress_1 = require("../lib/questProgress");
@@ -31,11 +33,13 @@ function pointsPerCycle(type, level) {
     return 0;
 }
 router.post("/", async (req, res) => {
+    let releaseWarehouseLock;
     try {
         if (!req.telegramUser?.id) {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const telegramId = BigInt(req.telegramUser.id);
+        releaseWarehouseLock = await (0, warehouseLock_1.acquireWarehouseLock)(telegramId);
         const user = await prisma_1.prisma.user.findUnique({
             where: { telegramId },
             include: {
@@ -99,6 +103,7 @@ router.post("/", async (req, res) => {
             },
         });
         await (0, questProgress_1.addSellToday)(user.id, 1);
+        await Promise.all([(0, questMetrics_1.recordQuestMetric)(user.id, "sells", 1), (0, questMetrics_1.recordQuestMetric)(user.id, "resources", eggs + wool + milk), (0, questMetrics_1.recordQuestMetric)(user.id, "points", totalPoints)]).catch(console.error);
         const xpResult = await (0, xp_1.addXp)(user.id, Math.floor(totalCoins / 100));
         return res.json({
             ok: true,
@@ -129,6 +134,10 @@ router.post("/", async (req, res) => {
     catch (e) {
         console.error("SELL ERROR:", e);
         return res.status(500).json({ error: "Server error" });
+    }
+    finally {
+        if (releaseWarehouseLock)
+            await releaseWarehouseLock();
     }
 });
 exports.default = router;

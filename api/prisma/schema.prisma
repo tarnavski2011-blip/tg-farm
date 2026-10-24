@@ -74,6 +74,8 @@ model User {
   withdrawals       WithdrawalRequest[]
   walletAddress String?
 
+  questCounters QuestCounter[]
+  questPeriodClaims QuestPeriodClaim[]
   tonDeposits TonDeposit[]
 }
 
@@ -231,4 +233,25 @@ model DailyComboAttempt {
 
   @@unique([day, userId, attemptNo])
   @@index([day, won])
+}
+
+model QuestCounter {
+  id Int @id @default(autoincrement())
+  userId Int
+  period String
+  metric String
+  value Int @default(0)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, period, metric])
+  @@index([userId, period])
+}
+model QuestPeriodClaim {
+  id Int @id @default(autoincrement())
+  userId Int
+  period String
+  code String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, period, code])
+  @@index([userId, period])
 }

@@ -1,3 +1,4 @@
+import { recordQuestMetric } from "../lib/questMetrics";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -34,6 +35,7 @@ router.post("/", async (req: TgAuthedRequest, res) => {
     select: { coins: true, feedUntil: true },
   });
 
+  await recordQuestMetric(user.id,"feeds",1).catch(console.error);
   return res.json({
     ok: true,
     coins: updated.coins,
