@@ -5,6 +5,7 @@ import "dotenv/config";
 import { telegramAuth } from "./middleware/telegramAuth";
 
 import stateRouter from "./routes/state";
+import farmMapRouter from "./routes/farmMap";
 import levelsRouter from "./routes/levels";
 import nicknameRouter from "./routes/nickname";
 import collectRouter from "./routes/collect";
@@ -73,6 +74,7 @@ app.use("/api", telegramAuth);
 
 // game routes
 app.use("/api/state", stateRouter);
+app.use("/api/farm-map", farmMapRouter);
 app.use("/api/levels", levelsRouter);
 app.use("/api/nickname", nicknameRouter);
 app.use("/api/collect", collectRouter);
