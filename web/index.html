@@ -1005,8 +1005,6 @@
       /* Compact Grow Tea-style navigation: keep TAP and core farm actions. */
       #farmGuideBtn,
       #dailyBtn,
-      #questsBtn,
-      #wheelBtnVisible,
       #boostBtn,
       #walletBtn {
         display: none !important;
@@ -1704,6 +1702,28 @@
       .levelsClaim { padding:8px 10px; border:0; border-radius:10px; color:white; background:#2563eb; font-weight:700; }
       .levelsClaim:disabled { background:#46536b; color:#b7c0cf; }
       #levelsClose { background:transparent; border:0; color:white; font-size:25px; padding:0 6px; }
+    
+      /* Three persistent shortcuts on the left side of the farm. */
+      #questsBtn, #wheelBtnVisible, #comboBtnVisible {
+        display: flex !important;
+        left: 10px;
+        right: auto;
+        width: 66px;
+        min-height: 65px;
+        padding: 5px 2px;
+        z-index: 13;
+      }
+      #questsBtn { top: 235px; }
+      #wheelBtnVisible { top: 307px; }
+      #comboBtnVisible { top: 379px; }
+      #feedSideBtn { top: 451px; }
+      #questsBtn strong, #wheelBtnVisible strong, #comboBtnVisible strong {
+        font-size: 10px;
+        line-height: 1.12;
+        text-align: center;
+      }
+      #questsBtn span, #wheelBtnVisible span, #comboBtnVisible span { font-size: 26px; }
+
     </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -1887,10 +1907,13 @@
           <b class="notify">3</b><span>📅</span><strong>Daily</strong>
         </button>
         <button class="side-btn tasks" id="questsBtn" type="button">
-          <span>📋</span><strong>Tasks</strong>
+          <span>📋</span><strong>Завдання</strong>
         </button>
         <button class="side-btn wheel-side" id="wheelBtnVisible" type="button">
-          <span>🎡</span><strong>Wheel</strong>
+          <span>🎡</span><strong>Колесо</strong>
+        </button>
+        <button class="side-btn combo-side" id="comboBtnVisible" type="button">
+          <span>🧩</span><strong>Комбо дня</strong>
         </button>
         <button class="side-btn refs" id="feedSideBtn" type="button">
           <span>🌾</span><strong>Feed</strong>
@@ -2021,26 +2044,9 @@
               ><small>Бонуси за регулярну гру</small></span
             ><span class="farm-menu-chevron">›</span>
           </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="wheel">
-            <span class="farm-menu-icon">🎡</span
-            ><span class="farm-menu-copy"
-              ><strong>Колесо фортуни</strong
-              ><small>Щоденне обертання</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="combo">
-            <span class="farm-menu-icon">🧩</span
-            ><span class="farm-menu-copy"
-              ><strong>Комбо дня</strong
-              ><small>3 спроби · 500 Points</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
-          <button class="farm-menu-item" type="button" data-farm-menu="quests">
-            <span class="farm-menu-icon">📋</span
-            ><span class="farm-menu-copy"
-              ><strong>Завдання</strong><small>Місії та нагороди</small></span
-            ><span class="farm-menu-chevron">›</span>
-          </button>
+          
+          
+          
           <button class="farm-menu-item" type="button" data-farm-menu="boost">
             <span class="farm-menu-icon">🚀</span
             ><span class="farm-menu-copy"
@@ -5022,6 +5028,7 @@
       bindButton("refsBtnOld", openRefsModal);
       bindButton("wheelBtn", openWheelModal);
       bindButton("wheelBtnVisible", openWheelModal);
+      bindButton("comboBtnVisible", openComboModal);
 
       if (tabBuyBtn) tabBuyBtn.addEventListener("click", renderAnimalsBuy);
       if (tabOwnedBtn)
