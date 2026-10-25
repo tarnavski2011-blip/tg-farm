@@ -1,3 +1,4 @@
+import { recordQuestMetric } from "../lib/questMetrics";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import type { TgAuthedRequest } from "../middleware/telegramAuth";
@@ -128,6 +129,7 @@ router.post("/spin", async (req: TgAuthedRequest, res) => {
     });
     if (!updated) return res.status(400).json({ error: "Spin already claimed" });
 
+    await recordQuestMetric(user.id,"wheel_spins",1).catch(console.error);
     return res.json({
       ok: true,
       reward, // full reward object
