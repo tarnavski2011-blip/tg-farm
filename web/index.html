@@ -1724,7 +1724,18 @@
       }
       #questsBtn span, #wheelBtnVisible span, #comboBtnVisible span { font-size: 26px; }
 
-    </style>
+    
+/* Farm V2 as the default farm background; original game controls remain */
+#farmV2Layer{position:absolute;inset:0;z-index:2;display:block;overflow:hidden;touch-action:none;background:#547d52}
+#farmV2Layer.active{display:block}
+#farmV2Canvas{position:absolute;left:50%;top:50%;width:840px;height:840px;display:grid;grid-template-columns:repeat(7,120px);grid-template-rows:repeat(7,120px);transform-origin:center;will-change:transform}
+.fv2-tile{position:relative;border:2px solid #739a6b;background:repeating-linear-gradient(45deg,#80ba71 0 12px,#88c477 12px 24px);display:grid;place-items:center}
+.fv2-tile.locked{background:#506650}.fv2-tile.locked:after{content:'🔒';position:absolute;inset:0;background:#1b2927a6;display:grid;place-items:center;font-size:25px}
+.fv2-house{font-size:58px;cursor:pointer}.fv2-pen{border:5px dashed #b48145;border-radius:10px;width:95%;height:95%;background:#96c47b99;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;padding:10px 3px 2px}
+.fv2-pen label{position:absolute;top:0;left:4px;font-size:11px;background:#2d5132;color:white;padding:2px 5px;border-radius:4px}.fv2-animal{font-size:23px;animation:fv2walk 3s ease-in-out infinite alternate}.fv2-animal:nth-child(even){animation-delay:-1.5s}@keyframes fv2walk{to{transform:translate(5px,-4px)}}
+#farmV2Center{position:absolute;z-index:6;right:12px;top:170px;display:block;border:0;border-radius:12px;background:#f7eee0;color:#333;padding:9px}
+#farmV2Layer.active~#farmV2Center{display:block}
+</style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
@@ -1807,6 +1818,8 @@
     </div>
     <div class="app">
       <div class="premium-game">
+        <div id="farmV2Layer" class="active" aria-label="Нова карта ферми"><div id="farmV2Canvas"></div></div>
+        <button id="farmV2Center" type="button" aria-label="Центрувати карту">⌖</button>
         <img
           class="premium-bg"
           src="/assets/farm_reference_bg_v5.jpg"
@@ -5038,5 +5051,63 @@
 
       loadState();
     </script>
-  </body>
+  <script>
+(function(){
+ const layer=document.getElementById('farmV2Layer'), canvas=document.getElementById('farmV2Canvas');
+ const centerBtn=document.getElementById('farmV2Center');
+ if(!layer||!canvas)return;
+ let state=null,tiles=null,scale=.6,dx=0,dy=0,lastDist=0;const pointers=new Map();
+ const key='myfarm-v2-camera';
+ try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c&&Number.isFinite(c.scale)){scale=c.scale;dx=c.dx||0;dy=c.dy||0}}catch{}
+ const save=()=>{try{localStorage.setItem(key,JSON.stringify({scale,dx,dy}))}catch{}};
+ const paint=()=>{canvas.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${scale})`;save()};
+ const center=()=>{scale=Math.min(.8,(layer.clientWidth-24)/840,(layer.clientHeight-24)/840);dx=0;dy=0;paint()};
+ const tell=t=>{const fn=window.showToast;if(typeof fn==='function')fn(t);else alert(t)};
+ async function fetchData(){
+  const init=window.Telegram?.WebApp?.initData;
+  if(!init){return} // Browser preview has no Telegram credentials
+  const api='https://tg-farm-api.onrender.com/api';
+  const headers={'x-telegram-init-data':init};
+  try{
+   const sr=await fetch(api+'/state',{headers});if(!sr.ok)throw Error('State HTTP '+sr.status);
+   state=await sr.json();
+   // Farm V2 API is on the development branch, not deployed on Render main yet.
+   // Do not pretend the hardcoded preview is the user's persisted map.
+   const mr=await fetch(api+'/farm-map',{headers});
+   if(mr.ok){const m=await mr.json();tiles=Array.isArray(m.tiles)?m.tiles:Array.isArray(m.map?.tiles)?m.map.tiles:null}
+   render();
+  }catch(e){tell('Дані ферми недоступні: '+e.message)}
+ }
+ function render(){
+  canvas.replaceChildren();
+  for(let y=0;y<7;y++)for(let x=0;x<7;x++){
+   const record=tiles?.find(t=>t.x===x&&t.y===y);
+   const unlocked=record?Boolean(record.unlocked):x>=2&&x<=4&&y>=2&&y<=4;
+   const tile=document.createElement('div');tile.className='fv2-tile '+(unlocked?'':'locked');
+   if(unlocked){
+    if(x===3&&y===3){const h=document.createElement('span');h.className='fv2-house';h.textContent='🏠';h.onclick=e=>{e.stopPropagation();document.querySelector('[data-farm-menu="profile"]')?.click()};tile.append(h)}
+    const specs={'2,3':['chicken','chickenCards','🐔','Кури'],'4,3':['sheep','sheepCards','🐑','Вівці'],'3,4':['cow','cowCards','🐄','Корови']};
+    const spec=specs[x+','+y];if(spec){const [countField,cardsField,emoji,name]=spec;
+     const p=document.createElement('div');p.className='fv2-pen';const l=document.createElement('label');l.textContent=name+' · '+(state?.animals?.[countField]??'—');p.append(l);
+     const cards=state?.animals?.[cardsField]||[];
+     cards.slice(0,6).forEach(a=>{const b=document.createElement('span');b.className='fv2-animal';b.textContent=emoji;b.title=`Рівень ${a.level||1} · HP ${a.hp??100}%`;p.append(b)});
+     p.onclick=e=>{e.stopPropagation();document.getElementById('animalsBtn')?.click()};tile.append(p)
+    }
+   }else tile.onclick=()=>tell('Купівлю ділянок підключимо після серверної перевірки');
+   canvas.append(tile)
+  }
+  paint();
+ }
+ // Main farm screen is always Farm V2; no version switch.
+ centerBtn.style.display='block';
+ fetchData();
+ centerBtn.onclick=center;
+ layer.addEventListener('pointerdown',e=>{layer.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});lastDist=0});
+ layer.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const pts=[...pointers.values()];if(pts.length===1){dx+=e.clientX-prev.x;dy+=e.clientY-prev.y}else if(pts.length===2){const d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);if(lastDist)scale=Math.max(.3,Math.min(1.8,scale*d/lastDist));lastDist=d}paint()});
+ ['pointerup','pointercancel'].forEach(ev=>layer.addEventListener(ev,e=>{pointers.delete(e.pointerId);lastDist=0}));
+ layer.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.3,Math.min(1.8,scale*(e.deltaY>0?.92:1.08)));paint()},{passive:false});
+ render();
+})();
+</script>
+</body>
 </html>
