@@ -20,28 +20,61 @@ small{color:#c4d6ca}button{border:0;border-radius:10px;padding:10px 13px;font-we
 footer{height:54px;background:#182e26;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;gap:8px;font-size:12px}
 #toast{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);background:#172b22eb;border:1px solid #9ec08e;padding:10px 15px;border-radius:12px;max-width:90%;text-align:center;display:none;pointer-events:none}
 </style></head><body>
-<header><div><strong>🌿 My Farm Clicker 2.0</strong><div><small>Попередній перегляд карти · без збереження</small></div></div><button id="reset">⌖ Центр</button></header>
+<header><div><strong>🌿 My Farm Clicker 2.0</strong><div><small>Етап 4 · API + справжні тварини</small></div></div><button id="reset">⌖ Центр</button></header>
 <div id="viewport"><div id="world"></div><div id="toast"></div></div>
-<footer><span>49 ділянок · 9 відкрито</span><span>Перетягни карту · масштаб двома пальцями</span></footer>
+<footer><span id="status">Підключення до API…</span><span>Перетягни карту · масштаб двома пальцями</span></footer>
 <script>
 const world=document.getElementById('world'),viewport=document.getElementById('viewport'),toast=document.getElementById('toast');
 function message(t){toast.textContent=t;toast.style.display='block';clearTimeout(message.t);message.t=setTimeout(()=>toast.style.display='none',2300)}
-for(let y=0;y<7;y++)for(let x=0;x<7;x++){
- const open=x>=2&&x<=4&&y>=2&&y<=4;
- const tile=document.createElement('div');tile.className='tile '+(open?'open':'locked');tile.dataset.x=x;tile.dataset.y=y;
- if(open){
-  if(x===3&&y===3){tile.classList.add('center');const h=document.createElement('div');h.className='house';h.textContent='🏠';h.onclick=()=>message('Будиночок → профіль (підключимо в наступному етапі)');tile.append(h)}
-  const pens={'2,3':['🐔','Кури'],'4,3':['🐑','Вівці'],'3,4':['🐄','Корови']};
-  if(pens[x+','+y]){const [emoji,name]=pens[x+','+y];const p=document.createElement('div');p.className='pen';p.innerHTML='<b>'+name+'</b>'+Array.from({length:3},()=>'<span class="animal">'+emoji+'</span>').join('');p.onclick=()=>message(name+': демонстраційні тварини, не дані акаунта');tile.append(p)}
- }else tile.onclick=()=>message('Закрита ділянка · купівлю підключимо пізніше');
- world.append(tile);
+const tg=window.Telegram?.WebApp;
+tg?.ready?.();
+const params=new URLSearchParams(location.search);
+const apiBase=(params.get('api')||'http://localhost:3000').replace(/\/$/,'');
+const auth=tg?.initData||'';
+const status=document.getElementById('status');
+const farmKey='myfarm_v2_camera_'+(tg?.initDataUnsafe?.user?.id||'preview');
+const animalTypes={CHICKEN:{emoji:'🐔',name:'Кури',x:2,y:3},SHEEP:{emoji:'🐑',name:'Вівці',x:4,y:3},COW:{emoji:'🐄',name:'Корови',x:3,y:4}};
+const demoTiles=Array.from({length:49},(_,i)=>({x:i%7,y:Math.floor(i/7),unlocked:i%7>=2&&i%7<=4&&Math.floor(i/7)>=2&&Math.floor(i/7)<=4}));
+function renderFarm(tiles,animals){
+ world.replaceChildren();
+ const byPosition=new Map(tiles.map(t=>[`${t.x},${t.y}`,t]));
+ for(let y=0;y<7;y++)for(let x=0;x<7;x++){
+  const open=!!byPosition.get(`${x},${y}`)?.unlocked;
+  const tile=document.createElement('div');tile.className='tile '+(open?'open':'locked');tile.dataset.x=x;tile.dataset.y=y;
+  if(open){
+   if(x===3&&y===3){tile.classList.add('center');const h=document.createElement('div');h.className='house';h.textContent='🏠';h.onclick=()=>message('Профіль відкриватиметься в основній грі');tile.append(h)}
+   for(const [type,info] of Object.entries(animalTypes)){
+    if(info.x!==x||info.y!==y)continue;
+    const list=animals[type]||[];const p=document.createElement('div');p.className='pen';
+    const label=document.createElement('b');label.textContent=`${info.name}: ${list.length}/6`;p.append(label);
+    for(const animal of list.slice(0,6)){const a=document.createElement('span');a.className='animal';a.textContent=info.emoji;a.title=`Рівень ${animal.level||1}`;a.onclick=e=>{e.stopPropagation();message(`${info.name} · рівень ${animal.level||1} · HP ${animal.hp??'?'}%`)};p.append(a)}
+    p.onclick=()=>message(`${info.name}: ${list.length} тварин · список підключимо в основній грі`);tile.append(p);
+   }
+  }else tile.onclick=()=>message('Закрита ділянка · купівлю додамо окремо');
+  world.append(tile);
+ }
+}
+function restoreCamera(){try{const s=JSON.parse(localStorage.getItem(farmKey));if(s&&Number.isFinite(s.scale)&&Number.isFinite(s.tx)&&Number.isFinite(s.ty)){scale=Math.max(.25,Math.min(2,s.scale));tx=s.tx;ty=s.ty;render()}}catch{}}
+function saveCamera(){try{localStorage.setItem(farmKey,JSON.stringify({scale,tx,ty}))}catch{}}
+async function loadFarm(){
+ if(!auth){renderFarm(demoTiles,{});status.textContent='Демо: відкрий через Telegram для реальних даних';return}
+ try{
+  const headers={'x-telegram-init-data':auth};
+  const [mapRes,stateRes]=await Promise.all([fetch(apiBase+'/api/farm-map',{headers}),fetch(apiBase+'/api/state',{headers})]);
+  const map=await mapRes.json();const state=await stateRes.json();
+  if(!mapRes.ok||!stateRes.ok)throw Error(map?.error||state?.error||`HTTP ${mapRes.status}/${stateRes.status}`);
+  if(!Array.isArray(map.farm?.tiles)||map.farm.tiles.length!==49)throw Error('API не повернув 49 ділянок');
+  const animals={CHICKEN:state.animals?.chickenCards||[],SHEEP:state.animals?.sheepCards||[],COW:state.animals?.cowCards||[]};
+  renderFarm(map.farm.tiles,animals);
+  status.textContent=`Реальна ферма · ${map.farm.tiles.filter(t=>t.unlocked).length}/49 ділянок`;
+ }catch(err){renderFarm(demoTiles,{});status.textContent='API недоступний · показано демо';message('Помилка API: '+String(err.message||err))}
 }
 let scale=.56,tx=0,ty=0;const pointers=new Map();let last=null;
 function render(){world.style.transform=`translate(calc(-50% + ${tx}px),calc(-50% + ${ty}px)) scale(${scale})`}
-function center(){scale=Math.min(.76,(viewport.clientWidth-18)/840,(viewport.clientHeight-18)/840);tx=0;ty=0;render()}center();document.getElementById('reset').onclick=center;
+function center(){scale=Math.min(.76,(viewport.clientWidth-18)/840,(viewport.clientHeight-18)/840);tx=0;ty=0;render();saveCamera()}center();document.getElementById('reset').onclick=center;
 viewport.addEventListener('pointerdown',e=>{viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null});
 viewport.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const a=[...pointers.values()];if(a.length===1){tx+=e.clientX-old.x;ty+=e.clientY-old.y}else if(a.length===2){const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(last)scale=Math.max(.25,Math.min(2,scale*d/last));last=d}render()});
 for(const ev of ['pointerup','pointercancel'])viewport.addEventListener(ev,e=>{pointers.delete(e.pointerId);last=null});
-viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.25,Math.min(2,scale*(e.deltaY>0?.92:1.08)));render()},{passive:false});
-window.addEventListener('resize',render);
+viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.25,Math.min(2,scale*(e.deltaY>0?.92:1.08)));render();saveCamera()},{passive:false});
+window.addEventListener('resize',render);restoreCamera();loadFarm();
 </script></body></html>
