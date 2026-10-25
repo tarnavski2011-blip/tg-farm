@@ -1735,6 +1735,30 @@
 .fv2-pen label{position:absolute;top:0;left:4px;font-size:11px;background:#2d5132;color:white;padding:2px 5px;border-radius:4px}.fv2-animal{font-size:23px;animation:fv2walk 3s ease-in-out infinite alternate}.fv2-animal:nth-child(even){animation-delay:-1.5s}@keyframes fv2walk{to{transform:translate(5px,-4px)}}
 #farmV2Center{position:absolute;z-index:6;right:12px;top:170px;display:block;border:0;border-radius:12px;background:#f7eee0;color:#333;padding:9px}
 #farmV2Layer.active~#farmV2Center{display:block}
+
+/* Farm 2.0 — compact controls layout, stage 5C */
+#storageBtn { display:none !important; }
+#boostStatus {
+  position:absolute; z-index:16; top:155px; left:50%; transform:translateX(-50%);
+  width:max-content; max-width:calc(100% - 125px); margin:0;
+  padding:6px 10px; font-size:clamp(10px,2.7vw,13px); line-height:1.2;
+  white-space:nowrap; pointer-events:none;
+}
+#questsBtn,#wheelBtnVisible,#comboBtnVisible,#feedSideBtn {
+  left:8px !important; right:auto !important; width:52px !important;
+  min-height:51px !important; padding:4px 2px !important;
+  border-radius:11px !important; gap:2px !important;
+}
+#questsBtn {top:193px !important;}
+#wheelBtnVisible {top:250px !important;}
+#comboBtnVisible {top:307px !important;}
+#feedSideBtn {top:364px !important;}
+#questsBtn span,#wheelBtnVisible span,#comboBtnVisible span,#feedSideBtn span {font-size:21px !important;}
+#questsBtn strong,#wheelBtnVisible strong,#comboBtnVisible strong,#feedSideBtn strong {font-size:9px !important;line-height:1.1;text-align:center;}
+@media(max-width:390px){
+ #boostStatus{top:151px;max-width:calc(100% - 112px);padding:5px 7px;}
+ #questsBtn,#wheelBtnVisible,#comboBtnVisible,#feedSideBtn{width:47px !important;min-height:48px !important;}
+}
 </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -1942,7 +1966,7 @@
 
         <div class="bottom-nav">
           <button class="nav-btn active" id="farmHomeBtn" type="button">
-            <span>🏠</span><strong>Farm</strong>
+            <span>📦</span><strong>Склад</strong>
           </button>
           <button class="nav-btn" id="animalsBtn" type="button">
             <span>🐾</span><strong>Animals</strong>
@@ -4691,7 +4715,7 @@
 
         safeBind("loadStateBtn", loadState);
         safeBind("refreshBtn", loadState);
-        safeBind("farmHomeBtn", loadState);
+        safeBind("farmHomeBtn", openStorageModal);
 
         safeBind("animalsBtn", openAnimalsModal);
         safeBind("animalsBtnOld", openAnimalsModal);
@@ -4825,7 +4849,7 @@
             };
           };
 
-          bindClick("farmHomeBtn", loadState);
+          bindClick("farmHomeBtn", openStorageModal);
           bindClick("feedSideBtn", openFeedModal);
 
           bindClick("animalsBtnOld", openAnimalsModal);
