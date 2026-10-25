@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const questMetrics_1 = require("../lib/questMetrics");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
@@ -110,6 +111,7 @@ router.post("/spin", async (req, res) => {
         });
         if (!updated)
             return res.status(400).json({ error: "Spin already claimed" });
+        await (0, questMetrics_1.recordQuestMetric)(user.id, "wheel_spins", 1).catch(console.error);
         return res.json({
             ok: true,
             reward, // full reward object

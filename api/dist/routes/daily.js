@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const questMetrics_1 = require("../lib/questMetrics");
 const express_1 = require("express");
 const prisma_1 = require("../prisma");
 const router = (0, express_1.Router)();
@@ -91,6 +92,7 @@ router.post("/", async (req, res) => {
         });
         if (result.count !== 1)
             return res.status(400).json({ error: "Вже забрано сьогодні" });
+        await (0, questMetrics_1.recordQuestMetric)(user.id, "daily_rewards", 1).catch(console.error);
         return res.json({
             ok: true,
             day: s.day,

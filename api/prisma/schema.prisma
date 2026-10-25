@@ -79,6 +79,7 @@ model User {
   questCounters QuestCounter[]
   questPeriodClaims QuestPeriodClaim[]
   tonDeposits TonDeposit[]
+  farmMap FarmMap?
 }
 
 model Storage {
@@ -268,4 +269,40 @@ model LevelReward {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, level])
   @@index([userId, claimedAt])
+}
+
+// New farm map: isolated from existing animals and economy.
+model FarmMap {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  width     Int       @default(7)
+  height    Int       @default(7)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tiles     FarmTile[]
+  objects   FarmObject[]
+}
+
+model FarmTile {
+  id       Int      @id @default(autoincrement())
+  farmId   Int
+  x        Int
+  y        Int
+  terrain  String   @default("GRASS")
+  unlocked Boolean  @default(false)
+  farm     FarmMap  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  @@unique([farmId, x, y])
+}
+
+model FarmObject {
+  id        Int      @id @default(autoincrement())
+  farmId    Int
+  kind      String
+  x         Int
+  y         Int
+  rotation  Int      @default(0)
+  createdAt DateTime @default(now())
+  farm      FarmMap  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  @@index([farmId, x, y])
 }
