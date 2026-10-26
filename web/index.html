@@ -1732,10 +1732,11 @@
 .fv2-tile{position:relative;border:2px solid #739a6b;background:repeating-linear-gradient(45deg,#80ba71 0 12px,#88c477 12px 24px);display:grid;place-items:center}
 .fv2-tile.locked{background:#506650}.fv2-tile.locked:after{content:'🔒';position:absolute;inset:0;background:#1b2927a6;display:grid;place-items:center;font-size:25px}
 .fv2-house{font-size:58px;cursor:pointer}.fv2-pen{border:5px dashed #b48145;border-radius:10px;width:95%;height:95%;background:#96c47b99;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;padding:10px 3px 2px}
-.fv2-pen label{position:absolute;top:0;left:4px;font-size:11px;background:#2d5132;color:white;padding:2px 5px;border-radius:4px}.fv2-animal{font-size:23px;animation:fv2walk 3s ease-in-out infinite alternate}.fv2-animal:nth-child(even){animation-delay:-1.5s}@keyframes fv2walk{to{transform:translate(5px,-4px)}}
+.fv2-pen label{position:absolute;top:0;left:4px;font-size:11px;background:#2d5132;color:white;padding:2px 5px;border-radius:4px}.fv2-animal{font-size:clamp(12px, 2.1vw, 23px);animation:fv2walk 3s ease-in-out infinite alternate}.fv2-animal:nth-child(even){animation-delay:-1.5s}@keyframes fv2walk{to{transform:translate(5px,-4px)}}
 #farmV2Center{position:absolute;z-index:6;right:12px;top:170px;display:block;border:0;border-radius:12px;background:#f7eee0;color:#333;padding:9px}
 #farmV2Layer.active~#farmV2Center{display:block}
 
+.fv2-tile.fv2-reveal{animation:fv2-reveal 1.5s ease-out}@keyframes fv2-reveal{0%{filter:brightness(1.7);opacity:.55}100%{filter:brightness(1);opacity:1}}
 /* Farm 2.0 — compact controls layout, stage 5C */
 #storageBtn { display:none !important; }
 #boostStatus {
@@ -2145,7 +2146,7 @@
     </div>
     <script>
       const tg = window.Telegram?.WebApp;
-      const API = "https://tg-farm-api.onrender.com/api";
+      const API = ["localhost", "127.0.0.1"].includes(location.hostname) ? "/api" : "https://tg-farm-api.onrender.com/api";
       const BOT_USERNAME = "my_farm_clicker_bot";
 
       let tonConnectUI = null;
@@ -2359,6 +2360,10 @@
         }
         return { ok: res.ok, data: json };
       }
+      // Shared authenticated API bridge for the separate Farm V2 script.
+      window.farmV2ApiGet = apiGet;
+      window.farmV2ApiPost = apiPost;
+      window.farmV2RefreshState = loadState;
       const levelsTopButton = document.getElementById("levelsTopButton");
       const levelsOverlay = document.getElementById("levelsOverlay");
       const levelsList = document.getElementById("levelsList");
@@ -2426,6 +2431,7 @@
 
         lastKnownLevel = newLevel;
         currentState = data;
+        window.dispatchEvent(new CustomEvent("myfarm:state", { detail: data }));
 
         coinsEl.textContent = data?.coins ?? 0;
         diamondsEl.textContent = data?.diamonds ?? 0;
@@ -5080,53 +5086,69 @@
  const layer=document.getElementById('farmV2Layer'), canvas=document.getElementById('farmV2Canvas');
  const centerBtn=document.getElementById('farmV2Center');
  if(!layer||!canvas)return;
- let state=null,tiles=null,scale=.6,dx=0,dy=0,lastDist=0;const pointers=new Map();
+ let state=null,farm=null,scale=.6,dx=0,dy=0,lastDist=0;const pointers=new Map();
  const key='myfarm-v2-camera';
  try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c&&Number.isFinite(c.scale)){scale=c.scale;dx=c.dx||0;dy=c.dy||0}}catch{}
  const save=()=>{try{localStorage.setItem(key,JSON.stringify({scale,dx,dy}))}catch{}};
  const paint=()=>{canvas.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${scale})`;save()};
  const center=()=>{scale=Math.min(.8,(layer.clientWidth-24)/840,(layer.clientHeight-24)/840);dx=0;dy=0;paint()};
  const tell=t=>{const fn=window.showToast;if(typeof fn==='function')fn(t);else alert(t)};
- async function fetchData(){
-  const init=window.Telegram?.WebApp?.initData;
-  if(!init){return} // Browser preview has no Telegram credentials
-  const api='https://tg-farm-api.onrender.com/api';
-  const headers={'x-telegram-init-data':init};
+ // Reuse the same authenticated /api/state response as the Animals screen.
+ // No second Render request: this also works in the localhost test mode.
+ window.addEventListener('myfarm:state',e=>{state=e.detail;render();if(!farm)loadFarm()});
+ async function loadFarm(){
   try{
-   const sr=await fetch(api+'/state',{headers});if(!sr.ok)throw Error('State HTTP '+sr.status);
-   state=await sr.json();
-   // Farm V2 API is on the development branch, not deployed on Render main yet.
-   // Do not pretend the hardcoded preview is the user's persisted map.
-   const mr=await fetch(api+'/farm-map',{headers});
-   if(mr.ok){const m=await mr.json();tiles=Array.isArray(m.tiles)?m.tiles:Array.isArray(m.map?.tiles)?m.map.tiles:null}
-   render();
-  }catch(e){tell('Дані ферми недоступні: '+e.message)}
+   const response=await window.farmV2ApiGet('/farm-map');
+   if(!response.ok||!response.data?.farm){console.error('Farm map API:',response);tell('Не вдалося завантажити карту ферми');return}
+   farm=response.data.farm;render();
+  }catch(err){console.error('Farm map load:',err);tell('Помилка завантаження карти')}
  }
+ function tilePrice(){return farm?.nextPrice??5000}
+ async function purchaseTile(x,y){
+  if(!farm){tell('Карта ще завантажується');return}
+  const tile=farm.tiles.find(t=>t.x===x&&t.y===y);
+  if(!tile||tile.unlocked)return;
+  const adjacent=farm.tiles.some(t=>t.unlocked&&Math.abs(t.x-x)+Math.abs(t.y-y)===1);
+  if(!adjacent){tell('Можна купити тільки сусідню ділянку');return}
+  const price=tilePrice(),coins=Number(state?.coins??0);
+  if(!confirm(`Відкрити ділянку?\nЦіна: ${price.toLocaleString('uk-UA')} монет\nТвій баланс: ${coins.toLocaleString('uk-UA')} монет`))return;
+  if(coins<price){tell('Недостатньо монет');return}
+  try{
+   const response=await window.farmV2ApiPost('/farm-map/buy',{x,y});
+   if(!response.ok){tell(response.data?.error||'Помилка купівлі');await loadFarm();return}
+   // The server is authoritative: refresh balances and unlocked tiles.
+   await loadFarm();
+   await window.farmV2RefreshState();
+   const element=canvas.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+   if(element){element.classList.add('fv2-reveal');setTimeout(()=>element.classList.remove('fv2-reveal'),1600)}
+   tell('Нову ділянку відкрито!');
+  }catch(err){console.error('Farm purchase:',err);tell('Не вдалося купити ділянку')}
+ }
+
  function render(){
   canvas.replaceChildren();
   for(let y=0;y<7;y++)for(let x=0;x<7;x++){
-   const record=tiles?.find(t=>t.x===x&&t.y===y);
-   const unlocked=record?Boolean(record.unlocked):x>=2&&x<=4&&y>=2&&y<=4;
-   const tile=document.createElement('div');tile.className='fv2-tile '+(unlocked?'':'locked');
+   const unlocked=farm?!!farm.tiles.find(t=>t.x===x&&t.y===y&&t.unlocked):(x>=2&&x<=4&&y>=2&&y<=4);
+   const tile=document.createElement('div');tile.className='fv2-tile '+(unlocked?'':'locked');tile.dataset.x=x;tile.dataset.y=y;
    if(unlocked){
     if(x===3&&y===3){const h=document.createElement('span');h.className='fv2-house';h.textContent='🏠';h.onclick=e=>{e.stopPropagation();document.querySelector('[data-farm-menu="profile"]')?.click()};tile.append(h)}
     const specs={'2,3':['chicken','chickenCards','🐔','Кури'],'4,3':['sheep','sheepCards','🐑','Вівці'],'3,4':['cow','cowCards','🐄','Корови']};
     const spec=specs[x+','+y];if(spec){const [countField,cardsField,emoji,name]=spec;
-     const p=document.createElement('div');p.className='fv2-pen';const l=document.createElement('label');l.textContent=name+' · '+(state?.animals?.[countField]??'—');p.append(l);
-     const cards=state?.animals?.[cardsField]||[];
-     cards.slice(0,6).forEach(a=>{const b=document.createElement('span');b.className='fv2-animal';b.textContent=emoji;b.title=`Рівень ${a.level||1} · HP ${a.hp??100}%`;p.append(b)});
+     const p=document.createElement('div');p.className='fv2-pen';
+     const cards=Array.isArray(state?.animals?.[cardsField])?state.animals[cardsField]:[];
+     const l=document.createElement('label');l.textContent=name+' · '+cards.length;p.append(l);
+     cards.slice(0,6).forEach((a,i)=>{const b=document.createElement('span');b.className='fv2-animal';b.textContent=emoji;b.title=`Рівень ${a.level||1} · HP ${a.hp??100}%`;b.style.animationDelay=`-${(i%7)*0.4}s`;p.append(b)});
      p.onclick=e=>{e.stopPropagation();document.getElementById('animalsBtn')?.click()};tile.append(p)
     }
-   }else tile.onclick=()=>tell('Купівлю ділянок підключимо після серверної перевірки');
+   }else tile.onclick=()=>purchaseTile(x,y);
    canvas.append(tile)
   }
   paint();
  }
  // Main farm screen is always Farm V2; no version switch.
  centerBtn.style.display='block';
- fetchData();
  centerBtn.onclick=center;
- layer.addEventListener('pointerdown',e=>{layer.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});lastDist=0});
+ layer.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});lastDist=0});
  layer.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const pts=[...pointers.values()];if(pts.length===1){dx+=e.clientX-prev.x;dy+=e.clientY-prev.y}else if(pts.length===2){const d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);if(lastDist)scale=Math.max(.3,Math.min(1.8,scale*d/lastDist));lastDist=d}paint()});
  ['pointerup','pointercancel'].forEach(ev=>layer.addEventListener(ev,e=>{pointers.delete(e.pointerId);lastDist=0}));
  layer.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.3,Math.min(1.8,scale*(e.deltaY>0?.92:1.08)));paint()},{passive:false});

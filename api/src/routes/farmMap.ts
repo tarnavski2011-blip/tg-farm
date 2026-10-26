@@ -69,6 +69,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
           id: tile.id, x: tile.x, y: tile.y,
           terrain: tile.terrain, unlocked: tile.unlocked,
         })),
+        nextPrice: nextPrice(Math.max(0, result.tiles.filter(tile => tile.unlocked).length - 9)),
         objects: result.objects.map(object => ({
           id: object.id, kind: object.kind, x: object.x,
           y: object.y, rotation: object.rotation,
@@ -78,6 +79,72 @@ router.get("/", async (req: TgAuthedRequest, res) => {
   } catch (error) {
     console.error("FARM MAP GET ERROR", error);
     return res.status(500).json({ error: "Failed to load farm map" });
+  }
+});
+
+
+const FIRST_PRICE = 5000;
+const NEXT_MULTIPLIER = 1.25;
+function nextPrice(purchased: number) {
+  return Math.round(FIRST_PRICE * Math.pow(NEXT_MULTIPLIER, purchased));
+}
+function isAdjacent(x: number, y: number, opened: { x: number; y: number }[]) {
+  return opened.some(t => Math.abs(t.x - x) + Math.abs(t.y - y) === 1);
+}
+
+router.post("/buy", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  const { x, y } = req.body ?? {};
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE)
+    return res.status(400).json({ error: "Invalid tile coordinates" });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(rawId) }, select: { id: true },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Serializable transaction prevents two simultaneous purchases from using
+    // the same balance, adjacency state, or expansion price.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const outcome = await prisma.$transaction(async tx => {
+          const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, select: { id: true } });
+          if (!farm) return { status: 409, error: "Open farm map first" };
+          const tiles = await tx.farmTile.findMany({
+            where: { farmId: farm.id }, select: { id: true, x: true, y: true, unlocked: true },
+          });
+          const selected = tiles.find(t => t.x === x && t.y === y);
+          if (!selected) return { status: 404, error: "Tile not found" };
+          if (selected.unlocked) return { status: 409, error: "Tile already unlocked" };
+          const opened = tiles.filter(t => t.unlocked);
+          if (!isAdjacent(x, y, opened)) return { status: 400, error: "Only edge-adjacent tiles can be bought" };
+          const price = nextPrice(Math.max(0, opened.length - 9));
+          const debit = await tx.user.updateMany({
+            where: { id: user.id, coins: { gte: price } },
+            data: { coins: { decrement: price } },
+          });
+          if (debit.count !== 1) return { status: 400, error: "Not enough coins", price };
+          const updated = await tx.farmTile.updateMany({
+            where: { id: selected.id, unlocked: false }, data: { unlocked: true },
+          });
+          if (updated.count !== 1) throw new Error("Concurrent farm tile update");
+          const balance = await tx.user.findUniqueOrThrow({
+            where: { id: user.id }, select: { coins: true },
+          });
+          return { status: 200, ok: true, x, y, price, coins: balance.coins, nextPrice: nextPrice(opened.length - 8) };
+        }, { isolationLevel: "Serializable", timeout: 10000 });
+        return res.status(outcome.status).json(outcome);
+      } catch (error: any) {
+        if (error?.code === "P2034" && attempt < 2) continue;
+        throw error;
+      }
+    }
+    return res.status(409).json({ error: "Concurrent update; retry" });
+  } catch (error) {
+    console.error("FARM TILE BUY ERROR", error);
+    return res.status(500).json({ error: "Could not purchase tile" });
   }
 });
 
