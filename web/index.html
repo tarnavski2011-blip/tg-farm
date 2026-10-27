@@ -1774,7 +1774,17 @@
  .fv2-selected{outline:3px solid #facc15!important;outline-offset:2px;filter:drop-shadow(0 0 5px #facc15)}
  #farmV2EditTools button[hidden]{display:none!important}
  #farmV2EditTools button:disabled{opacity:.45}
- </style>
+ 
+#fv2DecorTray{display:flex;flex-wrap:wrap;gap:5px;max-width:250px;justify-content:flex-end;background:#213e2ce8;padding:7px;border-radius:10px}
+#fv2DecorTray[hidden]{display:none!important}
+#fv2DecorTray button{font-size:12px;padding:7px}
+.fv2-decor-cell{position:absolute;width:30px;height:30px;z-index:6;background:transparent;border:1px dashed #fff5;padding:0;cursor:crosshair;touch-action:manipulation}
+.fv2-decoration{position:absolute;z-index:9;width:30px;height:30px;display:grid;place-items:center;font-size:23px;cursor:pointer;user-select:none;touch-action:manipulation}
+.fv2-decoration.fv2-selected{background:#ffe58c66;border-radius:6px}
+.fv2-connected{border:1px solid #70583c;box-sizing:border-box;z-index:8}
+#fv2StorageTray{max-height:180px;overflow-y:auto}
+#fv2StorageTray[hidden]{display:none!important}
+</style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
@@ -5106,8 +5116,181 @@
  editHelp.textContent='Перетягуй будинок або огорожі на відкриту землю. Зміни зберігаються автоматично.';
  const rotateBtn=document.createElement('button');rotateBtn.type='button';rotateBtn.textContent='↻ Повернути';rotateBtn.hidden=true;
  const undoBtn=document.createElement('button');undoBtn.type='button';undoBtn.textContent='↩ Скасувати';undoBtn.hidden=true;
- editTools.append(editBtn,rotateBtn,undoBtn,editHelp);layer.parentElement.append(editTools);
+ const decorBtn=document.createElement('button');decorBtn.type='button';decorBtn.textContent='🌳 Декорації';decorBtn.hidden=true;
+ const decorTray=document.createElement('div');decorTray.id='fv2DecorTray';decorTray.hidden=true;
+ const storageBtn=document.createElement('button');storageBtn.type='button';storageBtn.textContent='📦 Сховище';storageBtn.hidden=true;
+ const storeBtn=document.createElement('button');storeBtn.type='button';storeBtn.textContent='📥 Прибрати';storeBtn.hidden=true;
+ const storageTray=document.createElement('div');storageTray.id='fv2StorageTray';storageTray.hidden=true;
+ editTools.append(editBtn,decorBtn,storageBtn,rotateBtn,storeBtn,undoBtn,decorTray,storageTray,editHelp);layer.parentElement.append(editTools);
  let editing=false,selectedKind=null,lastAction=null,actionBusy=false;
+ const decorationTypes=[
+  {kind:'DECOR_TREE',emoji:'🌳',label:'Дерево'},
+  {kind:'DECOR_BUSH',emoji:'🌿',label:'Кущ'},
+  {kind:'DECOR_FLOWER',emoji:'🌷',label:'Квіти'},
+  {kind:'DECOR_BENCH',emoji:'🪑',label:'Лавка'},
+  {kind:'DECOR_LAMP',emoji:'💡',label:'Ліхтар'},
+  {kind:'DECOR_PATH_DIRT',emoji:'🟫',label:'Земляна доріжка'},
+  {kind:'DECOR_PATH_STONE',emoji:'⬜',label:'Кам’яна доріжка'},
+  {kind:'DECOR_PATH_WOOD',emoji:'🟨',label:'Дерев’яна доріжка'},
+  {kind:'DECOR_FENCE_WOOD',emoji:'🪵',label:'Декоративний паркан'}
+ ];
+ let pendingDecoration=null,selectedDecorationId=null,storedDecorationId=null;
+ const isLineKind=k=>k?.startsWith('DECOR_PATH_')||k==='DECOR_FENCE_WOOD';
+ const isStored=k=>k?.startsWith('STORED_DECOR_');
+ const findDecoration=id=>farm?.objects?.find(o=>String(o.id)===String(id));
+ const decorationUndo=async()=>{
+  if(!lastAction?.decoration)return false;
+  const a=lastAction.decoration;
+  let endpoint='/farm-map/decoration/action',payload;
+  if(a.type==='place')payload={action:'store',id:a.id};
+  if(a.type==='store')payload={action:'restore',id:a.id,x:a.x,y:a.y};
+  if(a.type==='restore')payload={action:'store',id:a.id};
+  if(a.type==='rotate')payload={action:'rotate',id:a.id,rotation:a.rotation};
+  if(a.type==='move'){endpoint='/farm-map/decoration/move';payload={id:a.id,x:a.x,y:a.y}}
+  if(!payload)return false;
+  const resp=await window.farmV2ApiPost(endpoint,payload);
+  if(!resp.ok){tell(resp.data?.error||'Не вдалося скасувати');return false}
+  lastAction=null;selectedDecorationId=null;await loadFarm();return true;
+ };
+ async function decorAction(payload,undoData){
+  if(actionBusy)return false;actionBusy=true;refreshEditControls();
+  try{
+   const resp=await window.farmV2ApiPost('/farm-map/decoration/action',payload);
+   if(!resp.ok){tell(resp.data?.error||'Не вдалося змінити декорацію');return false}
+   lastAction={decoration:undoData};await loadFarm();return true;
+  }catch(err){console.error('Decoration action',err);tell('Помилка збереження');return false}
+  finally{actionBusy=false;refreshEditControls();render()}
+ }
+ storageBtn.addEventListener('click',()=>{storageTray.hidden=!storageTray.hidden;refreshStorage()});
+ storeBtn.addEventListener('click',async()=>{
+  const obj=findDecoration(selectedDecorationId);if(!obj)return;
+  if(await decorAction({action:'store',id:String(obj.id)},{type:'store',id:String(obj.id),x:obj.x,y:obj.y})){
+   selectedDecorationId=null;refreshEditControls();tell('Предмет у сховищі');
+  }
+ });
+ function refreshStorage(){
+  storageTray.replaceChildren();
+  for(const obj of farm?.objects||[]){
+   if(!isStored(obj.kind))continue;
+   const spec=decorationTypes.find(t=>t.kind===obj.kind.slice(7));if(!spec)continue;
+   const btn=document.createElement('button');btn.type='button';btn.textContent=spec.emoji+' '+spec.label;
+   btn.addEventListener('click',()=>{
+    storedDecorationId=String(obj.id);pendingDecoration=null;selectedDecorationId=null;
+    storageTray.hidden=true;tell('Натисни вільну клітинку, щоб повернути предмет');render();
+   });storageTray.append(btn);
+  }
+  if(!storageTray.children.length)storageTray.textContent='Сховище порожнє';
+ }
+
+ decorBtn.addEventListener('click',()=>{decorTray.hidden=!decorTray.hidden});
+ for(const type of decorationTypes){
+  const button=document.createElement('button');button.type='button';button.textContent=type.emoji+' '+type.label;
+  button.addEventListener('click',()=>{
+   pendingDecoration=type.kind;selectedDecorationId=null;storedDecorationId=null;decorTray.hidden=true;
+   tell('Натисни на вільну маленьку клітинку для '+type.label.toLowerCase());render();
+  });decorTray.append(button);
+ }
+ async function applyDecoration(x,y){
+  if(actionBusy)return;
+  actionBusy=true;refreshEditControls();
+  const isMove=!!selectedDecorationId, isRestore=!!storedDecorationId;
+  const old=isMove?findDecoration(selectedDecorationId):null;
+  const endpoint=isRestore?'/farm-map/decoration/action':isMove?'/farm-map/decoration/move':'/farm-map/decoration/place';
+  const payload=isRestore?{action:'restore',id:storedDecorationId,x,y}:isMove?{id:selectedDecorationId,x,y}:{kind:pendingDecoration,x,y};
+  try{
+   const r=await window.farmV2ApiPost(endpoint,payload);
+   if(!r.ok){tell(r.data?.error||'Не вдалося розмістити декорацію');return}
+   if(isRestore)lastAction={decoration:{type:'restore',id:storedDecorationId}};
+   else if(isMove&&old)lastAction={decoration:{type:'move',id:String(old.id),x:old.x,y:old.y}};
+   else if(r.data?.object?.id)lastAction={decoration:{type:'place',id:String(r.data.object.id)}};
+   selectedDecorationId=null;storedDecorationId=null;
+   await loadFarm();tell(isRestore?'Предмет повернуто зі сховища':isMove?'Декорацію переміщено':'Декорацію додано');
+  }catch(e){console.error('Decoration',e);tell('Помилка збереження декорації')}
+  finally{actionBusy=false;refreshEditControls();render()}
+ }
+ function addDecorations(){
+  for(const obj of farm?.objects||[]){
+   const spec=decorationTypes.find(d=>d.kind===obj.kind);if(!spec)continue;
+   const el=document.createElement('span');el.className='fv2-decoration';
+   el.textContent=spec.emoji;el.style.left=(obj.x*30)+'px';el.style.top=(obj.y*30)+'px';
+   el.style.transform=`rotate(${obj.rotation||0}deg)`;
+   if(isLineKind(obj.kind)){
+    const neighbors=[[0,-1],[1,0],[0,1],[-1,0]].map(([dx,dy])=>
+      (farm?.objects||[]).some(o=>o.kind===obj.kind&&o.x===obj.x+dx&&o.y===obj.y+dy));
+    el.classList.add('fv2-connected');
+    el.dataset.links=neighbors.map((v,i)=>v?i:'').join('');
+    if(obj.kind.startsWith('DECOR_PATH_')){
+     const colors={DECOR_PATH_DIRT:'#97744c',DECOR_PATH_STONE:'#b7c5c7',DECOR_PATH_WOOD:'#ae7a46'};
+     el.style.background=colors[obj.kind];el.style.borderRadius=neighbors.some(Boolean)?'3px':'7px';
+     el.style.boxShadow=neighbors.map((v,i)=>v?(['0 -4px 0','4px 0 0','0 4px 0','-4px 0 0'][i]+' '+colors[obj.kind]):'').filter(Boolean).join(',');
+     el.textContent='';
+    }else{el.style.background='#a67c52';el.style.borderRadius='3px';}
+   }
+   el.title=spec.label+(editing?' — натисни для переміщення':'');
+   if(String(obj.id)===selectedDecorationId)el.classList.add('fv2-selected');
+   el.addEventListener('click',e=>{
+    e.stopPropagation();if(!editing)return;
+    pendingDecoration=null;storedDecorationId=null;selectedDecorationId=String(obj.id);refreshEditControls();
+    tell('Натисни на нову вільну клітинку для переміщення');render();
+   });canvas.append(el);
+  }
+ }
+ let paintStroke=null;
+ async function commitPaintStroke(stroke){
+  if(!stroke?.cells?.length||actionBusy)return;
+  actionBusy=true;refreshEditControls();
+  try{
+   const r=await window.farmV2ApiPost('/farm-map/decoration/paint',
+    {kind:stroke.kind,cells:stroke.cells});
+   if(!r.ok){tell(r.data?.error||'Не вдалося намалювати доріжку');return}
+   lastAction=null; // Multi-cell stroke cannot be undone by single-object undo.
+   await loadFarm();tell('Додано клітинок: '+(r.data?.placed||0));
+  }catch(e){console.error('Paint stroke',e);tell('Помилка малювання')}
+  finally{actionBusy=false;refreshEditControls();render()}
+ }
+ function addStrokeCell(event){
+  if(!paintStroke)return;
+  const rect=canvas.getBoundingClientRect();
+  const x=Math.floor((event.clientX-rect.left)/(rect.width/28));
+  const y=Math.floor((event.clientY-rect.top)/(rect.height/28));
+  if(x<0||y<0||x>27||y>27)return;
+  const key=x+','+y;
+  if(!paintStroke.seen.has(key)){
+   paintStroke.seen.add(key);paintStroke.cells.push({x,y});
+  }
+ }
+ function addDecorationGrid(){
+  if(!editing)return;
+  for(const tile of farm?.tiles||[]){
+   if(!tile.unlocked)continue;
+   for(let sy=0;sy<4;sy++)for(let sx=0;sx<4;sx++){
+    const x=tile.x*4+sx,y=tile.y*4+sy;
+    const cell=document.createElement('button');cell.type='button';cell.className='fv2-decor-cell';
+    cell.style.left=(x*30)+'px';cell.style.top=(y*30)+'px';
+    cell.title='Клітинка '+x+','+y;
+    cell.addEventListener('pointerdown',e=>{
+     if(!isLineKind(pendingDecoration)||actionBusy)return;
+     e.stopPropagation();e.preventDefault();
+     paintStroke={kind:pendingDecoration,cells:[],seen:new Set()};
+     cell.setPointerCapture(e.pointerId);addStrokeCell(e);
+     const move=ev=>{ev.stopPropagation();ev.preventDefault();addStrokeCell(ev)};
+     const finish=ev=>{
+      ev.stopPropagation();cell.removeEventListener('pointermove',move);
+      cell.removeEventListener('pointerup',finish);cell.removeEventListener('pointercancel',finish);
+      const stroke=paintStroke;paintStroke=null;commitPaintStroke(stroke);
+     };
+     cell.addEventListener('pointermove',move);cell.addEventListener('pointerup',finish);
+     cell.addEventListener('pointercancel',finish);
+    });
+    cell.addEventListener('click',e=>{
+     e.stopPropagation();if(isLineKind(pendingDecoration))return;
+     if(pendingDecoration||selectedDecorationId||storedDecorationId)applyDecoration(x,y);
+     else tell('Спочатку вибери декорацію в каталозі');
+    });canvas.append(cell);
+   }
+  }
+ }
+
  const objectPosition=kind=>{
   const obj=farm?.objects?.find(o=>o.kind===kind);
   if(obj)return {x:obj.x,y:obj.y,rotation:obj.rotation||0};
@@ -5116,7 +5299,11 @@
   return spec?{x:spec.x,y:spec.y,rotation:0}:null;
  };
  function refreshEditControls(){
-  rotateBtn.hidden=!editing||!selectedKind;
+  decorBtn.hidden=!editing;storageBtn.hidden=!editing;
+  storeBtn.hidden=!editing||!selectedDecorationId;
+  rotateBtn.hidden=!editing||(!selectedKind&&!selectedDecorationId);
+  if(!editing)storageTray.hidden=true;
+  if(!editing)decorTray.hidden=true;
   undoBtn.hidden=!editing||!lastAction;
   rotateBtn.disabled=undoBtn.disabled=actionBusy;
  }
@@ -5139,12 +5326,25 @@
   finally{actionBusy=false;refreshEditControls();render()}
  }
  rotateBtn.addEventListener('click',async()=>{
-  if(!editing||!selectedKind||actionBusy)return;
+  if(!editing||actionBusy)return;
+  if(selectedDecorationId){
+   const obj=findDecoration(selectedDecorationId);if(!obj)return;
+   await decorAction({action:'rotate',id:String(obj.id),rotation:((obj.rotation||0)+90)%360},
+     {type:'rotate',id:String(obj.id),rotation:obj.rotation||0});return;
+  }
+  if(!selectedKind)return;
   const previous=objectPosition(selectedKind);if(!previous)return;
   await runObjectAction(selectedKind,{type:'rotate',rotation:(previous.rotation+90)%360},previous);
  });
  undoBtn.addEventListener('click',async()=>{
   if(!editing||!lastAction||actionBusy)return;
+  if(lastAction.decoration){
+   actionBusy=true;refreshEditControls();
+   try{if(await decorationUndo())tell('Останню дію скасовано')}
+   catch(e){console.error('Undo decoration',e);tell('Помилка скасування')}
+   finally{actionBusy=false;refreshEditControls();render()}
+   return;
+  }
   const item=lastAction,now=objectPosition(item.kind);
   const action=item.action.type==='rotate'
    ?{type:'rotate',rotation:item.previous.rotation}
@@ -5155,7 +5355,7 @@
  editBtn.addEventListener('click',()=>{
   editing=!editing;layer.classList.toggle('fv2-editing',editing);
   editBtn.textContent=editing?'✅ Готово':'✏️ Редагувати';editHelp.hidden=!editing;
-  if(!editing){selectedKind=null;lastAction=null}refreshEditControls();render();
+  if(!editing){selectedKind=null;lastAction=null;pendingDecoration=null;selectedDecorationId=null;storedDecorationId=null;decorTray.hidden=true;storageTray.hidden=true}refreshEditControls();render();
  });
 
  if(!layer||!canvas)return;
@@ -5332,6 +5532,9 @@
   }
   addPens();
   addHouse();
+  addDecorations();
+  addDecorationGrid();
+  refreshStorage();refreshEditControls();
   paint();
  }
  // Main farm screen is always Farm V2; no version switch.

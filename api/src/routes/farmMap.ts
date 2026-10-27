@@ -314,4 +314,140 @@ router.post("/object/rotate", async (req: TgAuthedRequest, res) => {
   }
 });
 
+
+// Decoration catalogue: no payment or bonuses. Each decoration occupies one
+// small cell. Multiple instances of each kind are allowed.
+const DECORATIONS = ["DECOR_TREE", "DECOR_BUSH", "DECOR_FLOWER", "DECOR_BENCH", "DECOR_LAMP", "DECOR_PATH_DIRT", "DECOR_PATH_STONE", "DECOR_PATH_WOOD", "DECOR_FENCE_WOOD"];
+const STORED_PREFIX = "STORED_";
+const DEFAULT_PEN_CELLS: Record<string, { x: number; y: number }> = {
+  PEN_CHICKEN: { x: 8, y: 12 }, PEN_SHEEP: { x: 16, y: 12 }, PEN_COW: { x: 12, y: 16 },
+};
+function decorationPlacementError(farm: any, x: number, y: number, excludeId?: number | string) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= 28 || y >= 28)
+    return "Invalid grid cell";
+  if (!farm.tiles.some((t: any) => t.unlocked && t.x === Math.floor(x / 4) && t.y === Math.floor(y / 4)))
+    return "This land is locked";
+  const house = farm.objects.find((o: any) => o.kind === "HOUSE") ?? { x: 13, y: 13 };
+  if (x >= house.x && x < house.x + 2 && y >= house.y && y < house.y + 2)
+    return "The house occupies this cell";
+  for (const kind of Object.keys(DEFAULT_PEN_CELLS)) {
+    const pen = farm.objects.find((o: any) => o.kind === kind) ?? DEFAULT_PEN_CELLS[kind];
+    if (x >= pen.x && x < pen.x + 4 && y >= pen.y && y < pen.y + 4)
+      return "An animal pen occupies this cell";
+  }
+  if (farm.objects.some((o: any) => o.id !== excludeId && DECORATIONS.includes(o.kind) && o.x === x && o.y === y))
+    return "This cell is already occupied";
+  return null;
+}
+router.post("/decoration/place", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  const { kind, x, y } = req.body ?? {};
+  if (!DECORATIONS.includes(kind)) return res.status(400).json({ error: "Unknown decoration" });
+  try {
+    const user = await prisma.user.findUnique({ where: { telegramId: BigInt(rawId) }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const result = await prisma.$transaction(async tx => {
+      const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, include: { tiles: true, objects: true } });
+      if (!farm) return { status: 404, error: "Farm not found" };
+      const error = decorationPlacementError(farm, x, y);
+      if (error) return { status: 400, error };
+      const obj = await tx.farmObject.create({ data: { farmId: farm.id, kind, x, y, rotation: 0 } });
+      return { status: 200, ok: true, object: { id: obj.id, kind, x, y } };
+    }, { isolationLevel: "Serializable" });
+    return res.status(result.status).json(result);
+  } catch (error) { console.error("DECORATION PLACE ERROR", error); return res.status(500).json({ error: "Could not place decoration" }); }
+});
+router.post("/decoration/move", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  const { id, x, y } = req.body ?? {};
+  if (typeof id !== "string" || !id) return res.status(400).json({ error: "Invalid decoration ID" });
+  try {
+    const user = await prisma.user.findUnique({ where: { telegramId: BigInt(rawId) }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const result = await prisma.$transaction(async tx => {
+      const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, include: { tiles: true, objects: true } });
+      if (!farm) return { status: 404, error: "Farm not found" };
+      const obj = farm.objects.find(o => String(o.id) === id && DECORATIONS.includes(o.kind));
+      if (!obj) return { status: 404, error: "Decoration not found" };
+      const error = decorationPlacementError(farm, x, y, obj.id);
+      if (error) return { status: 400, error };
+      await tx.farmObject.update({ where: { id: obj.id }, data: { x, y } });
+      return { status: 200, ok: true };
+    }, { isolationLevel: "Serializable" });
+    return res.status(result.status).json(result);
+  } catch (error) { console.error("DECORATION MOVE ERROR", error); return res.status(500).json({ error: "Could not move decoration" }); }
+});
+
+
+// Decoration operations share a serializable transaction. Stored items use
+// STORED_DECOR_* kind; they do not occupy any farm cell until restored.
+router.post("/decoration/action", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  const { action, id, x, y, rotation } = req.body ?? {};
+  if (!["rotate", "store", "restore"].includes(action) || typeof id !== "string" || !id)
+    return res.status(400).json({ error: "Invalid decoration action" });
+  try {
+    const user = await prisma.user.findUnique({ where: { telegramId: BigInt(rawId) }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const result = await prisma.$transaction(async tx => {
+      const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, include: { tiles: true, objects: true } });
+      if (!farm) return { status: 404, error: "Farm not found" };
+      const obj = farm.objects.find(o => String(o.id) === id);
+      if (!obj) return { status: 404, error: "Decoration not found" };
+      const stored = obj.kind.startsWith(STORED_PREFIX);
+      const originalKind = stored ? obj.kind.slice(STORED_PREFIX.length) : obj.kind;
+      if (!DECORATIONS.includes(originalKind)) return { status: 400, error: "Not a decoration" };
+      if (action === "rotate") {
+        if (stored || !Number.isInteger(rotation) || ![0,90,180,270].includes(rotation))
+          return { status: 400, error: "Invalid rotation" };
+        await tx.farmObject.update({ where: { id: obj.id }, data: { rotation } });
+      } else if (action === "store") {
+        if (stored) return { status: 409, error: "Already in storage" };
+        await tx.farmObject.update({ where: { id: obj.id }, data: { kind: STORED_PREFIX + obj.kind } });
+      } else {
+        if (!stored) return { status: 409, error: "Not in storage" };
+        const error = decorationPlacementError(farm, x, y, obj.id);
+        if (error) return { status: 400, error };
+        await tx.farmObject.update({ where: { id: obj.id }, data: { kind: originalKind, x, y } });
+      }
+      return { status: 200, ok: true };
+    }, { isolationLevel: "Serializable" });
+    return res.status(result.status).json(result);
+  } catch (error) { console.error("DECORATION ACTION ERROR", error); return res.status(500).json({ error: "Could not update decoration" }); }
+});
+
+
+router.post("/decoration/paint", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  const { kind, cells } = req.body ?? {};
+  if (!(["DECOR_PATH_DIRT", "DECOR_PATH_STONE", "DECOR_PATH_WOOD", "DECOR_FENCE_WOOD"].includes(kind)) ||
+      !Array.isArray(cells) || cells.length < 1 || cells.length > 120 ||
+      cells.some(c => !Number.isInteger(c?.x) || !Number.isInteger(c?.y)))
+    return res.status(400).json({ error: "Invalid path" });
+  try {
+    const user = await prisma.user.findUnique({ where: { telegramId: BigInt(rawId) }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const result = await prisma.$transaction(async tx => {
+      const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, include: { tiles: true, objects: true } });
+      if (!farm) return { status: 404, error: "Farm not found" };
+      let placed = 0;
+      const seen = new Set<string>();
+      for (const cell of cells) {
+        const key = `${cell.x},${cell.y}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (decorationPlacementError(farm, cell.x, cell.y)) continue;
+        const object = await tx.farmObject.create({ data: { farmId: farm.id, kind, x: cell.x, y: cell.y, rotation: 0 } });
+        farm.objects.push(object);placed++;
+      }
+      return { status: 200, ok: true, placed };
+    }, { isolationLevel: "Serializable", timeout: 15000 });
+    return res.status(result.status).json(result);
+  } catch (error) { console.error("DECORATION PAINT ERROR", error); return res.status(500).json({ error: "Could not paint path" }); }
+});
+
 export default router;
