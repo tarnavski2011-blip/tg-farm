@@ -1731,12 +1731,23 @@
 #farmV2Canvas{position:absolute;left:50%;top:50%;width:840px;height:840px;display:grid;grid-template-columns:repeat(7,120px);grid-template-rows:repeat(7,120px);transform-origin:center;will-change:transform}
 .fv2-tile{position:relative;border:2px solid #739a6b;background:repeating-linear-gradient(45deg,#80ba71 0 12px,#88c477 12px 24px);display:grid;place-items:center}
 .fv2-tile.locked{background:#506650}.fv2-tile.locked:after{content:'🔒';position:absolute;inset:0;background:#1b2927a6;display:grid;place-items:center;font-size:25px}
-.fv2-house{font-size:58px;cursor:pointer}.fv2-pen{border:5px dashed #b48145;border-radius:10px;width:95%;height:95%;background:#96c47b99;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;padding:10px 3px 2px}
+.fv2-house{font-size:44px;cursor:pointer;position:absolute;width:60px;height:60px;display:grid;place-items:center;z-index:8;touch-action:none;user-select:none;filter:drop-shadow(0 3px 2px #0005)}.fv2-editing .fv2-house{outline:2px dashed #ffe58c;border-radius:8px;cursor:grab}.fv2-house.dragging{opacity:.75;cursor:grabbing;z-index:20}.fv2-pen{border:5px dashed #b48145;border-radius:10px;width:95%;height:95%;background:#96c47b99;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;padding:10px 3px 2px}
+.fv2-map-pen{position:absolute;z-index:7;width:116px;height:116px;box-sizing:border-box;touch-action:none;user-select:none}
+.fv2-editing .fv2-map-pen{outline:2px dashed #ffe58c;cursor:grab}
+.fv2-map-pen.dragging{opacity:.75;z-index:20;cursor:grabbing}
 .fv2-pen label{position:absolute;top:0;left:4px;font-size:11px;background:#2d5132;color:white;padding:2px 5px;border-radius:4px}.fv2-animal{font-size:clamp(12px, 2.1vw, 23px);animation:fv2walk 3s ease-in-out infinite alternate}.fv2-animal:nth-child(even){animation-delay:-1.5s}@keyframes fv2walk{to{transform:translate(5px,-4px)}}
 #farmV2Center{position:absolute;z-index:6;right:12px;top:170px;display:block;border:0;border-radius:12px;background:#f7eee0;color:#333;padding:9px}
 #farmV2Layer.active~#farmV2Center{display:block}
 
 .fv2-tile.fv2-reveal{animation:fv2-reveal 1.5s ease-out}@keyframes fv2-reveal{0%{filter:brightness(1.7);opacity:.55}100%{filter:brightness(1);opacity:1}}
+
+/* Farm V2 Stage 8: visual editor grid (no object edits yet) */
+#farmV2EditTools{position:absolute;z-index:18;right:12px;bottom:94px;display:flex;flex-direction:column;gap:7px;align-items:flex-end;max-width:calc(100vw - 24px)}
+#farmV2EditTools button{background:#f7eee0;color:#263b2a;border:1px solid #a7b5a1;border-radius:11px;padding:9px 12px;font-weight:700;box-shadow:0 2px 8px #0004}
+#farmV2EditTools button:focus-visible{outline:3px solid #f0d273}
+#farmV2EditTools .fv2-edit-help{max-width:190px;background:#213e2ce8;color:#fff;padding:7px 9px;border-radius:8px;font-size:12px;line-height:1.35}
+#farmV2Layer.fv2-editing .fv2-tile:not(.locked)::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;background-image:linear-gradient(to right,#2d654b88 1px,transparent 1px),linear-gradient(to bottom,#2d654b88 1px,transparent 1px);background-size:25% 25%;box-shadow:inset 0 0 0 2px #ffe58c99}
+#farmV2Layer.fv2-editing .fv2-tile.locked{cursor:not-allowed}
 /* Farm 2.0 — compact controls layout, stage 5C */
 #storageBtn { display:none !important; }
 #boostStatus {
@@ -1760,7 +1771,10 @@
  #boostStatus{top:151px;max-width:calc(100% - 112px);padding:5px 7px;}
  #questsBtn,#wheelBtnVisible,#comboBtnVisible,#feedSideBtn{width:47px !important;min-height:48px !important;}
 }
-</style>
+ .fv2-selected{outline:3px solid #facc15!important;outline-offset:2px;filter:drop-shadow(0 0 5px #facc15)}
+ #farmV2EditTools button[hidden]{display:none!important}
+ #farmV2EditTools button:disabled{opacity:.45}
+ </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   </head>
@@ -5085,6 +5099,65 @@
 (function(){
  const layer=document.getElementById('farmV2Layer'), canvas=document.getElementById('farmV2Canvas');
  const centerBtn=document.getElementById('farmV2Center');
+ // Stage 8: editor mode only. Object movement and persistence are separate stages.
+ const editTools=document.createElement('div');editTools.id='farmV2EditTools';
+ const editBtn=document.createElement('button');editBtn.type='button';editBtn.textContent='✏️ Редагувати';
+ const editHelp=document.createElement('div');editHelp.className='fv2-edit-help';editHelp.hidden=true;
+ editHelp.textContent='Перетягуй будинок або огорожі на відкриту землю. Зміни зберігаються автоматично.';
+ const rotateBtn=document.createElement('button');rotateBtn.type='button';rotateBtn.textContent='↻ Повернути';rotateBtn.hidden=true;
+ const undoBtn=document.createElement('button');undoBtn.type='button';undoBtn.textContent='↩ Скасувати';undoBtn.hidden=true;
+ editTools.append(editBtn,rotateBtn,undoBtn,editHelp);layer.parentElement.append(editTools);
+ let editing=false,selectedKind=null,lastAction=null,actionBusy=false;
+ const objectPosition=kind=>{
+  const obj=farm?.objects?.find(o=>o.kind===kind);
+  if(obj)return {x:obj.x,y:obj.y,rotation:obj.rotation||0};
+  if(kind==='HOUSE')return {x:13,y:13,rotation:0};
+  const spec=penSpecs.find(p=>p.kind===kind);
+  return spec?{x:spec.x,y:spec.y,rotation:0}:null;
+ };
+ function refreshEditControls(){
+  rotateBtn.hidden=!editing||!selectedKind;
+  undoBtn.hidden=!editing||!lastAction;
+  rotateBtn.disabled=undoBtn.disabled=actionBusy;
+ }
+ function selectObject(kind){if(!editing)return;selectedKind=kind;refreshEditControls();render()}
+ async function runObjectAction(kind,action,prior,record=true){
+  if(actionBusy)return false;
+  actionBusy=true;refreshEditControls();
+  try{
+   const endpoint=action.type==='rotate'?'/farm-map/object/rotate':
+    kind==='HOUSE'?'/farm-map/house/move':'/farm-map/pen/move';
+   const payload=action.type==='rotate'?{kind,rotation:action.rotation}:
+    kind==='HOUSE'?{x:action.x,y:action.y}:{kind,x:action.x,y:action.y};
+   const response=await window.farmV2ApiPost(endpoint,payload);
+   if(!response.ok){tell(response.data?.error||'Не вдалося зберегти зміни');return false}
+   if(record)lastAction={kind,previous:prior,action};
+   await loadFarm();
+   tell(action.type==='rotate'?'Поворот збережено':'Положення збережено');
+   return true;
+  }catch(error){console.error('Farm object edit',error);tell('Помилка збереження');return false}
+  finally{actionBusy=false;refreshEditControls();render()}
+ }
+ rotateBtn.addEventListener('click',async()=>{
+  if(!editing||!selectedKind||actionBusy)return;
+  const previous=objectPosition(selectedKind);if(!previous)return;
+  await runObjectAction(selectedKind,{type:'rotate',rotation:(previous.rotation+90)%360},previous);
+ });
+ undoBtn.addEventListener('click',async()=>{
+  if(!editing||!lastAction||actionBusy)return;
+  const item=lastAction,now=objectPosition(item.kind);
+  const action=item.action.type==='rotate'
+   ?{type:'rotate',rotation:item.previous.rotation}
+   :{type:'move',x:item.previous.x,y:item.previous.y};
+  const ok=await runObjectAction(item.kind,action,now,false);
+  if(ok){lastAction=null;selectedKind=item.kind;refreshEditControls()}
+ });
+ editBtn.addEventListener('click',()=>{
+  editing=!editing;layer.classList.toggle('fv2-editing',editing);
+  editBtn.textContent=editing?'✅ Готово':'✏️ Редагувати';editHelp.hidden=!editing;
+  if(!editing){selectedKind=null;lastAction=null}refreshEditControls();render();
+ });
+
  if(!layer||!canvas)return;
  let state=null,farm=null,scale=.6,dx=0,dy=0,lastDist=0;const pointers=new Map();
  const key='myfarm-v2-camera';
@@ -5125,24 +5198,140 @@
   }catch(err){console.error('Farm purchase:',err);tell('Не вдалося купити ділянку')}
  }
 
+
+ const penSpecs=[
+  {kind:'PEN_CHICKEN',field:'chickenCards',emoji:'🐔',name:'Кури',x:8,y:12},
+  {kind:'PEN_SHEEP',field:'sheepCards',emoji:'🐑',name:'Вівці',x:16,y:12},
+  {kind:'PEN_COW',field:'cowCards',emoji:'🐄',name:'Корови',x:12,y:16}
+ ];
+ function penPosition(spec){
+  const obj=farm?.objects?.find(o=>o.kind===spec.kind);
+  return {x:obj?.x??spec.x,y:obj?.y??spec.y};
+ }
+ let penBusy=false;
+ async function savePen(spec,x,y){
+  return runObjectAction(spec.kind,{type:'move',x,y},objectPosition(spec.kind));
+ }
+ async function savePenLegacy(spec,x,y){
+  if(penBusy)return;
+  penBusy=true;
+  try{
+   const response=await window.farmV2ApiPost('/farm-map/pen/move',{kind:spec.kind,x,y});
+   if(!response.ok){tell(response.data?.error||'Не вдалося перемістити огорожу');return}
+   await loadFarm();tell('Огорожу переміщено та збережено');
+  }catch(error){console.error('Pen move',error);tell('Помилка збереження огорожі')}
+  finally{penBusy=false;render()}
+ }
+ function addPens(){
+  penSpecs.forEach(spec=>{
+   const pos=penPosition(spec);
+   const pen=document.createElement('div');pen.className='fv2-pen fv2-map-pen';
+   if(selectedKind===spec.kind&&editing)pen.classList.add('fv2-selected');
+   pen.style.transform=`rotate(${objectPosition(spec.kind)?.rotation||0}deg)`;
+   pen.style.left=(pos.x*30)+'px';pen.style.top=(pos.y*30)+'px';
+   pen.title=editing?'Перетягни огорожу':'Відкрити тварин';
+   const cards=Array.isArray(state?.animals?.[spec.field])?state.animals[spec.field]:[];
+   const label=document.createElement('label');label.textContent=spec.name+' · '+cards.length;pen.append(label);
+   cards.slice(0,6).forEach((animal,i)=>{
+    const el=document.createElement('span');el.className='fv2-animal';el.textContent=spec.emoji;
+    el.title=`Рівень ${animal.level||1} · HP ${animal.hp??100}%`;
+    el.style.animationDelay=`-${(i%7)*0.4}s`;pen.append(el);
+   });
+   pen.addEventListener('pointerdown',event=>{
+    event.stopPropagation();
+    if(!editing||penBusy||houseBusy)return;
+    event.preventDefault();pen.setPointerCapture(event.pointerId);
+    const origin=penPosition(spec);let moved=false;
+    pen.classList.add('dragging');
+    const move=ev=>{
+     ev.stopPropagation();moved=true;
+     const bounds=canvas.getBoundingClientRect(),tileSize=bounds.width/7;
+     const nx=Math.max(0,Math.min(6,Math.round((ev.clientX-bounds.left)/tileSize-.5)));
+     const ny=Math.max(0,Math.min(6,Math.round((ev.clientY-bounds.top)/tileSize-.5)));
+     pen.style.left=(nx*120)+'px';pen.style.top=(ny*120)+'px';
+     pen.dataset.destX=nx*4;pen.dataset.destY=ny*4;
+    };
+    const finish=ev=>{
+     ev.stopPropagation();pen.removeEventListener('pointermove',move);
+     pen.removeEventListener('pointerup',finish);pen.removeEventListener('pointercancel',cancel);
+     pen.classList.remove('dragging');
+     const nx=Number(pen.dataset.destX??origin.x),ny=Number(pen.dataset.destY??origin.y);
+     if(moved&&(nx!==origin.x||ny!==origin.y))savePen(spec,nx,ny);else {selectObject(spec.kind);render()}
+    };
+    const cancel=()=>{
+     pen.removeEventListener('pointermove',move);pen.removeEventListener('pointerup',finish);
+     pen.removeEventListener('pointercancel',cancel);render();
+    };
+    pen.addEventListener('pointermove',move);pen.addEventListener('pointerup',finish);
+    pen.addEventListener('pointercancel',cancel);
+   });
+   pen.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject(spec.kind);else document.getElementById('animalsBtn')?.click()});
+   canvas.append(pen);
+  });
+ }
+ function housePosition(){const obj=farm?.objects?.find(o=>o.kind==='HOUSE');return {x:obj?.x??13,y:obj?.y??13}}
+ let houseBusy=false;
+ async function saveHouse(x,y){
+  return runObjectAction('HOUSE',{type:'move',x,y},objectPosition('HOUSE'));
+ }
+ async function saveHouseLegacy(x,y){
+  if(houseBusy)return;
+  houseBusy=true;
+  try{
+   const r=await window.farmV2ApiPost('/farm-map/house/move',{x,y});
+   if(!r.ok){tell(r.data?.error||'Не вдалося перемістити будинок');return}
+   await loadFarm();tell('Будинок переміщено та збережено');
+  }catch(e){console.error('House move',e);tell('Помилка збереження будинку')}
+  finally{houseBusy=false;render()}
+ }
+ function addHouse(){
+  const {x,y}=housePosition();
+  const house=document.createElement('span');house.className='fv2-house';house.textContent='🏠';
+  if(selectedKind==='HOUSE'&&editing)house.classList.add('fv2-selected');
+  house.style.transform=`rotate(${objectPosition('HOUSE')?.rotation||0}deg)`;
+  house.style.left=(x*30)+'px';house.style.top=(y*30)+'px';
+  house.title=editing?'Перетягни будинок':'Відкрити профіль';
+  house.addEventListener('pointerdown',e=>{
+   e.stopPropagation();if(!editing||houseBusy)return;
+   e.preventDefault();house.setPointerCapture(e.pointerId);
+   const startX=e.clientX,startY=e.clientY;
+   const origin=housePosition();let moved=false;
+   house.classList.add('dragging');
+   const move=ev=>{
+    ev.stopPropagation();moved=true;
+    const bounds=canvas.getBoundingClientRect();
+    const cell=bounds.width/28;
+    const nx=Math.max(0,Math.min(26,Math.round((ev.clientX-bounds.left)/cell-1)));
+    const ny=Math.max(0,Math.min(26,Math.round((ev.clientY-bounds.top)/cell-1)));
+    house.style.left=(nx*30)+'px';house.style.top=(ny*30)+'px';
+    house.dataset.destX=nx;house.dataset.destY=ny;
+   };
+   const finish=ev=>{
+    ev.stopPropagation();house.removeEventListener('pointermove',move);
+    house.removeEventListener('pointerup',finish);house.removeEventListener('pointercancel',cancel);
+    house.classList.remove('dragging');
+    const nx=Number(house.dataset.destX??origin.x),ny=Number(house.dataset.destY??origin.y);
+    if(moved&&(nx!==origin.x||ny!==origin.y))saveHouse(nx,ny);else {selectObject('HOUSE');render()}
+   };
+   const cancel=()=>{house.removeEventListener('pointermove',move);house.removeEventListener('pointerup',finish);house.removeEventListener('pointercancel',cancel);render()};
+   house.addEventListener('pointermove',move);house.addEventListener('pointerup',finish);house.addEventListener('pointercancel',cancel);
+  });
+  house.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject('HOUSE');else document.querySelector('[data-farm-menu="profile"]')?.click()});
+  canvas.append(house);
+ }
  function render(){
   canvas.replaceChildren();
   for(let y=0;y<7;y++)for(let x=0;x<7;x++){
    const unlocked=farm?!!farm.tiles.find(t=>t.x===x&&t.y===y&&t.unlocked):(x>=2&&x<=4&&y>=2&&y<=4);
    const tile=document.createElement('div');tile.className='fv2-tile '+(unlocked?'':'locked');tile.dataset.x=x;tile.dataset.y=y;
    if(unlocked){
-    if(x===3&&y===3){const h=document.createElement('span');h.className='fv2-house';h.textContent='🏠';h.onclick=e=>{e.stopPropagation();document.querySelector('[data-farm-menu="profile"]')?.click()};tile.append(h)}
-    const specs={'2,3':['chicken','chickenCards','🐔','Кури'],'4,3':['sheep','sheepCards','🐑','Вівці'],'3,4':['cow','cowCards','🐄','Корови']};
-    const spec=specs[x+','+y];if(spec){const [countField,cardsField,emoji,name]=spec;
-     const p=document.createElement('div');p.className='fv2-pen';
-     const cards=Array.isArray(state?.animals?.[cardsField])?state.animals[cardsField]:[];
-     const l=document.createElement('label');l.textContent=name+' · '+cards.length;p.append(l);
-     cards.slice(0,6).forEach((a,i)=>{const b=document.createElement('span');b.className='fv2-animal';b.textContent=emoji;b.title=`Рівень ${a.level||1} · HP ${a.hp??100}%`;b.style.animationDelay=`-${(i%7)*0.4}s`;p.append(b)});
-     p.onclick=e=>{e.stopPropagation();document.getElementById('animalsBtn')?.click()};tile.append(p)
-    }
-   }else tile.onclick=()=>purchaseTile(x,y);
+
+
+   }else tile.onclick=()=>{if(editing){tell('Спочатку натисни «Готово»');return}purchaseTile(x,y)};
    canvas.append(tile)
   }
+  addPens();
+  addHouse();
   paint();
  }
  // Main farm screen is always Farm V2; no version switch.
