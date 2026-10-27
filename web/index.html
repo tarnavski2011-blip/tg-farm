@@ -1802,6 +1802,27 @@
 .fv2-info-panel .fv2-info-close{background:#5d755f;color:white}
 .fv2-info-panel h3{margin:4px 0 12px}
 </style>
+
+<style id="farm-v2-weather-styles">
+/* Decorative client-side effects; pointer events always pass through. */
+#farmV2Layer { isolation:isolate; }
+#farmV2Layer .fv2-weather-overlay {position:absolute;inset:0;pointer-events:none;z-index:20;overflow:hidden;transition:background 90s linear,opacity 90s linear;}
+#farmV2Layer .fv2-weather-overlay[data-time="dawn"]{background:linear-gradient(180deg,rgba(255,169,104,.14),rgba(255,202,120,.04))}
+#farmV2Layer .fv2-weather-overlay[data-time="day"]{background:transparent}
+#farmV2Layer .fv2-weather-overlay[data-time="dusk"]{background:linear-gradient(180deg,rgba(119,63,148,.22),rgba(255,127,76,.08))}
+#farmV2Layer .fv2-weather-overlay[data-time="night"]{background:rgba(11,22,64,.33)}
+#farmV2Layer .fv2-weather-overlay[data-weather="cloud"]::before{content:"";position:absolute;inset:0;background:rgba(123,142,157,.10)}
+#farmV2Layer .fv2-weather-overlay[data-weather="rain"]::before{content:"";position:absolute;inset:0;background:rgba(67,103,125,.13)}
+#farmV2Layer .fv2-weather-rain{position:absolute;inset:-100% 0 0;opacity:0;background-image:repeating-linear-gradient(108deg,transparent 0 24px,rgba(186,223,255,.50) 25px,transparent 26px,transparent 47px);background-size:75px 85px;animation:fv2-rain-fall 1.4s linear infinite;transform:translateY(0)}
+#farmV2Layer .fv2-weather-overlay[data-weather="rain"] .fv2-weather-rain{opacity:.38}
+@keyframes fv2-rain-fall{to{transform:translateY(85px)}}
+#farmV2Layer .fv2-weather-label{position:absolute;right:12px;top:12px;z-index:21;pointer-events:none;padding:5px 9px;border-radius:14px;background:rgba(24,43,37,.72);color:white;font-size:12px;text-shadow:0 1px 2px #000}
+#farmV2Layer[data-season="autumn"] .fv2-tile:not(.locked){filter:sepia(.20) saturate(.92)}
+#farmV2Layer[data-season="winter"] .fv2-tile:not(.locked){filter:saturate(.6) brightness(1.13)}
+#farmV2Layer[data-season="spring"] .fv2-tile:not(.locked){filter:saturate(1.08)}
+#farmV2Layer[data-season="summer"] .fv2-tile:not(.locked){filter:saturate(1.16)}
+@media (prefers-reduced-motion:reduce){#farmV2Layer .fv2-weather-rain{animation:none!important}#farmV2Layer .fv2-weather-overlay{transition:none}}
+</style>
 </head>
   <body>
     <button type="button" id="levelsTopButton">⭐ LVL 1</button>
@@ -5575,6 +5596,37 @@
   house.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject('HOUSE');else openHouseUpgrade()});
   canvas.append(house);
  }
+
+ // 33–39: lightweight seasonal, day/night and simulated hourly weather.
+ // Weather is decorative, not a real forecast or game mechanic.
+ const weatherOverlay=document.createElement('div');
+ weatherOverlay.className='fv2-weather-overlay';
+ weatherOverlay.setAttribute('aria-hidden','true');
+ const rainEffect=document.createElement('div');
+ rainEffect.className='fv2-weather-rain';
+ weatherOverlay.append(rainEffect);
+ const weatherLabel=document.createElement('div');
+ weatherLabel.className='fv2-weather-label';
+ weatherLabel.setAttribute('aria-hidden','true');
+ layer.append(weatherOverlay,weatherLabel);
+ const seasonNames=['Зима','Весна','Літо','Осінь'];
+ const weatherNames={sun:'☀️ Сонячно',cloud:'☁️ Хмарно',rain:'🌧️ Дощ'};
+ function updateFarmAtmosphere(){
+  const now=new Date(),h=now.getHours()+now.getMinutes()/60;
+  const month=now.getMonth(),season=Math.floor(((month+1)%12)/3);
+  const seasonKeys=['winter','spring','summer','autumn'];
+  const period=h<5||h>=21?'night':h<8?'dawn':h<18?'day':'dusk';
+  // Stable during an hour, varies by date; never requests external weather data.
+  const day=Math.floor(now.getTime()/86400000),weatherSeed=(day*7+now.getHours()*13)%10;
+  const weather=weatherSeed<5?'sun':weatherSeed<8?'cloud':'rain';
+  layer.dataset.season=seasonKeys[season];
+  weatherOverlay.dataset.time=period;
+  weatherOverlay.dataset.weather=weather;
+  weatherLabel.textContent=`${['❄️','🌷','🌞','🍂'][season]} ${seasonNames[season]} · ${weatherNames[weather]}`;
+  weatherLabel.title='Умовна погода в грі, не прогноз';
+ }
+ updateFarmAtmosphere();
+ const atmosphereTimer=setInterval(()=>{if(layer.isConnected)updateFarmAtmosphere();else clearInterval(atmosphereTimer)},60000);
  function render(){
   canvas.replaceChildren();
   for(let y=0;y<7;y++)for(let x=0;x<7;x++){
