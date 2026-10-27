@@ -273,6 +273,7 @@ model LevelReward {
 
 // New farm map: isolated from existing animals and economy.
 model FarmMap {
+  houseLevel Int @default(1)
   id        Int       @id @default(autoincrement())
   userId    Int       @unique
   width     Int       @default(7)

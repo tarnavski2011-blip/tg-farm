@@ -1787,7 +1787,22 @@
 </style>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-  </head>
+  
+<style id="fv2-stage26-style">
+.fv2-house[data-level="2"]{filter:drop-shadow(0 4px 3px #0007) sepia(.22)}
+.fv2-house[data-level="3"]{filter:drop-shadow(0 4px 3px #0007) saturate(1.5);font-size:52px}
+.fv2-house[data-level="4"]{filter:drop-shadow(0 4px 6px #f4ce55) saturate(1.7);font-size:56px}
+.fv2-house[data-level="5"]{filter:drop-shadow(0 0 9px #ffe477) drop-shadow(0 3px 3px #0007);font-size:60px}
+.fv2-animal{cursor:pointer;display:inline-block;animation:fv2animalWander 5.2s ease-in-out infinite alternate}
+.fv2-animal:nth-of-type(3n){animation-duration:7.1s;animation-direction:alternate-reverse}
+.fv2-animal:nth-of-type(4n){animation-duration:4.3s;animation-delay:-2.5s}
+@keyframes fv2animalWander{0%,15%{transform:translate(0,0) scaleX(1)}35%{transform:translate(6px,-3px)}55%,68%{transform:translate(2px,2px) scaleX(-1)}100%{transform:translate(-5px,3px) scaleX(1)}}
+.fv2-info-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(330px,88%);z-index:70;background:#213b2b;color:white;padding:16px;border:2px solid #d6c184;border-radius:15px;box-shadow:0 8px 30px #000a;text-align:center}
+.fv2-info-panel button{border:0;border-radius:9px;background:#e4bc60;color:#2a291d;padding:9px 12px;margin:5px;cursor:pointer;font-weight:700}
+.fv2-info-panel .fv2-info-close{background:#5d755f;color:white}
+.fv2-info-panel h3{margin:4px 0 12px}
+</style>
+</head>
   <body>
     <button type="button" id="levelsTopButton">⭐ LVL 1</button>
     <div id="levelsOverlay" role="dialog" aria-modal="true" aria-label="Рівні та нагороди">
@@ -5434,7 +5449,12 @@
    const label=document.createElement('label');label.textContent=spec.name+' · '+cards.length;pen.append(label);
    cards.slice(0,6).forEach((animal,i)=>{
     const el=document.createElement('span');el.className='fv2-animal';el.textContent=spec.emoji;
-    el.title=`Рівень ${animal.level||1} · HP ${animal.hp??100}%`;
+    el.title=`Рівень ${animal.level||1}`;
+    el.addEventListener('click',ev=>{if(editing)return;ev.stopPropagation();showFarmInfo(
+     spec.emoji+' '+spec.name+' · тварина '+(i+1),
+     'Рівень: '+(animal.level||1),
+     [{label:'Відкрити тварин',click:()=>{layer.querySelector('.fv2-info-panel')?.remove();document.getElementById('animalsBtn')?.click()}}]
+    )});
     el.style.animationDelay=`-${(i%7)*0.4}s`;pen.append(el);
    });
    pen.addEventListener('pointerdown',event=>{
@@ -5465,9 +5485,41 @@
     pen.addEventListener('pointermove',move);pen.addEventListener('pointerup',finish);
     pen.addEventListener('pointercancel',cancel);
    });
-   pen.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject(spec.kind);else document.getElementById('animalsBtn')?.click()});
+   pen.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject(spec.kind);else showFarmInfo(spec.emoji+' '+spec.name,
+     'Тварин: '+cards.length+' із 6',
+     [{label:'Відкрити список тварин',click:()=>{layer.querySelector('.fv2-info-panel')?.remove();document.getElementById('animalsBtn')?.click()}}])});
    canvas.append(pen);
   });
+ }
+ function showFarmInfo(title,content,buttons=[]){
+  layer.querySelector('.fv2-info-panel')?.remove();
+  const panel=document.createElement('div');panel.className='fv2-info-panel';
+  const heading=document.createElement('h3');heading.textContent=title;panel.append(heading);
+  const body=document.createElement('div');body.textContent=content;panel.append(body);
+  buttons.forEach(({label,click})=>{const b=document.createElement('button');b.textContent=label;b.onclick=click;panel.append(b)});
+  const close=document.createElement('button');close.className='fv2-info-close';close.textContent='Закрити';
+  close.onclick=()=>panel.remove();panel.append(close);layer.append(panel);
+  return panel;
+ }
+ function openHouseUpgrade(){
+  const level=Math.min(5,Math.max(1,Number(farm?.houseLevel||1)));
+  const prices=[{coins:25000,diamonds:0},{coins:100000,diamonds:0},{coins:350000,diamonds:25},{coins:1000000,diamonds:100}];
+  const price=prices[level-1];
+  const buttons=[];
+  if(price)buttons.push({label:'Покращити будинок',click:async()=>{
+   if(!confirm(`Покращити будинок до рівня ${level+1}?\\n${price.coins.toLocaleString('uk-UA')} монет${price.diamonds?' + '+price.diamonds+' діамантів':''}`))return;
+   const panel=layer.querySelector('.fv2-info-panel');if(panel)panel.querySelectorAll('button').forEach(b=>b.disabled=true);
+   try{
+    const r=await window.farmV2ApiPost('/farm-map/house/upgrade',{});
+    if(!r.ok){tell(r.data?.error||'Не вдалося покращити будинок');return}
+    await loadFarm();await window.farmV2RefreshState();tell('Будинок покращено до рівня '+r.data.houseLevel);
+   }catch(e){console.error('House upgrade',e);tell('Помилка покращення')}
+   finally{layer.querySelector('.fv2-info-panel')?.remove();render()}
+  }});
+  buttons.push({label:'Мій профіль',click:()=>{layer.querySelector('.fv2-info-panel')?.remove();document.querySelector('[data-farm-menu="profile"]')?.click()}});
+  showFarmInfo('🏠 Будинок · рівень '+level,price
+   ?`Наступний рівень: ${price.coins.toLocaleString('uk-UA')} монет${price.diamonds?' і '+price.diamonds+' діамантів':''}. Покращення лише змінює вигляд.`
+   :'Максимальний рівень будинку!',buttons);
  }
  function housePosition(){const obj=farm?.objects?.find(o=>o.kind==='HOUSE');return {x:obj?.x??13,y:obj?.y??13}}
  let houseBusy=false;
@@ -5486,7 +5538,11 @@
  }
  function addHouse(){
   const {x,y}=housePosition();
-  const house=document.createElement('span');house.className='fv2-house';house.textContent='🏠';
+  const house=document.createElement('span');house.className='fv2-house';
+  const houseLevel=Math.min(5,Math.max(1,Number(farm?.houseLevel||1)));
+  house.dataset.level=String(houseLevel);
+  house.textContent=['🏠','🏡','🏘️','🏰','🏯'][houseLevel-1];
+  house.title='Будинок, рівень '+houseLevel;
   if(selectedKind==='HOUSE'&&editing)house.classList.add('fv2-selected');
   house.style.transform=`rotate(${objectPosition('HOUSE')?.rotation||0}deg)`;
   house.style.left=(x*30)+'px';house.style.top=(y*30)+'px';
@@ -5516,7 +5572,7 @@
    const cancel=()=>{house.removeEventListener('pointermove',move);house.removeEventListener('pointerup',finish);house.removeEventListener('pointercancel',cancel);render()};
    house.addEventListener('pointermove',move);house.addEventListener('pointerup',finish);house.addEventListener('pointercancel',cancel);
   });
-  house.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject('HOUSE');else document.querySelector('[data-farm-menu="profile"]')?.click()});
+  house.addEventListener('click',e=>{e.stopPropagation();if(editing)selectObject('HOUSE');else openHouseUpgrade()});
   canvas.append(house);
  }
  function render(){

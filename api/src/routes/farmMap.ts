@@ -63,6 +63,7 @@ router.get("/", async (req: TgAuthedRequest, res) => {
       farm: {
         id: result.id,
         width: result.width,
+        houseLevel: result.houseLevel,
         height: result.height,
         cellsPerTile: CELLS_PER_TILE,
         tiles: result.tiles.map(tile => ({
@@ -448,6 +449,45 @@ router.post("/decoration/paint", async (req: TgAuthedRequest, res) => {
     }, { isolationLevel: "Serializable", timeout: 15000 });
     return res.status(result.status).json(result);
   } catch (error) { console.error("DECORATION PAINT ERROR", error); return res.status(500).json({ error: "Could not paint path" }); }
+});
+
+
+// House upgrades are cosmetic only. Serializable transaction and conditional
+// debit prevent duplicate charges and concurrent purchases.
+const HOUSE_UPGRADE_PRICES = [
+  { coins: 25000, diamonds: 0 },
+  { coins: 100000, diamonds: 0 },
+  { coins: 350000, diamonds: 25 },
+  { coins: 1000000, diamonds: 100 },
+];
+router.post("/house/upgrade", async (req: TgAuthedRequest, res) => {
+  const rawId = req.telegramUser?.id;
+  if (!rawId || !Number.isSafeInteger(rawId)) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(rawId) }, select: { id: true }
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const result = await prisma.$transaction(async tx => {
+      const farm = await tx.farmMap.findUnique({ where: { userId: user.id } });
+      if (!farm) return { status: 404, error: "Farm not found" };
+      if (farm.houseLevel >= 5) return { status: 409, error: "Maximum house level reached" };
+      const price = HOUSE_UPGRADE_PRICES[farm.houseLevel - 1];
+      const paid = await tx.user.updateMany({
+        where: { id: user.id, coins: { gte: price.coins }, diamonds: { gte: price.diamonds } },
+        data: { coins: { decrement: price.coins }, diamonds: { decrement: price.diamonds } }
+      });
+      if (paid.count !== 1) return { status: 400, error: "Недостатньо монет або діамантів" };
+      const updated = await tx.farmMap.update({
+        where: { id: farm.id }, data: { houseLevel: { increment: 1 } }
+      });
+      return { status: 200, ok: true, houseLevel: updated.houseLevel, price };
+    }, { isolationLevel: "Serializable", timeout: 10000 });
+    return res.status(result.status).json(result);
+  } catch (error) {
+    console.error("HOUSE UPGRADE ERROR", error);
+    return res.status(500).json({ error: "Could not upgrade house" });
+  }
 });
 
 export default router;
