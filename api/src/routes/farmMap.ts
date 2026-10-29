@@ -316,9 +316,28 @@ router.post("/object/rotate", async (req: TgAuthedRequest, res) => {
 });
 
 
-// Decoration catalogue: no payment or bonuses. Each decoration occupies one
+// Decoration catalogue: server-authoritative prices. Each decoration occupies one
 // small cell. Multiple instances of each kind are allowed.
-const DECORATIONS = ["DECOR_TREE", "DECOR_BUSH", "DECOR_FLOWER", "DECOR_BENCH", "DECOR_LAMP", "DECOR_PATH_DIRT", "DECOR_PATH_STONE", "DECOR_PATH_WOOD", "DECOR_FENCE_WOOD"];
+const DECORATION_PRICES: Record<string, { coins: number; diamonds: number }> = {
+  DECOR_TREE: {coins:750,diamonds:0}, DECOR_BUSH:{coins:300,diamonds:0},
+  DECOR_FLOWER:{coins:150,diamonds:0}, DECOR_BENCH:{coins:1500,diamonds:0},
+  DECOR_LAMP:{coins:2500,diamonds:0}, DECOR_PATH_DIRT:{coins:25,diamonds:0},
+  DECOR_PATH_STONE:{coins:75,diamonds:0}, DECOR_PATH_WOOD:{coins:100,diamonds:0},
+  DECOR_FENCE_WOOD:{coins:150,diamonds:0},
+  DECOR_GOLD_TREE:{coins:0,diamonds:10}, DECOR_FOUNTAIN:{coins:0,diamonds:20},
+  DECOR_FLOWER_ARCH:{coins:0,diamonds:15}
+};
+const DECORATIONS = Object.keys(DECORATION_PRICES);
+async function debitDecoration(tx:any,userId:any,kind:string,count:number) {
+  const price=DECORATION_PRICES[kind];
+  const coins=price.coins*count,diamonds=price.diamonds*count;
+  const paid=await tx.user.updateMany({
+    where:{id:userId,coins:{gte:coins},diamonds:{gte:diamonds}},
+    data:{coins:{decrement:coins},diamonds:{decrement:diamonds}}
+  });
+  return paid.count===1;
+}
+router.get("/decoration/catalog", (_req,res) => res.json({ok:true,items:DECORATION_PRICES}));
 const STORED_PREFIX = "STORED_";
 const DEFAULT_PEN_CELLS: Record<string, { x: number; y: number }> = {
   PEN_CHICKEN: { x: 8, y: 12 }, PEN_SHEEP: { x: 16, y: 12 }, PEN_COW: { x: 12, y: 16 },
@@ -353,6 +372,8 @@ router.post("/decoration/place", async (req: TgAuthedRequest, res) => {
       if (!farm) return { status: 404, error: "Farm not found" };
       const error = decorationPlacementError(farm, x, y);
       if (error) return { status: 400, error };
+      if (!await debitDecoration(tx,user.id,kind,1))
+        return { status: 400, error: "Недостатньо монет або діамантів" };
       const obj = await tx.farmObject.create({ data: { farmId: farm.id, kind, x, y, rotation: 0 } });
       return { status: 200, ok: true, object: { id: obj.id, kind, x, y } };
     }, { isolationLevel: "Serializable" });
@@ -436,16 +457,23 @@ router.post("/decoration/paint", async (req: TgAuthedRequest, res) => {
       const farm = await tx.farmMap.findUnique({ where: { userId: user.id }, include: { tiles: true, objects: true } });
       if (!farm) return { status: 404, error: "Farm not found" };
       let placed = 0;
+      const validCells: {x:number;y:number}[]=[];
       const seen = new Set<string>();
       for (const cell of cells) {
         const key = `${cell.x},${cell.y}`;
         if (seen.has(key)) continue;
         seen.add(key);
         if (decorationPlacementError(farm, cell.x, cell.y)) continue;
-        const object = await tx.farmObject.create({ data: { farmId: farm.id, kind, x: cell.x, y: cell.y, rotation: 0 } });
-        farm.objects.push(object);placed++;
+        // Reserve the cell in memory before processing the next one.
+        farm.objects.push({...farm.objects[0],id:-validCells.length-1,kind,x:cell.x,y:cell.y} as any);
+        validCells.push({x:cell.x,y:cell.y});
       }
-      return { status: 200, ok: true, placed };
+      placed=validCells.length;
+      if (!placed) return {status:400,error:"Немає вільних клітинок"};
+      if (!await debitDecoration(tx,user.id,kind,placed))
+        return {status:400,error:"Недостатньо монет"};
+      await tx.farmObject.createMany({data:validCells.map(cell=>({farmId:farm.id,kind,x:cell.x,y:cell.y,rotation:0}))});
+      return { status: 200, ok: true, placed, price: DECORATION_PRICES[kind].coins*placed };
     }, { isolationLevel: "Serializable", timeout: 15000 });
     return res.status(result.status).json(result);
   } catch (error) { console.error("DECORATION PAINT ERROR", error); return res.status(500).json({ error: "Could not paint path" }); }

@@ -5168,8 +5168,17 @@
   {kind:'DECOR_PATH_DIRT',emoji:'🟫',label:'Земляна доріжка'},
   {kind:'DECOR_PATH_STONE',emoji:'⬜',label:'Кам’яна доріжка'},
   {kind:'DECOR_PATH_WOOD',emoji:'🟨',label:'Дерев’яна доріжка'},
-  {kind:'DECOR_FENCE_WOOD',emoji:'🪵',label:'Декоративний паркан'}
+  {kind:'DECOR_FENCE_WOOD',emoji:'🪵',label:'Декоративний паркан'},
+  {kind:'DECOR_GOLD_TREE',emoji:'🌟',label:'Золоте дерево'},
+  {kind:'DECOR_FOUNTAIN',emoji:'⛲',label:'Фонтан'},
+  {kind:'DECOR_FLOWER_ARCH',emoji:'💐',label:'Квіткова арка'}
  ];
+ const decorPrices={
+ DECOR_TREE:[750,0],DECOR_BUSH:[300,0],DECOR_FLOWER:[150,0],
+ DECOR_BENCH:[1500,0],DECOR_LAMP:[2500,0],DECOR_PATH_DIRT:[25,0],
+ DECOR_PATH_STONE:[75,0],DECOR_PATH_WOOD:[100,0],DECOR_FENCE_WOOD:[150,0],
+ DECOR_GOLD_TREE:[0,10],DECOR_FOUNTAIN:[0,20],DECOR_FLOWER_ARCH:[0,15]
+ };
  let pendingDecoration=null,selectedDecorationId=null,storedDecorationId=null;
  const isLineKind=k=>k?.startsWith('DECOR_PATH_')||k==='DECOR_FENCE_WOOD';
  const isStored=k=>k?.startsWith('STORED_DECOR_');
@@ -5220,10 +5229,11 @@
 
  decorBtn.addEventListener('click',()=>{decorTray.hidden=!decorTray.hidden});
  for(const type of decorationTypes){
-  const button=document.createElement('button');button.type='button';button.textContent=type.emoji+' '+type.label;
+  const button=document.createElement('button');button.type='button';button.textContent=type.emoji+' '+type.label+' · '+(decorPrices[type.kind][1]?decorPrices[type.kind][1]+' 💎':decorPrices[type.kind][0]+' 🪙');
   button.addEventListener('click',()=>{
    pendingDecoration=type.kind;selectedDecorationId=null;storedDecorationId=null;decorTray.hidden=true;
-   tell('Натисни на вільну маленьку клітинку для '+type.label.toLowerCase());render();
+   const price=decorPrices[type.kind];
+   tell('Натисни клітинку для '+type.label.toLowerCase()+' · '+(price[1]?price[1]+' 💎':price[0]+' 🪙')+' за штуку');render();
   });decorTray.append(button);
  }
  async function applyDecoration(x,y){
@@ -5240,7 +5250,9 @@
    else if(isMove&&old)lastAction={decoration:{type:'move',id:String(old.id),x:old.x,y:old.y}};
    else if(r.data?.object?.id)lastAction={decoration:{type:'place',id:String(r.data.object.id)}};
    selectedDecorationId=null;storedDecorationId=null;
-   await loadFarm();tell(isRestore?'Предмет повернуто зі сховища':isMove?'Декорацію переміщено':'Декорацію додано');
+   await loadFarm();
+   if(!isRestore&&!isMove&&typeof window.farmV2RefreshState==='function') await window.farmV2RefreshState();
+   tell(isRestore?'Предмет повернуто зі сховища':isMove?'Декорацію переміщено':'Декорацію куплено й додано');
   }catch(e){console.error('Decoration',e);tell('Помилка збереження декорації')}
   finally{actionBusy=false;refreshEditControls();render()}
  }
@@ -5280,7 +5292,9 @@
     {kind:stroke.kind,cells:stroke.cells});
    if(!r.ok){tell(r.data?.error||'Не вдалося намалювати доріжку');return}
    lastAction=null; // Multi-cell stroke cannot be undone by single-object undo.
-   await loadFarm();tell('Додано клітинок: '+(r.data?.placed||0));
+   await loadFarm();
+   if(typeof window.farmV2RefreshState==='function') await window.farmV2RefreshState();
+   tell('Куплено клітинок: '+(r.data?.placed||0)+' · '+(r.data?.price||0)+' 🪙');
   }catch(e){console.error('Paint stroke',e);tell('Помилка малювання')}
   finally{actionBusy=false;refreshEditControls();render()}
  }
