@@ -1823,6 +1823,57 @@
 #farmV2Layer[data-season="summer"] .fv2-tile:not(.locked){filter:saturate(1.16)}
 @media (prefers-reduced-motion:reduce){#farmV2Layer .fv2-weather-rain{animation:none!important}#farmV2Layer .fv2-weather-overlay{transition:none}}
 </style>
+
+/* MFC 2.0 / stage 54: mobile farm-first layout; CSS only, no game-state changes. */
+<style id="mfc-v2-stage54-mobile-ui">
+@media (max-width: 640px) {
+  .premium-top {
+    grid-template-columns: minmax(0,1.35fr) repeat(3,minmax(0,1fr));
+    gap: 4px;
+    padding: 7px 6px;
+    align-items: center;
+  }
+  .premium-top .player-box { grid-template-columns: 30px minmax(0,1fr);gap:4px; }
+  .premium-top .avatar { width:30px;height:30px;font-size:19px;border-width:1px; }
+  .premium-top .player-name {font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .premium-top #editNickname {font-size:12px!important;padding:0;}
+  .premium-top .player-lvl {font-size:10px;margin-top:2px;}
+  .premium-top .xp-line {margin-top:2px;}
+  .premium-top #xpPercentLabel {display:none;}
+  .premium-top .resource-box {min-width:0;gap:3px;padding:5px 3px;}
+  .premium-top .resource-icon {font-size:16px;}
+  .premium-top .resource-value {font-size:clamp(10px,2.8vw,15px);overflow:hidden;text-overflow:ellipsis;}
+  .premium-top .resource-sub {display:none;}
+  #farmV2Center {top:118px;right:8px;padding:8px 10px;min-width:38px;min-height:38px;}
+  #farmV2EditTools {right:8px;bottom:78px;gap:5px;}
+  #farmV2EditTools button {padding:7px 9px;font-size:12px;}
+  #farmV2Layer .fv2-weather-label {top:8px;right:8px;font-size:10px;padding:4px 6px;}
+}
+@media (max-width: 370px) {
+  .premium-top {grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr));gap:2px;padding:5px 3px;}
+  .premium-top .player-box {grid-template-columns:24px minmax(0,1fr);}
+  .premium-top .avatar {width:24px;height:24px;font-size:15px;}
+  .premium-top .resource-icon {font-size:13px;}
+}
+</style>
+
+<style id="farm-v2-stage54-bottom-fix">
+/* Let the actual farm map show behind the bottom controls. */
+.premium-game::before { background:linear-gradient(180deg,rgba(4,12,24,.58),transparent 20%,transparent 74%,transparent 100%) !important; }
+.bottom-nav {background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 2px 3px !important;}
+/* The edit button sits directly above the bottom row, with matching blue styling. */
+#farmV2EditTools {bottom:112px !important;right:12px !important;}
+#farmV2EditTools > button:first-child {
+  background:linear-gradient(145deg,#087ee8,#054c9d) !important;
+  color:#fff !important;border:1px solid #35b8ff !important;
+  border-radius:17px !important;padding:10px 15px !important;
+  font-weight:800 !important;font-size:13px !important;
+  box-shadow:0 5px 14px rgba(0,18,50,.35),inset 0 1px rgba(255,255,255,.25) !important;
+  min-height:42px;
+}
+#farmV2EditTools > button:first-child:active {filter:brightness(1.15)}
+@media(max-width:480px){#farmV2EditTools {bottom:102px !important;right:8px !important;}}
+</style>
 </head>
   <body>
     <button type="button" id="levelsTopButton">⭐ LVL 1</button>
